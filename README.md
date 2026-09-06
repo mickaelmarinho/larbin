@@ -6,14 +6,19 @@ téléphone.
 
 Les règles appliquées sont détaillées dans [REGLES.md](REGLES.md).
 
-## Jouer tout de suite (terminal)
+## Jouer tout de suite
+
+Le plus simple : double-cliquer **Jouer.cmd** dans ce dossier.
+
+En ligne de commande — attention, Windows PowerShell enchaîne avec `;`, jamais
+avec `&&` :
+
+```
+cd C:\Users\Micka\Desktop\larbin; npm run jouer
+```
 
 Il faut Node 22.6 ou plus récent — le projet lit le TypeScript directement, il
 n'y a rien à compiler.
-
-```bash
-npm run jouer
-```
 
 Vous affrontez Gina, Hugo et Lila. À chaque tour, le jeu liste vos coups
 possibles : tapez le numéro, ou `p` pour passer.
