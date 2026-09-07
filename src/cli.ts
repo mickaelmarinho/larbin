@@ -52,13 +52,22 @@ function afficher(state: GameState): void {
 async function tourHumain(state: GameState, rl: readline.Interface): Promise<GameState> {
   const vue = viewFor(state, MOI);
 
-  if (vue.phase === 'echange' && vue.pendingReturn) {
+  if (vue.phase === 'echange' && vue.tribut && vue.pendingReturn) {
     const { count, received, to } = vue.pendingReturn;
+    const { forcees, candidats, aChoisir } = vue.tribut;
     const donneur = vue.others.find((o) => o.id === to)!;
+
     console.log(`\n${donneur.name} (${donneur.role}) vous a donné ${main(received)}.`);
-    console.log(`Votre main : ${main(vue.me.hand)}`);
-    const choix = await demanderCartes(rl, vue.me.hand, count, `Rendez-lui ${count} carte(s)`);
-    return apply(state, { type: 'rendre', player: MOI, cards: choix.map((c) => c.id) });
+    console.log(
+      `Le tribut est imposé : vous rendez ${count === 1 ? 'votre plus basse' : `vos ${count} plus basses`}.`,
+    );
+    if (forcees.length > 0) console.log(`  D'office : ${main(forcees)}`);
+
+    const invite = aChoisir === 1 ? 'Choisissez la couleur' : `Choisissez ${aChoisir} couleurs`;
+    const choix = await demanderCartes(rl, candidats, aChoisir, invite);
+    return apply(state, {
+      type: 'rendre', player: MOI, cards: [...forcees, ...choix].map((c) => c.id),
+    });
   }
 
   afficher(state);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import type { Card, GameState, Rank } from '../src/engine/types.ts';
 import {
-  RegleViolee, apply, assignRoles, createGame, legalPlays, viewFor,
+  RegleViolee, apply, assignRoles, createGame, legalPlays, tributImpose, viewFor,
 } from '../src/engine/game.ts';
 import { botAction } from '../src/engine/bot.ts';
 import { makeDeck, sortHand } from '../src/engine/cards.ts';
@@ -265,55 +265,121 @@ test('finir sur une doublette de 2 compte aussi', () => {
 
 /* ---------------------------------------------------------- les échanges */
 
-test('début de manche : dons imposés, cartes rendues au choix, le Boss commence', () => {
-  let state = nouvelle(4, 5);
-  // On force une fin de manche connue.
-  state.finishOrder = ['a', 'b', 'c', 'd'];
+/** Une manche 2 prête à démarrer, avec des rôles connus. */
+function mancheSuivante(seed: number, n = 4): GameState {
+  const state = nouvelle(n, seed);
+  state.finishOrder = state.order.slice();
   for (const p of state.players) p.hand = [];
   assignRoles(state);
   state.phase = 'fin-de-manche';
+  return apply(state, { type: 'manche-suivante' });
+}
 
-  state = apply(state, { type: 'manche-suivante' });
-  assert.equal(state.phase, 'echange');
+/** Un début de manche où seul le tribut du Boss reste à trancher. */
+function enEchange(mainDuBoss: string[], count = 2): GameState {
+  const state = partie({
+    a: mainDuBoss, b: ['R♠'], c: ['D♠'], d: ['V♠'],
+  });
+  state.players.find((p) => p.id === 'a')!.role = 'boss';
+  state.players.find((p) => p.id === 'd')!.role = 'larbin';
+  state.phase = 'echange';
+  state.pendingReturns = [{ from: 'a', to: 'd', count, received: [] }];
+  return state;
+}
 
-  const boss = state.players.find((p) => p.id === 'a')!;
-  const larbin = state.players.find((p) => p.id === 'd')!;
-  const sousBoss = state.players.find((p) => p.id === 'b')!;
-  const surLarbin = state.players.find((p) => p.id === 'c')!;
+test('le tribut désigne les cartes les plus basses', () => {
+  const main = (labels: string[]) => labels.map(carte);
 
-  assert.equal(boss.hand.length, 15, 'le Boss a reçu 2 cartes');
-  assert.equal(larbin.hand.length, 11, 'le Larbin en a lâché 2');
-  assert.equal(sousBoss.hand.length, 14);
-  assert.equal(surLarbin.hand.length, 12);
+  // Deux hauteurs distinctes : rien à décider.
+  const net = tributImpose(main(['3♠', '5♥', '9♣', 'R♦']), 2);
+  assert.deepEqual(ids(net.forcees).sort(), ['3♠', '5♥']);
+  assert.equal(net.aChoisir, 0);
+  assert.deepEqual(net.candidats, []);
 
-  const donsAuBoss = state.pendingReturns.find((r) => r.from === 'a')!;
-  assert.equal(donsAuBoss.received.length, 2);
-  // Les cartes données sont bien les 2 meilleures du Larbin.
-  const meilleures = sortHand([...larbin.hand, ...donsAuBoss.received]).slice(0, 2);
-  assert.deepEqual(ids(donsAuBoss.received).sort(), ids(meilleures).sort());
+  // La paire de 3 occupe exactement les deux places : toujours rien à décider.
+  const pile = tributImpose(main(['3♠', '3♥', '9♣', 'R♦']), 2);
+  assert.deepEqual(ids(pile.forcees).sort(), ['3♠', '3♥'].sort());
+  assert.equal(pile.aChoisir, 0);
 
-  // Le Boss rend ce qu'il veut, même en cassant une paire.
-  const rendues = ids(sortHand(boss.hand).slice(-2));
-  state = apply(state, { type: 'rendre', player: 'a', cards: rendues });
-  assert.equal(state.phase, 'echange', 'le Sous-Boss doit encore rendre');
-  state = apply(state, { type: 'rendre', player: 'b', cards: ids(sortHand(sousBoss.hand).slice(-1)) });
+  // Un 3 puis trois 4 : le 3 part d'office, reste à choisir la couleur du 4.
+  const frontiere = tributImpose(main(['3♠', '4♥', '4♦', '4♣', 'R♦']), 2);
+  assert.deepEqual(ids(frontiere.forcees), ['3♠']);
+  assert.equal(frontiere.aChoisir, 1);
+  assert.deepEqual(ids(frontiere.candidats).sort(), ['4♥', '4♦', '4♣'].sort());
 
-  assert.equal(state.phase, 'jeu');
-  assert.equal(state.order[state.turn], 'a', 'le Boss ouvre la manche');
-  assert.deepEqual(state.players.map((p) => p.hand.length).sort(), [13, 13, 13, 13]);
+  // Trois 3 pour deux places : deux couleurs à choisir parmi trois.
+  const trois = tributImpose(main(['3♠', '3♥', '3♦', '9♣']), 2);
+  assert.deepEqual(trois.forcees, []);
+  assert.equal(trois.aChoisir, 2);
+  assert.equal(trois.candidats.length, 3);
+});
+
+test('sans égalité, le tribut part tout seul et la manche démarre', () => {
+  const state = mancheSuivante(5);
+  // Rien à trancher des deux côtés : personne n'a eu à décider.
+  if (state.pendingReturns.length === 0) {
+    assert.equal(state.phase, 'jeu');
+    assert.equal(state.order[state.turn], 'a', 'le Boss ouvre la manche');
+    assert.deepEqual(state.players.map((p) => p.hand.length).sort(), [13, 13, 13, 13]);
+  }
+  // Dans tous les cas, le Larbin a bien lâché ses deux meilleures cartes.
+  const donnees = state.log.filter((l) => l.includes('(larbin) donne'));
+  assert.equal(donnees.length, 1);
+});
+
+test('le Boss ne rend pas ce qu’il veut : ce sont ses plus basses', () => {
+  const state = enEchange(['3♠', '5♥', '9♣', 'R♦']);
+
+  // Ses deux plus basses, dans l'ordre qu'on veut : accepté.
+  const bon = apply(state, { type: 'rendre', player: 'a', cards: ['5♥', '3♠'].map((l) => carte(l).id) });
+  assert.equal(bon.phase, 'jeu');
+  assert.equal(bon.players.find((p) => p.id === 'd')!.hand.length, 3);
+
+  // Garder son 3 pour lâcher un 9 : refusé.
+  assert.throws(
+    () => apply(state, { type: 'rendre', player: 'a', cards: ['5♥', '9♣'].map((l) => carte(l).id) }),
+    RegleViolee,
+  );
+  // Deux cartes hautes : refusé aussi.
+  assert.throws(
+    () => apply(state, { type: 'rendre', player: 'a', cards: ['9♣', 'R♦'].map((l) => carte(l).id) }),
+    RegleViolee,
+  );
+});
+
+test('en cas d’égalité, seule la couleur se choisit', () => {
+  const state = enEchange(['3♠', '4♥', '4♦', '4♣', 'R♦']);
+  const tribut = viewFor(state, 'a').tribut!;
+  assert.deepEqual(ids(tribut.forcees), ['3♠']);
+  assert.equal(tribut.aChoisir, 1);
+
+  // N'importe laquelle des trois couleurs de 4 convient.
+  for (const couleur of ['4♥', '4♦', '4♣']) {
+    const suite = apply(state, {
+      type: 'rendre', player: 'a', cards: ['3♠', couleur].map((l) => carte(l).id),
+    });
+    assert.equal(suite.phase, 'jeu', couleur);
+  }
+  // Mais pas une autre hauteur.
+  assert.throws(
+    () => apply(state, { type: 'rendre', player: 'a', cards: ['3♠', 'R♦'].map((l) => carte(l).id) }),
+    RegleViolee,
+  );
 });
 
 test('les neutres n’échangent rien', () => {
-  let state = nouvelle(6, 9);
-  state.finishOrder = ['a', 'b', 'c', 'd', 'e', 'f'];
-  for (const p of state.players) p.hand = [];
-  assignRoles(state);
-  state.phase = 'fin-de-manche';
-  state = apply(state, { type: 'manche-suivante' });
-
+  const state = mancheSuivante(9, 6);
   const neutres = state.players.filter((p) => p.role === 'neutre');
   assert.equal(neutres.length, 2);
+
+  // Attention : les joueurs s'appellent A, B, C… et « D♠ » est une dame.
+  // On repère donc le nom par sa place dans la phrase, pas par sous-chaîne.
+  const implique = (ligne: string, nom: string) =>
+    ligne.startsWith(`${nom} `) || ligne.endsWith(`à ${nom}.`);
+
+  const echanges = state.log.filter((l) => / donne | rend /.test(l));
   for (const n of neutres) {
+    assert.ok(!echanges.some((l) => implique(l, n.name)), `${n.name} ne devrait rien échanger`);
     assert.ok(!state.pendingReturns.some((r) => r.from === n.id || r.to === n.id));
   }
 });

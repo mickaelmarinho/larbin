@@ -1,5 +1,5 @@
 import type {
-  Action, Card, GameState, PendingReturn, Player, Role,
+  Action, Card, GameState, PendingReturn, Player, Rank, Role,
 } from './types.ts';
 import { DEUX, cardLabel, groupByRank, makeDeck, rankLabel, sortHand } from './cards.ts';
 import { nextRandom, shuffle } from './rng.ts';
@@ -159,9 +159,55 @@ function randomSeat(state: GameState): number {
 }
 
 /**
- * Les dons du bas vers le haut sont imposés, donc appliqués tout de suite :
- * le Larbin lâche ses 2 meilleures cartes, le Sur-Larbin sa meilleure.
- * Le Boss et le Sous-Boss choisiront ensuite ce qu'ils rendent.
+ * Le tribut ne se choisit pas : on rend ses cartes les plus basses. La seule
+ * liberté est la couleur, quand plusieurs cartes se disputent la dernière place.
+ */
+export interface Tribut {
+  /** Cartes que la règle désigne sans discussion. */
+  forcees: Card[];
+  /** Cartes de même hauteur entre lesquelles il reste à trancher. */
+  candidats: Card[];
+  /** Combien en prendre parmi les candidats (0 s'il n'y a rien à décider). */
+  aChoisir: number;
+}
+
+export function tributImpose(hand: Card[], count: number): Tribut {
+  if (hand.length <= count) return { forcees: hand.slice(), candidats: [], aChoisir: 0 };
+
+  const basses = hand.slice().sort((a, b) => a.rank - b.rank).slice(0, count);
+  const frontiere = basses[basses.length - 1].rank;
+  const placesEnJeu = basses.filter((c) => c.rank === frontiere).length;
+  const candidats = hand.filter((c) => c.rank === frontiere);
+  const forcees = basses.filter((c) => c.rank !== frontiere);
+
+  // Autant de prétendants que de places : personne n'a de choix à faire.
+  return candidats.length === placesEnJeu
+    ? { forcees: [...forcees, ...candidats], candidats: [], aChoisir: 0 }
+    : { forcees, candidats, aChoisir: placesEnJeu };
+}
+
+/** Les hauteurs qu'un joueur est tenu de rendre, dans l'ordre croissant. */
+function rangsARendre(hand: Card[], count: number): Rank[] {
+  return hand.slice().sort((a, b) => a.rank - b.rank).slice(0, count).map((c) => c.rank);
+}
+
+/** Déplace les cartes rendues et solde le don correspondant. */
+function soldeRendu(state: GameState, pending: PendingReturn, cards: Card[]): void {
+  const from = player(state, pending.from);
+  const ids = new Set(cards.map((c) => c.id));
+  from.hand = from.hand.filter((c) => !ids.has(c.id));
+  const to = player(state, pending.to);
+  to.hand = sortHand([...to.hand, ...cards]);
+  state.log.push(`${from.name} rend ${cards.map(cardLabel).join(' ')} à ${to.name}.`);
+  state.pendingReturns = state.pendingReturns.filter((r) => r !== pending);
+}
+
+/**
+ * Les deux sens de l'échange sont imposés : le Larbin lâche ses 2 meilleures
+ * cartes, le Boss lui rend ses 2 plus basses ; de même entre Sur-Larbin et
+ * Sous-Boss. Tout ce qui ne demande aucun arbitrage est appliqué sur-le-champ ;
+ * il ne reste en attente que les cas où plusieurs cartes de même hauteur se
+ * disputent la dernière place, et où il faut choisir une couleur.
  */
 function planExchanges(state: GameState): void {
   const byRole = (role: Role) => state.players.find((p) => p.role === role) ?? null;
@@ -182,6 +228,11 @@ function planExchanges(state: GameState): void {
       `${from.name} (${fromRole}) donne ${given.map(cardLabel).join(' ')} à ${to.name}.`,
     );
     state.pendingReturns.push({ from: to.id, to: from.id, count, received: given });
+  }
+
+  for (const pending of [...state.pendingReturns]) {
+    const tribut = tributImpose(player(state, pending.from).hand, pending.count);
+    if (tribut.aChoisir === 0) soldeRendu(state, pending, tribut.forcees);
   }
 }
 
@@ -215,12 +266,14 @@ function doReturn(state: GameState, id: string, cardIds: string[]): void {
     return card;
   });
 
-  from.hand = from.hand.filter((c) => !cards.includes(c));
-  const to = player(state, pending.to);
-  to.hand = sortHand([...to.hand, ...cards]);
-  state.log.push(`${from.name} rend ${cards.map(cardLabel).join(' ')} à ${to.name}.`);
+  // On ne rend pas ce qu'on veut : ce sont les plus basses. Seule la couleur se choisit.
+  const dus = rangsARendre(from.hand, pending.count);
+  const proposes = cards.map((c) => c.rank).sort((a, b) => a - b);
+  if (dus.join(',') !== proposes.join(',')) {
+    fail(`Le tribut est imposé : il faut rendre ${dus.map(rankLabel).join(' et ')}.`);
+  }
 
-  state.pendingReturns = state.pendingReturns.filter((r) => r !== pending);
+  soldeRendu(state, pending, cards);
   if (state.pendingReturns.length === 0) {
     state.phase = 'jeu';
     const boss = state.players.find((p) => p.role === 'boss');
@@ -407,6 +460,8 @@ export interface PlayerView {
   pile: GameState['pile'];
   lastPlayer: string | null;
   pendingReturn: PendingReturn | null;
+  /** Ce qu'il reste à trancher sur le tribut : la couleur, et rien d'autre. */
+  tribut: Tribut | null;
   others: Array<{
     id: string; name: string; count: number; role: Role | null;
     passed: boolean; finishedAt: number | null; isBot: boolean;
@@ -418,6 +473,7 @@ export interface PlayerView {
 
 export function viewFor(state: GameState, id: string): PlayerView {
   const me = player(state, id);
+  const rendu = state.pendingReturns.find((r) => r.from === id) ?? null;
   return {
     me: structuredClone(me),
     round: state.round,
@@ -426,7 +482,8 @@ export function viewFor(state: GameState, id: string): PlayerView {
     requirement: state.requirement,
     pile: structuredClone(state.pile),
     lastPlayer: state.lastPlayer,
-    pendingReturn: state.pendingReturns.find((r) => r.from === id) ?? null,
+    pendingReturn: rendu,
+    tribut: rendu ? tributImpose(me.hand, rendu.count) : null,
     others: state.order
       .filter((oid) => oid !== id)
       .map((oid) => {

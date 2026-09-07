@@ -1,6 +1,6 @@
 import type { Action, Card } from './types.ts';
 import type { PlayerView } from './game.ts';
-import { DEUX, sortHand } from './cards.ts';
+import { DEUX } from './cards.ts';
 
 /**
  * Adversaire artificiel. Pas de calcul d'arbre : quelques réflexes de joueur
@@ -13,10 +13,11 @@ import { DEUX, sortHand } from './cards.ts';
  *  - accélérer quand un adversaire est sur le point de sortir.
  */
 export function botAction(view: PlayerView): Action | null {
-  if (view.phase === 'echange' && view.pendingReturn) {
-    // On rend ce qu'on a de plus mauvais.
-    const worst = sortHand(view.me.hand).slice(-view.pendingReturn.count);
-    return { type: 'rendre', player: view.me.id, cards: worst.map((c) => c.id) };
+  if (view.phase === 'echange' && view.tribut) {
+    // Le tribut est imposé : il ne reste qu'à trancher la couleur.
+    const { forcees, candidats, aChoisir } = view.tribut;
+    const rendues = [...forcees, ...candidats.slice(0, aChoisir)];
+    return { type: 'rendre', player: view.me.id, cards: rendues.map((c) => c.id) };
   }
 
   if (view.phase !== 'jeu' || view.turnPlayer !== view.me.id) return null;

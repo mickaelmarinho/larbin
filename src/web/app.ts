@@ -307,21 +307,39 @@ function cacherVoile(): void {
   $('voile').innerHTML = '';
 }
 
+/**
+ * Le tribut est imposé dans les deux sens : on rend ses cartes les plus basses.
+ * Ce panneau ne s'ouvre donc que lorsqu'il reste une couleur à départager —
+ * sinon le moteur a déjà tout réglé et la manche démarre directement.
+ */
 function voileEchange(): void {
   const vue = viewFor(etat, MOI);
   const don = vue.pendingReturn!;
+  const { forcees, candidats, aChoisir } = vue.tribut!;
   const donneur = vue.others.find((o) => o.id === don.to)!;
   const seule = don.count === 1;
-  const combien = seule ? 'une carte' : `${don.count} cartes`;
+  const hauteur = rankLabel(candidats[0].rank);
+
+  // « Vous avez 2 6 » se lit mal : les petits nombres s'écrivent en toutes lettres.
+  const enLettres = ['zéro', 'une', 'deux', 'trois', 'quatre'];
+  const combienRendues = seule ? 'votre plus basse' : `vos ${enLettres[don.count]} plus basses`;
+  const consigne = aChoisir === 1
+    ? `Vous avez ${enLettres[candidats.length]} ${hauteur} : choisissez la couleur.`
+    : `Vous avez ${enLettres[candidats.length]} ${hauteur} : choisissez-en ${enLettres[aChoisir]}.`;
 
   montrerVoile(`
     <h2>Le tribut du ${TITRES[donneur.role!]}</h2>
     <p>${donneur.name} vous cède d'office ${seule ? 'sa meilleure carte' : 'ses deux meilleures cartes'}.
-       À vous de lui rendre ${combien}, ${seule ? 'celle' : 'celles'} que vous voulez.</p>
+       En retour vous lui rendez ${combienRendues} —
+       la règle l'impose, seule la couleur vous appartient.</p>
+    <p class="mention">Vous recevez :</p>
     <div class="cartes-recues">${sortHand(don.received).map((c) => carteHTML(c)).join('')}</div>
-    <div id="choix-rendu">${sortHand(vue.me.hand).map((c) => carteHTML(c)).join('')}</div>
+    ${forcees.length > 0 ? `<p class="mention">Part d'office :</p>
+      <div class="cartes-recues">${sortHand(forcees).map((c) => carteHTML(c)).join('')}</div>` : ''}
+    <p class="mention">${consigne}</p>
+    <div id="choix-rendu">${sortHand(candidats).map((c) => carteHTML(c)).join('')}</div>
     <button class="action primaire" id="valider-rendu" disabled type="button">
-      Rendre ${combien}
+      Rendre ${seule ? 'la carte' : `les ${don.count} cartes`}
     </button>
   `);
 
@@ -333,18 +351,19 @@ function voileEchange(): void {
     if (!cible) return;
     const id = cible.dataset.id!;
     if (choix.includes(id)) choix = choix.filter((x) => x !== id);
-    else if (choix.length < don.count) choix.push(id);
-    else choix = [...choix.slice(1), id];
+    else choix = [...choix, id].slice(-aChoisir);
 
     $('choix-rendu').querySelectorAll('.carte').forEach((el) => {
       el.classList.toggle('choisie', choix.includes((el as HTMLElement).dataset.id!));
     });
-    bouton.disabled = choix.length !== don.count;
+    bouton.disabled = choix.length !== aChoisir;
   });
 
   bouton.addEventListener('click', () => {
     cacherVoile();
-    envoyer({ type: 'rendre', player: MOI, cards: choix });
+    envoyer({
+      type: 'rendre', player: MOI, cards: [...forcees.map((c) => c.id), ...choix],
+    });
   });
 }
 
@@ -423,3 +442,4 @@ window.addEventListener('resize', () => ajusterChevauchement(
 
 rendre();
 boucle();
+

@@ -47,15 +47,21 @@ d'arrivée.
 
 ## Les échanges de la manche suivante
 
-- Le Larbin donne ses **2 meilleures cartes** au Boss ; le Boss lui rend
-  **2 cartes de son choix**, même si cela casse une paire.
-- Le Sur-Larbin donne sa **meilleure carte** au Sous-Boss ; le Sous-Boss lui
-  rend **1 carte de son choix**.
+**Personne ne choisit ses cartes.** L'échange est imposé dans les deux sens :
+
+- Le Larbin donne ses **2 meilleures cartes** au Boss ; le Boss lui rend ses
+  **2 plus basses**.
+- Le Sur-Larbin donne sa **meilleure carte** au Sous-Boss ; le Sous-Boss lui rend
+  sa **plus basse**.
 - Les Neutres n'échangent rien.
 - Le Boss ouvre la manche.
 
-Les dons du bas vers le haut sont imposés : le moteur les applique tout seul dès
-la distribution. Seuls le Boss et le Sous-Boss ont une décision à prendre.
+La seule liberté est la **couleur**, et seulement en cas d'égalité : si vos deux
+cartes les plus basses sont deux 6, vous décidez si vous lâchez le cœur, le
+trèfle, le carreau ou le pique.
+
+Le moteur applique donc tout l'échange sans rien demander, et ne s'arrête que
+lorsqu'une couleur reste à départager.
 
 ---
 

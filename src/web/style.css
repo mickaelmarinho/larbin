@@ -398,3 +398,9 @@ button.action:disabled {
   :root { --carte-l: 68px; }
   #table { max-width: 860px; margin: 0 auto; }
 }
+
+.panneau p.mention {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--texte-pale);
+}
