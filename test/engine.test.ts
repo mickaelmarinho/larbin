@@ -539,16 +539,17 @@ test('la partie s’arrête quand l’objectif est atteint', () => {
 
 test('chacun sait ce qui est déjà passé sur le tapis', () => {
   let state = partie({ a: ['7♠', '3♥'], b: ['8♠', '3♦'], c: ['9♠', '3♣'], d: ['R♠', 'A♥'] });
+  const reste = (v: Array<[number, number]>, rang: number) => new Map(v).get(rang);
   const avant = viewFor(state, 'd').restantes;
-  assert.equal(avant.get(7), 4, 'aucun 7 vu, et je n’en ai pas');
-  assert.equal(avant.get(13), 3, 'je tiens un roi sur les quatre');
+  assert.equal(reste(avant, 7), 4, 'aucun 7 vu, et je n’en ai pas');
+  assert.equal(reste(avant, 13), 3, 'je tiens un roi sur les quatre');
 
   state = apply(state, { type: 'poser', player: 'a', cards: [carte('7♠').id] });
   state = apply(state, { type: 'poser', player: 'b', cards: [carte('8♠').id] });
 
   const apres = viewFor(state, 'd').restantes;
-  assert.equal(apres.get(7), 3, 'un 7 est tombé');
-  assert.equal(apres.get(8), 3);
+  assert.equal(reste(apres, 7), 3, 'un 7 est tombé');
+  assert.equal(reste(apres, 8), 3);
   assert.equal(state.passees.length, 2);
 });
 

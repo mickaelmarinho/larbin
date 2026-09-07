@@ -161,7 +161,7 @@ function startRound(state: GameState): void {
     const ouvreur = state.players.find((p) => p.hand.some((c) => c.id === DAME_DE_COEUR))!;
     state.phase = 'jeu';
     state.turn = state.order.indexOf(ouvreur.id);
-    state.log.push(`${ouvreur.name} a la dame de cœur : il ouvre la première manche.`);
+    state.log.push(`${ouvreur.name} ouvre la première manche (dame de cœur).`);
     return;
   }
 
@@ -560,12 +560,13 @@ function doNewGame(state: GameState): void {
  * hauteur, moins celles qu'on a vues passer et celles qu'on tient. Tout le monde
  * à la table dispose de cette information — il suffit de regarder le tapis.
  */
-export function cartesRestantes(state: GameState, id: string): Map<Rank, number> {
-  const restantes = new Map<Rank, number>(RANKS.map((r) => [r, 4]));
-  const retirer = (c: Card) => restantes.set(c.rank, (restantes.get(c.rank) ?? 0) - 1);
+export function cartesRestantes(state: GameState, id: string): Array<[Rank, number]> {
+  const compte = new Map<Rank, number>(RANKS.map((r) => [r, 4]));
+  const retirer = (c: Card) => compte.set(c.rank, (compte.get(c.rank) ?? 0) - 1);
   state.passees.forEach(retirer);
   player(state, id).hand.forEach(retirer);
-  return restantes;
+  // Un tableau, pas une Map : la vue doit pouvoir voyager en JSON jusqu'au client.
+  return [...compte.entries()];
 }
 
 /** Ce qu'un joueur a le droit de voir : sa main, et seulement le nombre de cartes des autres. */
@@ -590,17 +591,28 @@ export interface PlayerView {
   others: Array<{
     id: string; name: string; count: number; role: Role | null;
     passed: boolean; finishedAt: number | null; isBot: boolean; points: number;
+    finishedOnTwo: boolean;
   }>;
+  /** Classement de la manche écoulée, vide tant qu'elle n'est pas finie. */
+  classement: string[];
+  /** Les mouvements d'échange de ce début de manche, en clair. */
+  resumeEchanges: string[];
   /** Score à atteindre pour remporter la partie. */
   objectif: number;
   /**
    * Pour chaque hauteur, combien de cartes je n'ai encore ni vues passer ni en
    * main : autrement dit ce que les autres peuvent encore détenir.
    */
-  restantes: Map<Rank, number>;
+  restantes: Array<[Rank, number]>;
   legal: Card[][];
   canPass: boolean;
   log: string[];
+}
+
+/** Les lignes d'échange écrites depuis le début de la manche en cours. */
+function echangesDeLaManche(state: GameState): string[] {
+  const debut = state.log.lastIndexOf(`--- Manche ${state.round} ---`);
+  return state.log.slice(debut + 1).filter((l) => / donne | rend /.test(l));
 }
 
 export function viewFor(state: GameState, id: string): PlayerView {
@@ -628,8 +640,11 @@ export function viewFor(state: GameState, id: string): PlayerView {
         return {
           id: o.id, name: o.name, count: o.hand.length, role: o.role,
           passed: o.passed, finishedAt: o.finishedAt, isBot: o.isBot, points: o.points,
+          finishedOnTwo: o.finishedOnTwo,
         };
       }),
+    classement: state.classement.slice(),
+    resumeEchanges: echangesDeLaManche(state),
     objectif: state.objectif,
     restantes: cartesRestantes(state, id),
     legal: legalPlays(state, id),

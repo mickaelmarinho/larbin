@@ -513,3 +513,73 @@ button.action:disabled {
 #restantes .hauteur.epuisee {
   opacity: .35;
 }
+
+/* --------------------------------------------------- accueil et salon */
+
+#table[hidden] { display: none; }
+
+.panneau .champ {
+  display: block;
+  font-size: 13px;
+  color: var(--texte-pale);
+  margin-bottom: 14px;
+}
+
+.panneau input[type="text"] {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 16px; /* en dessous de 16px, iOS zoome tout seul sur le champ */
+  color: var(--texte);
+  background: #00000038;
+  border: 1px solid #ffffff26;
+  border-radius: 10px;
+}
+
+.panneau input[type="text"]:focus {
+  outline: none;
+  border-color: var(--laiton);
+}
+
+.panneau .action + .action { margin-top: 8px; }
+
+.panneau .action {
+  display: block;
+  width: 100%;
+}
+
+.rejoindre {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin: 8px 0 0;
+}
+
+.rejoindre input[type="text"] {
+  margin-top: 0;
+  min-width: 0;
+}
+
+.rejoindre .action {
+  width: auto;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 11px 14px;
+}
+
+.panneau .mention.alerte { color: #e0a08a; }
+
+button.mini {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #ffffff1f;
+  background: #ffffff10;
+  color: var(--texte-pale);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}

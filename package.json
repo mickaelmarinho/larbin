@@ -12,9 +12,13 @@
     "jouer": "node src/cli.ts",
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
-    "serveur": "node scripts/serveur.mjs"
+    "serveur": "node src/reseau/serveur.ts"
   },
   "devDependencies": {
+    "@types/ws": "^8.18.1",
     "esbuild": "^0.28.2"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
   }
 }

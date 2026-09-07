@@ -4,7 +4,7 @@
     {
       "name": "larbin",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["scripts/serveur.mjs"],
+      "runtimeArgs": ["src/reseau/serveur.ts"],
       "port": 5177
     }
   ]
