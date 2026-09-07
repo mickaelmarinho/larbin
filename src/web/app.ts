@@ -24,10 +24,13 @@ const ADVERSAIRES = [
 const REFLEXION = 750;
 const REFLEXION_ECHANGE = 450;
 
-let etat: GameState = nouvellePartie();
+/** Une partie interrompue se retrouve telle quelle : on joue sur un téléphone. */
+const CLE_SAUVEGARDE = 'larbin.partie.v1';
+
+let etat: GameState = restaurer() ?? nouvellePartie();
 let selection: string[] = [];
 let annonce = '';
-let mancheAnnoncee = 0;
+let mancheAnnoncee = etat.round;
 let minuteur: number | undefined;
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -37,6 +40,45 @@ function nouvellePartie(): GameState {
     { id: MOI, name: 'Vous' },
     ...ADVERSAIRES.map((a) => ({ ...a, isBot: true })),
   ]);
+}
+
+function sauvegarder(): void {
+  try {
+    localStorage.setItem(CLE_SAUVEGARDE, JSON.stringify(etat));
+  } catch {
+    // Navigation privée, stockage plein : tant pis, la partie continue.
+  }
+}
+
+/** Relit la partie en cours, en refusant tout ce qui n'a pas la forme attendue. */
+function restaurer(): GameState | null {
+  try {
+    const brut = localStorage.getItem(CLE_SAUVEGARDE);
+    if (!brut) return null;
+    const s = JSON.parse(brut) as GameState;
+    const valide = Array.isArray(s.players)
+      && s.players.length >= 4
+      && s.players.every((p) => Array.isArray(p.hand) && typeof p.points === 'number')
+      && Array.isArray(s.order)
+      && typeof s.round === 'number'
+      && typeof s.objectif === 'number';
+    return valide ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+function recommencer(): void {
+  clearTimeout(minuteur);
+  cacherVoile();
+  etat = nouvellePartie();
+  selection = [];
+  annonce = '';
+  mancheAnnoncee = 0;
+  poseAffichee = '';
+  sauvegarder();
+  rendre();
+  boucle();
 }
 
 /* ---------------------------------------------------------------- rendu */
@@ -102,6 +144,7 @@ function rendreTapis(vue: PlayerView): void {
   const signature = dernier ? `${dernier.player}:${dernier.cards.map((c) => c.id).join(',')}` : '';
   if (signature !== poseAffichee) {
     poseAffichee = signature;
+    $('pose').classList.toggle('de-moi', dernier?.player === MOI);
     $('pose').innerHTML = dernier ? sortHand(dernier.cards).map((c) => carteHTML(c)).join('') : '';
   }
 
@@ -163,8 +206,37 @@ function ajusterChevauchement(n: number): void {
   zone.style.setProperty('--chevauchement', debord > 0 ? `${debord / (n - 1) + 0.5}px` : '0px');
 }
 
+function rendreScores(vue: PlayerView): void {
+  const marques = [
+    `<span class="marque moi">Vous <b>${vue.me.points}</b></span>`,
+    ...vue.others.map((o) => `<span class="marque">${o.name} <b>${o.points}</b></span>`),
+  ];
+  $('tableau-scores').innerHTML = `${marques.join('')}<span class="objectif">objectif ${vue.objectif}</span>`;
+}
+
+/**
+ * Ce que les adversaires peuvent encore détenir, hauteur par hauteur. À une
+ * vraie table cette information est publique — il suffit de regarder le tapis.
+ * Les bots la comptent : autant que le joueur puisse la lire aussi.
+ */
+let restantesVisibles = false;
+
+function rendreRestantes(vue: PlayerView): void {
+  const zone = $('restantes');
+  zone.hidden = !restantesVisibles;
+  if (!restantesVisibles) return;
+
+  zone.innerHTML = [...vue.restantes.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([rang, reste]) => `<span class="hauteur ${reste === 0 ? 'epuisee' : ''}">`
+      + `${rankLabel(rang)} <b>${reste}</b></span>`)
+    .join('');
+}
+
 function rendre(): void {
   const vue = viewFor(etat, MOI);
+  rendreScores(vue);
+  rendreRestantes(vue);
   rendreAdversaires(vue);
   rendreTapis(vue);
   rendreMaMain(vue);
@@ -233,6 +305,7 @@ function envoyer(action: Action): void {
   etat = apply(etat, action);
   selection = [];
   annonce = etat.log[etat.log.length - 1] ?? '';
+  sauvegarder();
   rendre();
   boucle();
 }
@@ -247,6 +320,11 @@ function planifier(delai: number, suite: () => void): void {
 /** Fait avancer la partie : chaque appel traite le prochain acteur non humain. */
 function boucle(): void {
   clearTimeout(minuteur);
+
+  if (etat.phase === 'fin-de-partie') {
+    voileFinDePartie();
+    return;
+  }
 
   if (etat.phase === 'fin-de-manche') {
     voileFinDeManche();
@@ -406,27 +484,38 @@ function voileDebutDeManche(): void {
   });
 }
 
-function voileFinDeManche(): void {
-  const lignes = etat.finishOrder.map((id, i) => {
+/** Le classement de la manche, avec le rôle, les points gagnés et le total. */
+function lignesDuClassement(): string {
+  const n = etat.classement.length;
+  return etat.classement.map((id, i) => {
     const p = etat.players.find((x) => x.id === id)!;
     const nom = id === MOI ? 'Vous' : p.name;
-    const deux = p.finishedOnTwo ? '<span class="sur-un-deux">fini sur un 2</span>' : '';
+    const deux = p.finishedOnTwo ? ' <span class="sur-un-deux">fini sur un 2</span>' : '';
     return `<li>
       <span class="place">${i + 1}${i === 0 ? 'er' : 'e'}</span>
-      <span>${nom} ${deux}</span>
+      <span>${nom}${deux}</span>
+      <span class="gain">+${n - 1 - i} → ${p.points}</span>
       <span class="role ${p.role}">${TITRES[p.role!]}</span>
     </li>`;
   }).join('');
+}
 
+function voileFinDeManche(): void {
   const moi = etat.players.find((p) => p.id === MOI)!;
   const verdict = moi.role === 'boss' ? 'Vous êtes le Boss.'
     : moi.role === 'larbin' ? 'Vous voilà Larbin. La prochaine manche va piquer.'
     : `Vous finissez ${TITRES[moi.role!]}.`;
 
+  const meneur = [...etat.players].sort((a, b) => b.points - a.points)[0];
+  const restant = etat.objectif - meneur.points;
+  const course = restant <= 3
+    ? ` ${meneur.id === MOI ? 'Vous êtes' : `${meneur.name} est`} à ${restant} point${restant > 1 ? 's' : ''} de la partie.`
+    : '';
+
   montrerVoile(`
     <h2>Fin de la manche ${etat.round}</h2>
-    <p>${verdict}</p>
-    <ul class="classement">${lignes}</ul>
+    <p>${verdict}${course}</p>
+    <ul class="classement">${lignesDuClassement()}</ul>
     <button class="action primaire" id="suivante" type="button">Manche suivante</button>
   `);
   $('suivante').addEventListener('click', () => {
@@ -434,6 +523,30 @@ function voileFinDeManche(): void {
     annonce = '';
     envoyer({ type: 'manche-suivante' });
   });
+}
+
+function voileFinDePartie(): void {
+  const ordre = [...etat.players].sort((a, b) => b.points - a.points);
+  const vainqueur = ordre[0];
+  const moi = etat.players.find((p) => p.id === MOI)!;
+
+  const verdict = vainqueur.id === MOI
+    ? `Vous remportez la partie avec ${moi.points} points.`
+    : `${vainqueur.name} remporte la partie avec ${vainqueur.points} points. Vous en avez ${moi.points}.`;
+
+  const lignes = ordre.map((p, i) => `<li>
+      <span class="place">${i + 1}${i === 0 ? 'er' : 'e'}</span>
+      <span>${p.id === MOI ? 'Vous' : p.name}</span>
+      <span class="gain">${p.points} pt${p.points > 1 ? "s" : ""}</span>
+    </li>`).join('');
+
+  montrerVoile(`
+    <h2>Partie terminée</h2>
+    <p>${verdict}</p>
+    <ul class="classement">${lignes}</ul>
+    <button class="action primaire" id="rejouer" type="button">Nouvelle partie</button>
+  `);
+  $('rejouer').addEventListener('click', recommencer);
 }
 
 /* ------------------------------------------------------------- démarrage */
@@ -450,6 +563,17 @@ $('poser').addEventListener('click', () => {
 
 $('passer').addEventListener('click', () => {
   if (viewFor(etat, MOI).canPass) envoyer({ type: 'passer', player: MOI });
+});
+
+$('voir-restantes').addEventListener('click', () => {
+  restantesVisibles = !restantesVisibles;
+  $('voir-restantes').classList.toggle('actif', restantesVisibles);
+  rendre();
+});
+
+$('recommencer').addEventListener('click', () => {
+  const enCours = etat.round > 1 || etat.players.some((p) => p.points > 0);
+  if (!enCours || confirm('Abandonner la partie en cours et tout remettre à zéro ?')) recommencer();
 });
 
 window.addEventListener('resize', () => ajusterChevauchement(

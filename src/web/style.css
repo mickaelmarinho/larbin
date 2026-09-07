@@ -156,14 +156,6 @@ body {
 
 #pose .carte + .carte { margin-left: calc(var(--carte-l) * -0.42); }
 
-#pose .carte {
-  animation: arrivee .28s cubic-bezier(.2, .9, .3, 1.2) backwards;
-}
-
-@keyframes arrivee {
-  from { transform: translateY(-26px) scale(.86); opacity: 0; }
-}
-
 #exigence {
   font-size: 13px;
   color: var(--texte);
@@ -403,4 +395,121 @@ button.action:disabled {
   margin: 0 0 8px;
   font-size: 13px;
   color: var(--texte-pale);
+}
+
+/* ------------------------------------------------------------- les scores */
+
+#scores {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--texte-pale);
+}
+
+#tableau-scores {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+#tableau-scores .marque {
+  white-space: nowrap;
+}
+
+#tableau-scores .marque b {
+  color: var(--texte);
+  font-variant-numeric: tabular-nums;
+}
+
+#tableau-scores .marque.moi b { color: var(--laiton); }
+
+#tableau-scores .objectif {
+  margin-left: auto;
+  opacity: .8;
+}
+
+#recommencer {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #ffffff1f;
+  background: #ffffff10;
+  color: var(--texte-pale);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#recommencer:active { transform: scale(.94); }
+
+.classement .gain {
+  color: var(--texte-pale);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Les cartes que vous posez montent depuis votre main ; celles des autres
+   descendent d'en face. */
+#pose .carte { animation: arrivee-adverse .28s cubic-bezier(.2, .9, .3, 1.2) backwards; }
+#pose.de-moi .carte { animation-name: arrivee-mienne; }
+
+@keyframes arrivee-adverse {
+  from { transform: translateY(-30px) scale(.86); opacity: 0; }
+}
+
+@keyframes arrivee-mienne {
+  from { transform: translateY(30px) scale(.86); opacity: 0; }
+}
+
+/* ------------------------------------------- ce qui peut encore sortir */
+
+#voir-restantes {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #ffffff1f;
+  background: #ffffff10;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#voir-restantes.actif {
+  border-color: var(--laiton);
+  background: #d9a44122;
+}
+
+#restantes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  max-width: 320px;
+}
+
+#restantes[hidden] { display: none; }
+
+#restantes .hauteur {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #00000033;
+  font-size: 12px;
+  color: var(--texte-pale);
+}
+
+#restantes .hauteur b {
+  color: var(--texte);
+  font-variant-numeric: tabular-nums;
+}
+
+#restantes .hauteur.epuisee {
+  opacity: .35;
 }

@@ -68,6 +68,20 @@ ensuite — car ses plus basses ne se comptent qu'une fois qu'il a reçu. Le mot
 applique tout ce qui ne demande aucun arbitrage et ne s'arrête que lorsqu'une
 couleur reste à départager.
 
+## Les points
+
+Chaque manche rapporte **autant de points qu'on a laissé de joueurs derrière
+soi**. À quatre : 3 au Boss, 2 au Sous-Boss, 1 au Sur-Larbin, rien au Larbin.
+À six, le Boss en prend 5.
+
+Le compte se fait sur le **classement**, pas sur l'ordre de sortie : celui qui
+termine sur un 2 est donc puni deux fois — il devient Larbin *et* repart les
+mains vides.
+
+La partie est gagnée par le premier à **5 points par adversaire** : 15 points à
+quatre joueurs, 20 à cinq, 25 à six. Cela représente cinq manches gagnées de
+bout en bout, soit une bonne soirée quel que soit le nombre de joueurs.
+
 ---
 
 ## Les points que le brief ne tranchait pas

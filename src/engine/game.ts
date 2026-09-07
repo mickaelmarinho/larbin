@@ -2,12 +2,20 @@ import type {
   Action, Card, Echange, GameState, Player, Rank, Role, SensEchange,
 } from './types.ts';
 import {
-  DAME_DE_COEUR, DEUX, cardLabel, groupByRank, makeDeck, rankLabel, sortHand,
+  DAME_DE_COEUR, DEUX, RANKS, cardLabel, groupByRank, makeDeck, rankLabel, sortHand,
 } from './cards.ts';
 import { nextRandom, shuffle } from './rng.ts';
 
 export const MIN_JOUEURS = 4;
 export const MAX_JOUEURS = 6;
+
+/**
+ * Une manche rapporte autant de points qu'on a laissé de joueurs derrière soi :
+ * le Boss en prend le maximum, le Larbin rien. L'objectif de la partie vaut donc
+ * cinq manches gagnées de bout en bout — une bonne soirée, quel que soit le
+ * nombre de joueurs.
+ */
+export const OBJECTIF_PAR_ADVERSAIRE = 5;
 
 export interface PlayerSeed {
   id: string;
@@ -99,6 +107,7 @@ export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
     finishedOnTwo: false,
     joinedLate: false,
     isBot: s.isBot ?? false,
+    points: 0,
   }));
 
   const state: GameState = {
@@ -111,7 +120,10 @@ export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
     requirement: null,
     lastPlayer: null,
     finishOrder: [],
+    classement: [],
     echanges: [],
+    passees: [],
+    objectif: OBJECTIF_PAR_ADVERSAIRE * (seeds.length - 1),
     rng: seed >>> 0,
     log: [],
   };
@@ -128,7 +140,9 @@ function startRound(state: GameState): void {
   state.requirement = null;
   state.lastPlayer = null;
   state.finishOrder = [];
+  state.classement = [];
   state.echanges = [];
+  state.passees = [];
   for (const p of state.players) {
     p.passed = false;
     p.finishedAt = null;
@@ -292,6 +306,7 @@ export function apply(state: GameState, action: Action): GameState {
     case 'passer': doPass(next, action.player); break;
     case 'echanger': doExchange(next, action.player, action.cards); break;
     case 'manche-suivante': doNextRound(next); break;
+    case 'nouvelle-partie': doNewGame(next); break;
     default: fail('Action inconnue.');
   }
   return next;
@@ -364,6 +379,7 @@ function doPlay(state: GameState, id: string, cardIds: string[]): void {
 
   p.hand = p.hand.filter((c) => !cards.includes(c));
   state.pile.push({ player: id, cards });
+  state.passees.push(...cards);
   state.requirement = { rank, count: cards.length };
   state.lastPlayer = id;
   state.log.push(`${p.name} pose ${cards.map(cardLabel).join(' ')}.`);
@@ -451,7 +467,7 @@ function ordinal(n: number): string {
  * queue de classement en conservant leur ordre relatif : avec un seul fautif,
  * cela revient exactement à « il devient Larbin ».
  */
-export function assignRoles(state: GameState): void {
+export function assignRoles(state: GameState): string[] {
   const last = state.players.find((p) => p.hand.length > 0);
   if (last && !state.finishOrder.includes(last.id)) {
     last.finishedAt = state.finishOrder.length;
@@ -483,18 +499,42 @@ export function assignRoles(state: GameState): void {
     }
   }
   for (const p of state.players) p.joinedLate = false;
+  return classement;
+}
+
+/**
+ * Une manche rapporte autant de points qu'on a laissé de joueurs derrière soi.
+ * À quatre : 3 au Boss, 2 au Sous-Boss, 1 au Sur-Larbin, rien au Larbin.
+ * On compte sur le classement, donc celui qui a fini sur un 2 est puni deux
+ * fois : il devient Larbin et repart les mains vides.
+ */
+export function pointsDeLaManche(classement: string[]): Map<string, number> {
+  const gains = new Map<string, number>();
+  classement.forEach((id, i) => gains.set(id, classement.length - 1 - i));
+  return gains;
 }
 
 function endRound(state: GameState): void {
-  assignRoles(state);
-  state.phase = 'fin-de-manche';
+  const classement = assignRoles(state);
+  state.classement = classement;
+  const gains = pointsDeLaManche(classement);
+  for (const [id, gain] of gains) player(state, id).points += gain;
+
   state.pile = [];
   state.requirement = null;
   for (const p of state.players) p.passed = false;
-  for (const id of state.finishOrder) {
+  for (const id of classement) {
     const p = player(state, id);
-    state.log.push(`${p.name} : ${p.role}.`);
+    state.log.push(`${p.name} : ${p.role}, +${gains.get(id)} (${p.points} pts).`);
   }
+
+  // Départage : le plus de points, puis la meilleure place de la manche.
+  const vainqueur = state.players
+    .filter((p) => p.points >= state.objectif)
+    .sort((a, b) => b.points - a.points || classement.indexOf(a.id) - classement.indexOf(b.id))[0];
+
+  state.phase = vainqueur ? 'fin-de-partie' : 'fin-de-manche';
+  if (vainqueur) state.log.push(`${vainqueur.name} remporte la partie avec ${vainqueur.points} points.`);
 }
 
 function doNextRound(state: GameState): void {
@@ -502,7 +542,31 @@ function doNextRound(state: GameState): void {
   startRound(state);
 }
 
+/** On repart de zéro : mêmes joueurs, mêmes places, scores et rôles effacés. */
+function doNewGame(state: GameState): void {
+  for (const p of state.players) {
+    p.points = 0;
+    p.role = null;
+  }
+  state.round = 0;
+  state.log = [];
+  startRound(state);
+}
+
 /* ------------------------------------------------------ vue par joueur */
+
+/**
+ * Ce qui peut encore sortir, hauteur par hauteur : les quatre cartes de chaque
+ * hauteur, moins celles qu'on a vues passer et celles qu'on tient. Tout le monde
+ * à la table dispose de cette information — il suffit de regarder le tapis.
+ */
+export function cartesRestantes(state: GameState, id: string): Map<Rank, number> {
+  const restantes = new Map<Rank, number>(RANKS.map((r) => [r, 4]));
+  const retirer = (c: Card) => restantes.set(c.rank, (restantes.get(c.rank) ?? 0) - 1);
+  state.passees.forEach(retirer);
+  player(state, id).hand.forEach(retirer);
+  return restantes;
+}
 
 /** Ce qu'un joueur a le droit de voir : sa main, et seulement le nombre de cartes des autres. */
 export interface PlayerView {
@@ -525,8 +589,15 @@ export interface PlayerView {
   } | null;
   others: Array<{
     id: string; name: string; count: number; role: Role | null;
-    passed: boolean; finishedAt: number | null; isBot: boolean;
+    passed: boolean; finishedAt: number | null; isBot: boolean; points: number;
   }>;
+  /** Score à atteindre pour remporter la partie. */
+  objectif: number;
+  /**
+   * Pour chaque hauteur, combien de cartes je n'ai encore ni vues passer ni en
+   * main : autrement dit ce que les autres peuvent encore détenir.
+   */
+  restantes: Map<Rank, number>;
   legal: Card[][];
   canPass: boolean;
   log: string[];
@@ -556,9 +627,11 @@ export function viewFor(state: GameState, id: string): PlayerView {
         const o = player(state, oid);
         return {
           id: o.id, name: o.name, count: o.hand.length, role: o.role,
-          passed: o.passed, finishedAt: o.finishedAt, isBot: o.isBot,
+          passed: o.passed, finishedAt: o.finishedAt, isBot: o.isBot, points: o.points,
         };
       }),
+    objectif: state.objectif,
+    restantes: cartesRestantes(state, id),
     legal: legalPlays(state, id),
     canPass: peutPasser(state, id),
     log: state.log.slice(-12),

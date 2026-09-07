@@ -478,6 +478,80 @@ test('un joueur arrivé en cours de partie devient Larbin', () => {
   assert.equal(role('d'), 'boss', 'l’ancien Larbin hérite de sa place');
 });
 
+/* --------------------------------------------------------- les points */
+
+test('une manche rapporte le nombre de joueurs laissés derrière soi', () => {
+  let state = partie({ a: ['3♠'], b: ['4♠'], c: ['5♠'], d: ['R♠', 'A♥'] });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('3♠').id] });
+  state = apply(state, { type: 'poser', player: 'b', cards: [carte('4♠').id] });
+  state = apply(state, { type: 'poser', player: 'c', cards: [carte('5♠').id] });
+
+  const points = (id: string) => state.players.find((p) => p.id === id)!.points;
+  assert.deepEqual([points('a'), points('b'), points('c'), points('d')], [3, 2, 1, 0]);
+  assert.deepEqual(state.classement, ['a', 'b', 'c', 'd']);
+});
+
+test('finir sur un 2 coûte aussi des points', () => {
+  let state = partie({ a: ['2♠'], b: ['4♠'], c: ['5♠'], d: ['R♠', 'A♥'] });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('2♠').id] });
+  state = apply(state, { type: 'passer', player: 'b' });
+  state = apply(state, { type: 'passer', player: 'c' });
+  state = apply(state, { type: 'passer', player: 'd' });
+  state = apply(state, { type: 'poser', player: 'b', cards: [carte('4♠').id] });
+  state = apply(state, { type: 'poser', player: 'c', cards: [carte('5♠').id] });
+
+  // Sorti premier, mais relégué dernier : il repart les mains vides.
+  const points = (id: string) => state.players.find((p) => p.id === id)!.points;
+  assert.equal(points('a'), 0);
+  assert.equal(points('b'), 3);
+});
+
+test('la partie s’arrête quand l’objectif est atteint', () => {
+  const state = nouvelle(4, 21);
+  assert.equal(state.objectif, 15, '5 points par adversaire');
+
+  // On amène un joueur au seuil, puis on lui fait gagner une manche.
+  state.players.find((p) => p.id === 'a')!.points = 13;
+  state.classement = [];
+  for (const p of state.players) p.hand = [];
+  state.players.find((p) => p.id === 'a')!.hand = [carte('3♠')];
+  state.players.find((p) => p.id === 'b')!.hand = [carte('4♠')];
+  state.players.find((p) => p.id === 'c')!.hand = [carte('5♠')];
+  state.players.find((p) => p.id === 'd')!.hand = [carte('R♠'), carte('A♥')];
+  state.finishOrder = [];
+  state.phase = 'jeu';
+  state.turn = 0;
+  state.requirement = null;
+
+  let suite = apply(state, { type: 'poser', player: 'a', cards: [carte('3♠').id] });
+  suite = apply(suite, { type: 'poser', player: 'b', cards: [carte('4♠').id] });
+  suite = apply(suite, { type: 'poser', player: 'c', cards: [carte('5♠').id] });
+
+  assert.equal(suite.phase, 'fin-de-partie');
+  assert.equal(suite.players.find((p) => p.id === 'a')!.points, 16);
+  assert.throws(() => apply(suite, { type: 'manche-suivante' }), RegleViolee);
+
+  const neuve = apply(suite, { type: 'nouvelle-partie' });
+  assert.equal(neuve.round, 1);
+  assert.ok(neuve.players.every((p) => p.points === 0 && p.role === null));
+  assert.equal(neuve.players.reduce((n, p) => n + p.hand.length, 0), 52);
+});
+
+test('chacun sait ce qui est déjà passé sur le tapis', () => {
+  let state = partie({ a: ['7♠', '3♥'], b: ['8♠', '3♦'], c: ['9♠', '3♣'], d: ['R♠', 'A♥'] });
+  const avant = viewFor(state, 'd').restantes;
+  assert.equal(avant.get(7), 4, 'aucun 7 vu, et je n’en ai pas');
+  assert.equal(avant.get(13), 3, 'je tiens un roi sur les quatre');
+
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('7♠').id] });
+  state = apply(state, { type: 'poser', player: 'b', cards: [carte('8♠').id] });
+
+  const apres = viewFor(state, 'd').restantes;
+  assert.equal(apres.get(7), 3, 'un 7 est tombé');
+  assert.equal(apres.get(8), 3);
+  assert.equal(state.passees.length, 2);
+});
+
 /* ------------------------------------------------- parties complètes (bots) */
 
 /** Fait jouer les bots jusqu'à la fin de la manche. Renvoie l'état final. */

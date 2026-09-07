@@ -47,6 +47,8 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
 - [x] **Un banc d'essai en terminal.**
 - [x] **L'interface** — cartes, éventail, panneaux d'échange et de fin de manche,
       pensée téléphone d'abord.
+- [x] **Les points** — score par manche, objectif de partie, classement final.
+      La partie en cours est sauvegardée : fermer l'onglet ne l'efface pas.
 - [ ] **Le multijoueur** — salons privés, invitation par lien, reconnexion.
 - [ ] **La mise en ligne.**
 

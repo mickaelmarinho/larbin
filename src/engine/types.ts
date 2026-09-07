@@ -33,6 +33,8 @@ export interface Player {
   /** Un joueur arrivé en cours de partie : Larbin imposé à la manche suivante. */
   joinedLate: boolean;
   isBot: boolean;
+  /** Points cumulés depuis le début de la partie. */
+  points: number;
 }
 
 /** Cartes posées d'un coup par un joueur (1 à 4 cartes de même hauteur). */
@@ -65,7 +67,7 @@ export interface Echange {
 /** Dans quel sens un joueur se sépare de ses cartes. */
 export type SensEchange = 'donner' | 'rendre';
 
-export type Phase = 'echange' | 'jeu' | 'fin-de-manche';
+export type Phase = 'echange' | 'jeu' | 'fin-de-manche' | 'fin-de-partie';
 
 export interface GameState {
   players: Player[];
@@ -82,7 +84,13 @@ export interface GameState {
   lastPlayer: string | null;
   /** Ordre de sortie de la manche en cours. */
   finishOrder: string[];
+  /** Classement final de la manche : il tient compte de la pénalité du 2. */
+  classement: string[];
   echanges: Echange[];
+  /** Toutes les cartes déjà posées dans la manche : chacun les a vues passer. */
+  passees: Card[];
+  /** Score à atteindre pour gagner la partie. */
+  objectif: number;
   /** État interne du générateur pseudo-aléatoire (parties rejouables). */
   rng: number;
   log: string[];
@@ -92,4 +100,5 @@ export type Action =
   | { type: 'poser'; player: string; cards: string[] }
   | { type: 'passer'; player: string }
   | { type: 'echanger'; player: string; cards: string[] }
-  | { type: 'manche-suivante' };
+  | { type: 'manche-suivante' }
+  | { type: 'nouvelle-partie' };
