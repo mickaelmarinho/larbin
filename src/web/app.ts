@@ -54,6 +54,12 @@ function franciser(ligne: string, monNom: string): string {
   return ligne
     .replace(new RegExp(`^${echappe} `), 'Vous ')
     .replace(new RegExp(` à ${echappe}\\b`, 'g'), ' à vous')
+    // « Vous et Lila ont fait leur échange » se dit « … avez fait votre échange ».
+    .replace(/^Vous et (.+) ont fait leur échange\.$/, 'Vous et $1 avez fait votre échange.')
+    .replace(
+      new RegExp(`^(.+) et ${echappe} ont fait leur échange\\.$`),
+      'Vous et $1 avez fait votre échange.',
+    )
     .replace(/^(.+?) (donne|rend) (.+) à vous\.$/, '$1 vous $2 $3.')
     .replace(/^Vous a fini\b/, 'Vous avez fini')
     .replace(
@@ -275,7 +281,7 @@ function boucle(): void {
   if (vue.phase === 'echange' && vue.echange) return voileEchange(vue);
   if (vue.phase === 'echange') return cacherVoile();
 
-  if (vue.round > mancheAnnoncee && vue.round > 1 && vue.resumeEchanges.length > 0) {
+  if (vue.round > mancheAnnoncee && vue.round > 1 && vue.mesEchanges.length > 0) {
     return voileDebutDeManche(vue);
   }
   mancheAnnoncee = Math.max(mancheAnnoncee, vue.round);
@@ -358,14 +364,28 @@ function voileEchange(vue: PlayerView): void {
   });
 }
 
+/**
+ * Le récapitulatif de début de manche ne montre que vos propres échanges :
+ * ce qui passe entre deux autres joueurs ne vous regarde pas.
+ */
 function voileDebutDeManche(vue: PlayerView): void {
   mancheAnnoncee = vue.round;
   const boss = [vue.me, ...vue.others].find((p) => p.role === 'boss');
   const nomBoss = !boss ? '' : boss.id === vue.me.id ? 'Vous ouvrez' : `${boss.name} ouvre`;
 
+  const phrases = vue.mesEchanges.map((m) => {
+    const jeCede = m.de === vue.me.id;
+    const autre = joueur(vue, jeCede ? m.vers : m.de).nom;
+    const cartes = m.cartes.map((c) => `${rankLabel(c.rank)}${c.suit}`).join(' ');
+    if (m.sens === 'donner') {
+      return jeCede ? `Vous cédez ${cartes} à ${autre}.` : `${autre} vous cède ${cartes}.`;
+    }
+    return jeCede ? `Vous rendez ${cartes} à ${autre}.` : `${autre} vous rend ${cartes}.`;
+  });
+
   montrerVoile(`
     <h2>Manche ${vue.round}</h2>
-    <p>${vue.resumeEchanges.map((m) => `• ${franciser(m, vue.me.name)}`).join('<br>')}</p>
+    <p>${phrases.map((p) => `• ${p}`).join('<br>')}</p>
     <p>${nomBoss} la manche.</p>
     <button class="action primaire" id="commencer" type="button">Jouer</button>
   `);

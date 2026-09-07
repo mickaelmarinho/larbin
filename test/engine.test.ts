@@ -396,17 +396,46 @@ test('la dame de cœur ouvre la première manche', () => {
   }
 });
 
-test('sans égalité, le tribut part tout seul et la manche démarre', () => {
-  const state = mancheSuivante(5);
-  // Rien à trancher des deux côtés : personne n'a eu à décider.
-  if (state.echanges.length === 0) {
-    assert.equal(state.phase, 'jeu');
-    assert.equal(state.order[state.turn], 'a', 'le Boss ouvre la manche');
-    assert.deepEqual(state.players.map((p) => p.hand.length).sort(), [13, 13, 13, 13]);
+test('l’échange se solde des deux côtés, puis le Boss ouvre', () => {
+  let state = mancheSuivante(5);
+  // On laisse les bots trancher les couleurs, s'il y en avait à trancher.
+  for (let i = 0; i < 10 && state.phase === 'echange'; i++) {
+    const acteur = joueursEnAttente(state)[0];
+    state = apply(state, botAction(viewFor(state, acteur))!);
   }
-  // Dans tous les cas, le Larbin a bien lâché ses deux meilleures cartes.
-  const donnees = state.log.filter((l) => l.includes('(larbin) donne'));
-  assert.equal(donnees.length, 1);
+
+  assert.equal(state.phase, 'jeu');
+  assert.equal(state.order[state.turn], 'a', 'le Boss ouvre la manche');
+  assert.deepEqual(state.players.map((p) => p.hand.length).sort(), [13, 13, 13, 13]);
+  assert.equal(state.mouvements.filter((m) => m.sens === 'donner').length, 2);
+  assert.equal(state.mouvements.filter((m) => m.sens === 'rendre').length, 2);
+});
+
+test('on ne voit que ses propres échanges', () => {
+  let state = mancheSuivante(5);
+  for (let i = 0; i < 10 && state.phase === 'echange'; i++) {
+    const acteur = joueursEnAttente(state)[0];
+    state = apply(state, botAction(viewFor(state, acteur))!);
+  }
+
+  // a est le Boss (avec d), b le Sous-Boss (avec c) : ils ne partagent rien.
+  const duBoss = viewFor(state, 'a').mesEchanges;
+  assert.equal(duBoss.length, 2, 'le don reçu et le tribut rendu');
+  assert.ok(duBoss.every((m) => m.de === 'a' || m.vers === 'a'));
+
+  const duSousBoss = viewFor(state, 'b').mesEchanges;
+  assert.ok(
+    duSousBoss.every((m) => m.de === 'b' || m.vers === 'b'),
+    'le Sous-Boss ne doit pas voir passer les cartes du Boss',
+  );
+  const croisement = duBoss.filter((m) => duSousBoss.some((n) => n.cartes[0]?.id === m.cartes[0]?.id));
+  assert.equal(croisement.length, 0, 'aucune carte commune entre les deux vues');
+
+  // Et le journal, lui, ne dit rien des cartes.
+  assert.ok(
+    !state.log.some((l) => / donne | rend /.test(l)),
+    'le journal partagé ne doit pas détailler les échanges',
+  );
 });
 
 test('le Boss ne rend pas ce qu’il veut : ce sont ses plus basses', () => {
@@ -454,15 +483,13 @@ test('les neutres n’échangent rien', () => {
   const neutres = state.players.filter((p) => p.role === 'neutre');
   assert.equal(neutres.length, 2);
 
-  // Attention : les joueurs s'appellent A, B, C… et « D♠ » est une dame.
-  // On repère donc le nom par sa place dans la phrase, pas par sous-chaîne.
-  const implique = (ligne: string, nom: string) =>
-    ligne.startsWith(`${nom} `) || ligne.endsWith(`à ${nom}.`);
-
-  const echanges = state.log.filter((l) => / donne | rend /.test(l));
   for (const n of neutres) {
-    assert.ok(!echanges.some((l) => implique(l, n.name)), `${n.name} ne devrait rien échanger`);
+    assert.ok(
+      !state.mouvements.some((m) => m.de === n.id || m.vers === n.id),
+      `${n.name} ne devrait rien échanger`,
+    );
     assert.ok(!state.echanges.some((e) => e.bas === n.id || e.haut === n.id));
+    assert.equal(viewFor(state, n.id).mesEchanges.length, 0);
   }
 });
 

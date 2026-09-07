@@ -67,6 +67,18 @@ export interface Echange {
 /** Dans quel sens un joueur se sépare de ses cartes. */
 export type SensEchange = 'donner' | 'rendre';
 
+/**
+ * Un mouvement de cartes de l'échange de début de manche. C'est une affaire
+ * privée entre deux joueurs : la table voit qu'un échange a eu lieu, pas ce
+ * qui a changé de main.
+ */
+export interface Mouvement {
+  de: string;
+  vers: string;
+  cartes: Card[];
+  sens: SensEchange;
+}
+
 export type Phase = 'echange' | 'jeu' | 'fin-de-manche' | 'fin-de-partie';
 
 export interface GameState {
@@ -87,6 +99,8 @@ export interface GameState {
   /** Classement final de la manche : il tient compte de la pénalité du 2. */
   classement: string[];
   echanges: Echange[];
+  /** Les mouvements de l'échange en cours, filtrés par joueur au moment de la vue. */
+  mouvements: Mouvement[];
   /** Toutes les cartes déjà posées dans la manche : chacun les a vues passer. */
   passees: Card[];
   /** Score à atteindre pour gagner la partie. */

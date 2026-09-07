@@ -68,6 +68,10 @@ ensuite — car ses plus basses ne se comptent qu'une fois qu'il a reçu. Le mot
 applique tout ce qui ne demande aucun arbitrage et ne s'arrête que lorsqu'une
 couleur reste à départager.
 
+**Les échanges sont discrets.** Chacun ne voit que les cartes qui passent par ses
+propres mains. La table apprend seulement qu'un échange a eu lieu entre untel et
+untel — jamais ce qui a changé de main entre deux autres joueurs.
+
 ## Les points
 
 Chaque manche rapporte **autant de points qu'on a laissé de joueurs derrière

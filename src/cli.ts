@@ -123,8 +123,10 @@ function tourBot(state: GameState, id: string): GameState {
   const action = botAction(viewFor(state, id));
   if (!action) throw new Error(`Le bot ${id} est bloqué.`);
   const suivant = apply(state, action);
-  const dit = suivant.log[suivant.log.length - 1];
-  console.log(`  ${C.pale}${dit}${C.reset}`);
+  // Les échanges ne laissent pas de trace publique : rien à annoncer alors.
+  if (suivant.log.length > state.log.length) {
+    console.log(`  ${C.pale}${suivant.log[suivant.log.length - 1]}${C.reset}`);
+  }
   return suivant;
 }
 

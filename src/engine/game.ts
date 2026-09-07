@@ -1,5 +1,5 @@
 import type {
-  Action, Card, Echange, GameState, Player, Rank, Role, SensEchange,
+  Action, Card, Echange, GameState, Mouvement, Player, Rank, Role, SensEchange,
 } from './types.ts';
 import {
   DAME_DE_COEUR, DEUX, RANKS, cardLabel, groupByRank, makeDeck, rankLabel, sortHand,
@@ -122,6 +122,7 @@ export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
     finishOrder: [],
     classement: [],
     echanges: [],
+    mouvements: [],
     passees: [],
     objectif: OBJECTIF_PAR_ADVERSAIRE * (seeds.length - 1),
     rng: seed >>> 0,
@@ -142,6 +143,7 @@ function startRound(state: GameState): void {
   state.finishOrder = [];
   state.classement = [];
   state.echanges = [];
+  state.mouvements = [];
   state.passees = [];
   for (const p of state.players) {
     p.passed = false;
@@ -218,7 +220,13 @@ function rangsImposes(hand: Card[], count: number, sens: SensEchange): Rank[] {
   ].sort((a, b) => a - b);
 }
 
-/** Le bas cède ses meilleures cartes au haut. */
+/**
+ * Le bas cède ses meilleures cartes au haut.
+ *
+ * Le détail va dans `mouvements`, que la vue filtre ensuite par joueur : ce qui
+ * passe d'une main à l'autre ne regarde que les deux intéressés. Le journal,
+ * lui, est commun à toute la table.
+ */
 function donner(state: GameState, echange: Echange, cards: Card[]): void {
   const bas = player(state, echange.bas);
   const haut = player(state, echange.haut);
@@ -226,9 +234,7 @@ function donner(state: GameState, echange: Echange, cards: Card[]): void {
   bas.hand = bas.hand.filter((c) => !ids.has(c.id));
   haut.hand = sortHand([...haut.hand, ...cards]);
   echange.donnees = cards;
-  state.log.push(
-    `${bas.name} (${bas.role}) donne ${cards.map(cardLabel).join(' ')} à ${haut.name}.`,
-  );
+  state.mouvements.push({ de: bas.id, vers: haut.id, cartes: cards, sens: 'donner' });
 }
 
 /** Le haut rend ses plus basses au bas : l'échange est soldé. */
@@ -238,7 +244,8 @@ function rendre(state: GameState, echange: Echange, cards: Card[]): void {
   const ids = new Set(cards.map((c) => c.id));
   haut.hand = haut.hand.filter((c) => !ids.has(c.id));
   bas.hand = sortHand([...bas.hand, ...cards]);
-  state.log.push(`${haut.name} rend ${cards.map(cardLabel).join(' ')} à ${bas.name}.`);
+  state.mouvements.push({ de: haut.id, vers: bas.id, cartes: cards, sens: 'rendre' });
+  state.log.push(`${bas.name} et ${haut.name} ont fait leur échange.`);
   state.echanges = state.echanges.filter((e) => e !== echange);
 }
 
@@ -595,8 +602,8 @@ export interface PlayerView {
   }>;
   /** Classement de la manche écoulée, vide tant qu'elle n'est pas finie. */
   classement: string[];
-  /** Les mouvements d'échange de ce début de manche, en clair. */
-  resumeEchanges: string[];
+  /** Mes échanges de ce début de manche — les miens seulement. */
+  mesEchanges: Mouvement[];
   /** Score à atteindre pour remporter la partie. */
   objectif: number;
   /**
@@ -607,12 +614,6 @@ export interface PlayerView {
   legal: Card[][];
   canPass: boolean;
   log: string[];
-}
-
-/** Les lignes d'échange écrites depuis le début de la manche en cours. */
-function echangesDeLaManche(state: GameState): string[] {
-  const debut = state.log.lastIndexOf(`--- Manche ${state.round} ---`);
-  return state.log.slice(debut + 1).filter((l) => / donne | rend /.test(l));
 }
 
 export function viewFor(state: GameState, id: string): PlayerView {
@@ -644,7 +645,7 @@ export function viewFor(state: GameState, id: string): PlayerView {
         };
       }),
     classement: state.classement.slice(),
-    resumeEchanges: echangesDeLaManche(state),
+    mesEchanges: state.mouvements.filter((m) => m.de === id || m.vers === id),
     objectif: state.objectif,
     restantes: cartesRestantes(state, id),
     legal: legalPlays(state, id),
