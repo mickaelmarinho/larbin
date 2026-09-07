@@ -9,6 +9,8 @@ brief ne tranchait pas.
 - 4 à 6 joueurs, 4 c'est l'idéal.
 - 52 cartes, toutes distribuées une par une dans le sens des aiguilles d'une
   montre. À 5 ou 6 joueurs, certains ont donc une carte de plus que d'autres.
+- À la première manche, personne n'a de rôle : **celui qui a la dame de cœur
+  ouvre**. Aux manches suivantes, c'est le Boss.
 
 ## Hiérarchie
 
@@ -56,12 +58,15 @@ d'arrivée.
 - Les Neutres n'échangent rien.
 - Le Boss ouvre la manche.
 
-La seule liberté est la **couleur**, et seulement en cas d'égalité : si vos deux
-cartes les plus basses sont deux 6, vous décidez si vous lâchez le cœur, le
-trèfle, le carreau ou le pique.
+La seule liberté est la **couleur**, et seulement en cas d'égalité — des deux
+côtés. Si vos deux cartes les plus basses sont deux 6, vous décidez si vous
+lâchez le cœur, le trèfle, le carreau ou le pique ; et si le Larbin a trois As
+au sommet de sa main, c'est lui qui décide lesquels il cède.
 
-Le moteur applique donc tout l'échange sans rien demander, et ne s'arrête que
-lorsqu'une couleur reste à départager.
+L'échange se règle donc en deux temps : le bas donne d'abord, le haut rend
+ensuite — car ses plus basses ne se comptent qu'une fois qu'il a reçu. Le moteur
+applique tout ce qui ne demande aucun arbitrage et ne s'arrête que lorsqu'une
+couleur reste à départager.
 
 ---
 
@@ -69,10 +74,6 @@ lorsqu'une couleur reste à départager.
 
 Voici les choix que j'ai faits pour que le moteur soit complet. Chacun se change
 en quelques lignes si tu préfères une autre convention.
-
-**Qui ouvre la toute première manche ?**
-Personne n'a encore de rôle. Le moteur tire un joueur au sort. (Autre usage
-courant : celui qui a le 3 de trèfle ouvre.)
 
 **Plusieurs joueurs finissent sur un 2 dans la même manche.**
 Rare mais possible. Ils sont tous relégués en queue de classement, dans l'ordre

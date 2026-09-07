@@ -44,3 +44,6 @@ export function groupByRank(hand: Card[]): Map<Rank, Card[]> {
   }
   return new Map([...groups.entries()].sort((a, b) => a[0] - b[0]));
 }
+
+/** La dame de cœur : c'est elle qui désigne l'ouvreur de la première manche. */
+export const DAME_DE_COEUR = '12♥';

@@ -47,16 +47,23 @@ export interface Requirement {
   count: number;
 }
 
-/** Un don imposé en début de manche, en attente de la carte rendue en échange. */
-export interface PendingReturn {
-  /** Celui qui doit choisir les cartes à rendre (Boss ou Sous-Boss). */
-  from: string;
-  /** Celui qui les recevra (Larbin ou Sur-Larbin). */
-  to: string;
+/**
+ * Un échange de début de manche, entre un joueur du bas et un joueur du haut.
+ * Il se règle en deux temps : le bas cède ses meilleures cartes, puis le haut
+ * lui rend ses plus basses. Les deux sont imposés — seule la couleur se choisit.
+ */
+export interface Echange {
+  /** Larbin ou Sur-Larbin : il donne ses meilleures cartes. */
+  bas: string;
+  /** Boss ou Sous-Boss : il rend ses plus basses. */
+  haut: string;
   count: number;
-  /** Ce que `to` vient de donner d'office, pour l'affichage. */
-  received: Card[];
+  /** Les cartes montées vers le haut ; null tant que le don n'est pas réglé. */
+  donnees: Card[] | null;
 }
+
+/** Dans quel sens un joueur se sépare de ses cartes. */
+export type SensEchange = 'donner' | 'rendre';
 
 export type Phase = 'echange' | 'jeu' | 'fin-de-manche';
 
@@ -75,7 +82,7 @@ export interface GameState {
   lastPlayer: string | null;
   /** Ordre de sortie de la manche en cours. */
   finishOrder: string[];
-  pendingReturns: PendingReturn[];
+  echanges: Echange[];
   /** État interne du générateur pseudo-aléatoire (parties rejouables). */
   rng: number;
   log: string[];
@@ -84,5 +91,5 @@ export interface GameState {
 export type Action =
   | { type: 'poser'; player: string; cards: string[] }
   | { type: 'passer'; player: string }
-  | { type: 'rendre'; player: string; cards: string[] }
+  | { type: 'echanger'; player: string; cards: string[] }
   | { type: 'manche-suivante' };

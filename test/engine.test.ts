@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 
 import type { Card, GameState, Rank } from '../src/engine/types.ts';
 import {
-  RegleViolee, apply, assignRoles, createGame, legalPlays, tributImpose, viewFor,
+  RegleViolee, apply, assignRoles, cartesImposees, createGame, joueursEnAttente,
+  legalPlays, viewFor,
 } from '../src/engine/game.ts';
 import { botAction } from '../src/engine/bot.ts';
 import { makeDeck, sortHand } from '../src/engine/cards.ts';
@@ -42,7 +43,7 @@ function partie(mains: Record<string, string[]>, turn = 0): GameState {
   state.requirement = null;
   state.lastPlayer = null;
   state.finishOrder = [];
-  state.pendingReturns = [];
+  state.echanges = [];
   return state;
 }
 
@@ -275,7 +276,7 @@ function mancheSuivante(seed: number, n = 4): GameState {
   return apply(state, { type: 'manche-suivante' });
 }
 
-/** Un début de manche où seul le tribut du Boss reste à trancher. */
+/** Un début de manche où le don est fait : seul le tribut du Boss reste à trancher. */
 function enEchange(mainDuBoss: string[], count = 2): GameState {
   const state = partie({
     a: mainDuBoss, b: ['R♠'], c: ['D♠'], d: ['V♠'],
@@ -283,7 +284,22 @@ function enEchange(mainDuBoss: string[], count = 2): GameState {
   state.players.find((p) => p.id === 'a')!.role = 'boss';
   state.players.find((p) => p.id === 'd')!.role = 'larbin';
   state.phase = 'echange';
-  state.pendingReturns = [{ from: 'a', to: 'd', count, received: [] }];
+  state.echanges = [{ bas: 'd', haut: 'a', count, donnees: [carte('V♠')] }];
+  return state;
+}
+
+/**
+ * Un début de manche où c'est au Larbin de choisir ce qu'il cède.
+ * Le Boss garde des petites cartes, sinon il rendrait aussitôt ce qu'il reçoit.
+ */
+function enDon(mainDuLarbin: string[], count = 2): GameState {
+  const state = partie({
+    a: ['R♠', '4♦', '3♣'], b: ['D♠'], c: ['V♠'], d: mainDuLarbin,
+  });
+  state.players.find((p) => p.id === 'a')!.role = 'boss';
+  state.players.find((p) => p.id === 'd')!.role = 'larbin';
+  state.phase = 'echange';
+  state.echanges = [{ bas: 'd', haut: 'a', count, donnees: null }];
   return state;
 }
 
@@ -291,33 +307,99 @@ test('le tribut désigne les cartes les plus basses', () => {
   const main = (labels: string[]) => labels.map(carte);
 
   // Deux hauteurs distinctes : rien à décider.
-  const net = tributImpose(main(['3♠', '5♥', '9♣', 'R♦']), 2);
+  const net = cartesImposees(main(['3♠', '5♥', '9♣', 'R♦']), 2, 'rendre');
   assert.deepEqual(ids(net.forcees).sort(), ['3♠', '5♥']);
   assert.equal(net.aChoisir, 0);
   assert.deepEqual(net.candidats, []);
 
   // La paire de 3 occupe exactement les deux places : toujours rien à décider.
-  const pile = tributImpose(main(['3♠', '3♥', '9♣', 'R♦']), 2);
+  const pile = cartesImposees(main(['3♠', '3♥', '9♣', 'R♦']), 2, 'rendre');
   assert.deepEqual(ids(pile.forcees).sort(), ['3♠', '3♥'].sort());
   assert.equal(pile.aChoisir, 0);
 
   // Un 3 puis trois 4 : le 3 part d'office, reste à choisir la couleur du 4.
-  const frontiere = tributImpose(main(['3♠', '4♥', '4♦', '4♣', 'R♦']), 2);
+  const frontiere = cartesImposees(main(['3♠', '4♥', '4♦', '4♣', 'R♦']), 2, 'rendre');
   assert.deepEqual(ids(frontiere.forcees), ['3♠']);
   assert.equal(frontiere.aChoisir, 1);
   assert.deepEqual(ids(frontiere.candidats).sort(), ['4♥', '4♦', '4♣'].sort());
 
   // Trois 3 pour deux places : deux couleurs à choisir parmi trois.
-  const trois = tributImpose(main(['3♠', '3♥', '3♦', '9♣']), 2);
+  const trois = cartesImposees(main(['3♠', '3♥', '3♦', '9♣']), 2, 'rendre');
   assert.deepEqual(trois.forcees, []);
   assert.equal(trois.aChoisir, 2);
   assert.equal(trois.candidats.length, 3);
 });
 
+test('en donnant, ce sont les cartes les plus hautes', () => {
+  const main = (labels: string[]) => labels.map(carte);
+
+  // Un 2 et un As : rien à décider.
+  const net = cartesImposees(main(['2♠', 'A♥', '9♣', '3♦']), 2, 'donner');
+  assert.deepEqual(ids(net.forcees).sort(), ['15♠', '14♥'].sort());
+  assert.equal(net.aChoisir, 0);
+
+  // Un 2 puis trois As : le 2 part d'office, la couleur de l'As se choisit.
+  const frontiere = cartesImposees(main(['2♠', 'A♥', 'A♦', 'A♣', '3♦']), 2, 'donner');
+  assert.deepEqual(ids(frontiere.forcees), ['15♠']);
+  assert.equal(frontiere.aChoisir, 1);
+  assert.deepEqual(ids(frontiere.candidats).sort(), ['14♥', '14♦', '14♣'].sort());
+});
+
+test('le Larbin choisit lui aussi la couleur de ce qu’il cède', () => {
+  const state = enDon(['2♠', 'A♥', 'A♦', 'A♣', '3♦']);
+  const attendu = viewFor(state, 'd').echange!;
+  assert.equal(attendu.sens, 'donner');
+  assert.equal(attendu.avec, 'a');
+  assert.deepEqual(ids(attendu.choix.forcees), ['15♠']);
+  assert.equal(attendu.choix.aChoisir, 1);
+
+  // N'importe lequel des trois As convient.
+  for (const couleur of ['A♥', 'A♦', 'A♣']) {
+    const suite = apply(state, {
+      type: 'echanger', player: 'd', cards: ['2♠', couleur].map((l) => carte(l).id),
+    });
+    const boss = suite.players.find((p) => p.id === 'a')!;
+    assert.ok(ids(boss.hand).includes(carte(couleur).id), couleur);
+  }
+  // Mais pas une carte plus faible que ses meilleures.
+  assert.throws(
+    () => apply(state, { type: 'echanger', player: 'd', cards: ['2♠', '3♦'].map((l) => carte(l).id) }),
+    RegleViolee,
+  );
+});
+
+test('le don précède le tribut : le Boss compte ses basses après avoir reçu', () => {
+  const state = enDon(['2♠', 'A♥', 'A♦', 'A♣', '3♦']);
+  // Tant que le Larbin n'a pas tranché, le Boss n'a rien à faire.
+  assert.deepEqual(joueursEnAttente(state), ['d']);
+  assert.equal(viewFor(state, 'a').echange, null);
+
+  const apres = apply(state, {
+    type: 'echanger', player: 'd', cards: ['2♠', 'A♥'].map((l) => carte(l).id),
+  });
+  // Le Boss a alors rendu ses deux plus basses sans ambiguïté : tout est soldé.
+  assert.equal(apres.phase, 'jeu');
+  assert.deepEqual(apres.echanges, []);
+  const larbin = apres.players.find((p) => p.id === 'd')!;
+  assert.deepEqual(ids(larbin.hand).sort(), ['14♦', '14♣', '3♦', '4♦', '3♣'].sort());
+});
+
+test('la dame de cœur ouvre la première manche', () => {
+  for (const seed of [1, 2, 3, 17, 99]) {
+    const state = nouvelle(4, seed);
+    const ouvreur = state.players.find((p) => p.id === state.order[state.turn])!;
+    assert.ok(
+      ouvreur.hand.some((c) => c.id === carte('D♥').id),
+      `graine ${seed} : l'ouvreur devrait avoir la dame de cœur`,
+    );
+    assert.match(state.log.join('\n'), /dame de cœur/);
+  }
+});
+
 test('sans égalité, le tribut part tout seul et la manche démarre', () => {
   const state = mancheSuivante(5);
   // Rien à trancher des deux côtés : personne n'a eu à décider.
-  if (state.pendingReturns.length === 0) {
+  if (state.echanges.length === 0) {
     assert.equal(state.phase, 'jeu');
     assert.equal(state.order[state.turn], 'a', 'le Boss ouvre la manche');
     assert.deepEqual(state.players.map((p) => p.hand.length).sort(), [13, 13, 13, 13]);
@@ -331,38 +413,38 @@ test('le Boss ne rend pas ce qu’il veut : ce sont ses plus basses', () => {
   const state = enEchange(['3♠', '5♥', '9♣', 'R♦']);
 
   // Ses deux plus basses, dans l'ordre qu'on veut : accepté.
-  const bon = apply(state, { type: 'rendre', player: 'a', cards: ['5♥', '3♠'].map((l) => carte(l).id) });
+  const bon = apply(state, { type: 'echanger', player: 'a', cards: ['5♥', '3♠'].map((l) => carte(l).id) });
   assert.equal(bon.phase, 'jeu');
   assert.equal(bon.players.find((p) => p.id === 'd')!.hand.length, 3);
 
   // Garder son 3 pour lâcher un 9 : refusé.
   assert.throws(
-    () => apply(state, { type: 'rendre', player: 'a', cards: ['5♥', '9♣'].map((l) => carte(l).id) }),
+    () => apply(state, { type: 'echanger', player: 'a', cards: ['5♥', '9♣'].map((l) => carte(l).id) }),
     RegleViolee,
   );
   // Deux cartes hautes : refusé aussi.
   assert.throws(
-    () => apply(state, { type: 'rendre', player: 'a', cards: ['9♣', 'R♦'].map((l) => carte(l).id) }),
+    () => apply(state, { type: 'echanger', player: 'a', cards: ['9♣', 'R♦'].map((l) => carte(l).id) }),
     RegleViolee,
   );
 });
 
 test('en cas d’égalité, seule la couleur se choisit', () => {
   const state = enEchange(['3♠', '4♥', '4♦', '4♣', 'R♦']);
-  const tribut = viewFor(state, 'a').tribut!;
+  const tribut = viewFor(state, 'a').echange!.choix;
   assert.deepEqual(ids(tribut.forcees), ['3♠']);
   assert.equal(tribut.aChoisir, 1);
 
   // N'importe laquelle des trois couleurs de 4 convient.
   for (const couleur of ['4♥', '4♦', '4♣']) {
     const suite = apply(state, {
-      type: 'rendre', player: 'a', cards: ['3♠', couleur].map((l) => carte(l).id),
+      type: 'echanger', player: 'a', cards: ['3♠', couleur].map((l) => carte(l).id),
     });
     assert.equal(suite.phase, 'jeu', couleur);
   }
   // Mais pas une autre hauteur.
   assert.throws(
-    () => apply(state, { type: 'rendre', player: 'a', cards: ['3♠', 'R♦'].map((l) => carte(l).id) }),
+    () => apply(state, { type: 'echanger', player: 'a', cards: ['3♠', 'R♦'].map((l) => carte(l).id) }),
     RegleViolee,
   );
 });
@@ -380,7 +462,7 @@ test('les neutres n’échangent rien', () => {
   const echanges = state.log.filter((l) => / donne | rend /.test(l));
   for (const n of neutres) {
     assert.ok(!echanges.some((l) => implique(l, n.name)), `${n.name} ne devrait rien échanger`);
-    assert.ok(!state.pendingReturns.some((r) => r.from === n.id || r.to === n.id));
+    assert.ok(!state.echanges.some((e) => e.bas === n.id || e.haut === n.id));
   }
 });
 
@@ -404,7 +486,7 @@ function jouerUneManche(state: GameState): GameState {
   for (let coup = 0; coup < 2000; coup++) {
     if (s.phase === 'fin-de-manche') return s;
     const acteur = s.phase === 'echange'
-      ? s.pendingReturns[0].from
+      ? joueursEnAttente(s)[0]
       : s.order[s.turn];
     const action = botAction(viewFor(s, acteur));
     assert.ok(action, `le bot ${acteur} n'a rien à jouer (phase ${s.phase})`);
@@ -443,7 +525,7 @@ test('un bot ne propose jamais un coup illégal', () => {
   for (let seed = 0; seed < 40; seed++) {
     let s = nouvelle(4 + (seed % 3), seed * 31 + 5);
     for (let coup = 0; coup < 600 && s.phase !== 'fin-de-manche'; coup++) {
-      const acteur = s.phase === 'echange' ? s.pendingReturns[0].from : s.order[s.turn];
+      const acteur = s.phase === 'echange' ? joueursEnAttente(s)[0] : s.order[s.turn];
       const action = botAction(viewFor(s, acteur))!;
       if (action.type === 'poser') {
         const legal = legalPlays(s, acteur).map((play) => ids(play).sort().join(','));
@@ -464,7 +546,7 @@ test('une main ne grossit jamais pendant le jeu', () => {
   let s = nouvelle(5, 2024);
   let tailles = s.players.map((p) => p.hand.length);
   for (let coup = 0; coup < 600 && s.phase !== 'fin-de-manche'; coup++) {
-    const acteur = s.phase === 'echange' ? s.pendingReturns[0].from : s.order[s.turn];
+    const acteur = s.phase === 'echange' ? joueursEnAttente(s)[0] : s.order[s.turn];
     s = apply(s, botAction(viewFor(s, acteur))!);
     const suivantes = s.players.map((p) => p.hand.length);
     suivantes.forEach((t, i) => assert.ok(t <= tailles[i], 'une main a grossi'));

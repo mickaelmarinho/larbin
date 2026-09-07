@@ -9,7 +9,7 @@ import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
 import type { Card, GameState } from './engine/types.ts';
-import { RegleViolee, apply, createGame, viewFor } from './engine/game.ts';
+import { RegleViolee, apply, createGame, joueursEnAttente, viewFor } from './engine/game.ts';
 import { botAction } from './engine/bot.ts';
 import { cardLabel, rankLabel, sortHand } from './engine/cards.ts';
 
@@ -52,21 +52,26 @@ function afficher(state: GameState): void {
 async function tourHumain(state: GameState, rl: readline.Interface): Promise<GameState> {
   const vue = viewFor(state, MOI);
 
-  if (vue.phase === 'echange' && vue.tribut && vue.pendingReturn) {
-    const { count, received, to } = vue.pendingReturn;
-    const { forcees, candidats, aChoisir } = vue.tribut;
-    const donneur = vue.others.find((o) => o.id === to)!;
+  if (vue.phase === 'echange' && vue.echange) {
+    const { sens, avec, count, recues, choix } = vue.echange;
+    const { forcees, candidats, aChoisir } = choix;
+    const autre = vue.others.find((o) => o.id === avec)!;
 
-    console.log(`\n${donneur.name} (${donneur.role}) vous a donné ${main(received)}.`);
-    console.log(
-      `Le tribut est imposé : vous rendez ${count === 1 ? 'votre plus basse' : `vos ${count} plus basses`}.`,
-    );
+    console.log('');
+    if (sens === 'donner') {
+      console.log(`Vous êtes ${vue.me.role} : vous cédez à ${autre.name} `
+        + `${count === 1 ? 'votre meilleure carte' : `vos ${count} meilleures cartes`}.`);
+    } else {
+      console.log(`${autre.name} (${autre.role}) vous a donné ${main(recues)}.`);
+      console.log(`En retour vous lui rendez `
+        + `${count === 1 ? 'votre plus basse' : `vos ${count} plus basses`}.`);
+    }
     if (forcees.length > 0) console.log(`  D'office : ${main(forcees)}`);
 
     const invite = aChoisir === 1 ? 'Choisissez la couleur' : `Choisissez ${aChoisir} couleurs`;
-    const choix = await demanderCartes(rl, candidats, aChoisir, invite);
+    const tranche = await demanderCartes(rl, candidats, aChoisir, invite);
     return apply(state, {
-      type: 'rendre', player: MOI, cards: [...forcees, ...choix].map((c) => c.id),
+      type: 'echanger', player: MOI, cards: [...forcees, ...tranche].map((c) => c.id),
     });
   }
 
@@ -157,7 +162,7 @@ async function jouer(): Promise<void> {
       }
 
       const acteur = state.phase === 'echange'
-        ? state.pendingReturns[0].from
+        ? joueursEnAttente(state)[0]
         : state.order[state.turn];
 
       try {

@@ -7,7 +7,9 @@
  * tout le reste de ce fichier ne bougera pas.
  */
 import type { Action, Card, GameState, Rank, Role } from '../engine/types.ts';
-import { apply, createGame, viewFor, type PlayerView } from '../engine/game.ts';
+import {
+  apply, createGame, joueursEnAttente, viewFor, type PlayerView,
+} from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
 
@@ -64,6 +66,8 @@ const VERBES: Record<string, string> = {
 function franciser(ligne: string): string {
   return ligne
     .replace(/ à Vous\b/g, ' à vous')
+    // « Hugo rend 3♦ à vous » se dit « Hugo vous rend 3♦ ».
+    .replace(/^(.+?) (donne|rend) (.+) à vous\.$/, '$1 vous $2 $3.')
     .replace(/^Vous a fini\b/, 'Vous avez fini')
     .replace(
       /^Vous( \([^)]+\))? (donne|rend|pose|passe|ouvre|termine)\b/,
@@ -250,14 +254,14 @@ function boucle(): void {
   }
 
   if (etat.phase === 'echange') {
-    const aMoi = etat.pendingReturns.find((r) => r.from === MOI);
-    if (aMoi) {
+    const attente = joueursEnAttente(etat);
+    if (attente.includes(MOI)) {
       voileEchange();
       return;
     }
-    const bot = etat.pendingReturns[0];
+    const bot = attente[0];
     planifier(REFLEXION_ECHANGE, () => {
-      const action = botAction(viewFor(etat, bot.from));
+      const action = botAction(viewFor(etat, bot));
       if (action) envoyer(action);
     });
     return;
@@ -314,55 +318,67 @@ function cacherVoile(): void {
  */
 function voileEchange(): void {
   const vue = viewFor(etat, MOI);
-  const don = vue.pendingReturn!;
-  const { forcees, candidats, aChoisir } = vue.tribut!;
-  const donneur = vue.others.find((o) => o.id === don.to)!;
-  const seule = don.count === 1;
+  const { sens, avec, count, recues, choix: impose } = vue.echange!;
+  const { forcees, candidats, aChoisir } = impose;
+  const autre = vue.others.find((o) => o.id === avec)!;
+  const seule = count === 1;
   const hauteur = rankLabel(candidats[0].rank);
 
   // « Vous avez 2 6 » se lit mal : les petits nombres s'écrivent en toutes lettres.
   const enLettres = ['zéro', 'une', 'deux', 'trois', 'quatre'];
-  const combienRendues = seule ? 'votre plus basse' : `vos ${enLettres[don.count]} plus basses`;
   const consigne = aChoisir === 1
     ? `Vous avez ${enLettres[candidats.length]} ${hauteur} : choisissez la couleur.`
     : `Vous avez ${enLettres[candidats.length]} ${hauteur} : choisissez-en ${enLettres[aChoisir]}.`;
 
+  const titre = sens === 'donner'
+    ? `Le tribut du ${TITRES[vue.me.role!]}`
+    : 'Ce que vous rendez';
+
+  const explication = sens === 'donner'
+    ? `Vous cédez à ${autre.name} ${seule ? 'votre meilleure carte' : `vos ${enLettres[count]} meilleures cartes`}
+       — la règle l'impose, seule la couleur vous appartient.`
+    : `${autre.name} vous a cédé ${seule ? 'sa meilleure carte' : 'ses deux meilleures cartes'}.
+       En retour vous lui rendez ${seule ? 'votre plus basse' : `vos ${enLettres[count]} plus basses`}
+       — là encore, seule la couleur vous appartient.`;
+
+  const recuesHTML = sens === 'rendre'
+    ? `<p class="mention">Vous recevez :</p>
+       <div class="cartes-recues">${sortHand(recues).map((c) => carteHTML(c)).join('')}</div>`
+    : '';
+
   montrerVoile(`
-    <h2>Le tribut du ${TITRES[donneur.role!]}</h2>
-    <p>${donneur.name} vous cède d'office ${seule ? 'sa meilleure carte' : 'ses deux meilleures cartes'}.
-       En retour vous lui rendez ${combienRendues} —
-       la règle l'impose, seule la couleur vous appartient.</p>
-    <p class="mention">Vous recevez :</p>
-    <div class="cartes-recues">${sortHand(don.received).map((c) => carteHTML(c)).join('')}</div>
+    <h2>${titre}</h2>
+    <p>${explication}</p>
+    ${recuesHTML}
     ${forcees.length > 0 ? `<p class="mention">Part d'office :</p>
       <div class="cartes-recues">${sortHand(forcees).map((c) => carteHTML(c)).join('')}</div>` : ''}
     <p class="mention">${consigne}</p>
     <div id="choix-rendu">${sortHand(candidats).map((c) => carteHTML(c)).join('')}</div>
     <button class="action primaire" id="valider-rendu" disabled type="button">
-      Rendre ${seule ? 'la carte' : `les ${don.count} cartes`}
+      ${sens === 'donner' ? 'Donner' : 'Rendre'} ${seule ? 'la carte' : `les ${count} cartes`}
     </button>
   `);
 
-  let choix: string[] = [];
+  let tranche: string[] = [];
   const bouton = $('valider-rendu') as HTMLButtonElement;
 
   $('choix-rendu').addEventListener('click', (e) => {
     const cible = (e.target as HTMLElement).closest('.carte') as HTMLElement | null;
     if (!cible) return;
     const id = cible.dataset.id!;
-    if (choix.includes(id)) choix = choix.filter((x) => x !== id);
-    else choix = [...choix, id].slice(-aChoisir);
+    if (tranche.includes(id)) tranche = tranche.filter((x) => x !== id);
+    else tranche = [...tranche, id].slice(-aChoisir);
 
     $('choix-rendu').querySelectorAll('.carte').forEach((el) => {
-      el.classList.toggle('choisie', choix.includes((el as HTMLElement).dataset.id!));
+      el.classList.toggle('choisie', tranche.includes((el as HTMLElement).dataset.id!));
     });
-    bouton.disabled = choix.length !== aChoisir;
+    bouton.disabled = tranche.length !== aChoisir;
   });
 
   bouton.addEventListener('click', () => {
     cacherVoile();
     envoyer({
-      type: 'rendre', player: MOI, cards: [...forcees.map((c) => c.id), ...choix],
+      type: 'echanger', player: MOI, cards: [...forcees.map((c) => c.id), ...tranche],
     });
   });
 }
