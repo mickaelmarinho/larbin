@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "larbin",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serveur.mjs"],
+      "port": 5177
+    }
+  ]
+}

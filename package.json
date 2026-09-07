@@ -4,9 +4,17 @@
   "private": true,
   "type": "module",
   "description": "Le Larbin — variante du President / Trou du cul, jouable en ligne.",
-  "engines": { "node": ">=22.6" },
+  "engines": {
+    "node": ">=22.6"
+  },
   "scripts": {
     "test": "node --test \"test/*.test.ts\"",
-    "jouer": "node src/cli.ts"
+    "jouer": "node src/cli.ts",
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "serveur": "node scripts/serveur.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

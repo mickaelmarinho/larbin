@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d3b2e">
+<title>Le Larbin</title>
+<style>/* Le Larbin — tapis de feutre, cartes crème, laiton pour les actions.
+   Pensé pour le téléphone d'abord ; le grand écran ne fait qu'agrandir. */
+
+:root {
+  --feutre: #0d3b2e;
+  --feutre-clair: #175643;
+  --feutre-haut: #1a5a46;
+  --creme: #f7f1e3;
+  --encre: #1b211f;
+  --rouge: #b5342b;
+  --laiton: #d9a441;
+  --laiton-sombre: #a97b26;
+  --texte: #e8e2d4;
+  --texte-pale: #a9b6ad;
+
+  --carte-l: clamp(48px, 13.5vw, 64px);
+  --carte-h: calc(var(--carte-l) * 1.42);
+  --rayon: calc(var(--carte-l) * 0.11);
+  --chevauchement: 0px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 22%, #1a5a46 0%, var(--feutre) 55%, #06231a 100%);
+  color: var(--texte);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#table {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  gap: 6px;
+}
+
+/* ------------------------------------------------------------ adversaires */
+
+#adversaires {
+  display: flex;
+  justify-content: center;
+  gap: clamp(6px, 2.5vw, 18px);
+  flex-wrap: wrap;
+}
+
+.joueur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 9px 7px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  min-width: 74px;
+  transition: border-color .25s, background .25s, transform .25s;
+}
+
+.joueur.actif {
+  border-color: var(--laiton);
+  background: #ffffff0f;
+  box-shadow: 0 0 16px #d9a44133;
+}
+
+.joueur.sorti { opacity: .55; }
+
+.joueur .nom {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
+.joueur .etat {
+  font-size: 11px;
+  color: var(--texte-pale);
+  min-height: 14px;
+}
+
+.dos-pile {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: calc(var(--carte-h) * 0.42);
+}
+
+.dos {
+  width: calc(var(--carte-l) * 0.42);
+  height: calc(var(--carte-h) * 0.42);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(45deg, #8d2f2a 0 4px, #7a2723 4px 8px);
+  border: 1px solid #00000055;
+  box-shadow: 0 1px 3px #0006;
+}
+
+.dos + .dos { margin-left: calc(var(--carte-l) * -0.28); }
+
+.compte {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--texte);
+  background: #00000040;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.role {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.role.boss { color: var(--laiton); }
+.role.sous-boss { color: #cbd8c8; }
+.role.neutre { color: var(--texte-pale); }
+.role.sur-larbin { color: #d99b7a; }
+.role.larbin { color: #e0736a; }
+
+/* ------------------------------------------------------------------ tapis */
+
+#tapis {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  min-height: 0;
+}
+
+#annonce {
+  font-size: 13px;
+  color: var(--texte-pale);
+  height: 18px;
+  text-align: center;
+  transition: opacity .2s;
+}
+
+#pose {
+  display: flex;
+  justify-content: center;
+  min-height: var(--carte-h);
+}
+
+#pose .carte + .carte { margin-left: calc(var(--carte-l) * -0.42); }
+
+#pose .carte {
+  animation: arrivee .28s cubic-bezier(.2, .9, .3, 1.2) backwards;
+}
+
+@keyframes arrivee {
+  from { transform: translateY(-26px) scale(.86); opacity: 0; }
+}
+
+#exigence {
+  font-size: 13px;
+  color: var(--texte);
+  background: #00000038;
+  padding: 4px 12px;
+  border-radius: 999px;
+  min-height: 25px;
+  display: flex;
+  align-items: center;
+}
+
+#exigence.vide { background: none; color: var(--texte-pale); }
+
+/* ------------------------------------------------------------- ma main */
+
+#moi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#ma-ligne {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--texte-pale);
+}
+
+#ma-main {
+  display: flex;
+  justify-content: center;
+  padding-top: 18px;
+  width: 100%;
+}
+
+#ma-main .carte + .carte { margin-left: calc(-1 * var(--chevauchement)); }
+
+#actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+}
+
+button.action {
+  flex: 1;
+  padding: 13px 10px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 12px;
+  border: 1px solid #ffffff26;
+  background: #ffffff12;
+  color: var(--texte);
+  cursor: pointer;
+  transition: transform .12s, background .2s, opacity .2s;
+}
+
+button.action:active { transform: scale(.97); }
+
+button.action.primaire {
+  background: linear-gradient(#e3b355, var(--laiton-sombre));
+  border-color: #f0cd84;
+  color: #2a1c04;
+}
+
+button.action:disabled {
+  opacity: .38;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------- les cartes */
+
+.carte {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--carte-l);
+  height: var(--carte-h);
+  border-radius: var(--rayon);
+  border: 1px solid #00000038;
+  padding: 0;
+  background: linear-gradient(160deg, #fffdf6 0%, var(--creme) 62%, #ece2cd 100%);
+  color: var(--encre);
+  box-shadow: 0 2px 5px #0007, inset 0 0 0 1px #ffffff80;
+  font-family: inherit;
+  cursor: default;
+  transition: transform .18s cubic-bezier(.2, .8, .3, 1.2), box-shadow .18s, filter .2s;
+}
+
+.carte.rouge { color: var(--rouge); }
+
+.carte .coin {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: calc(var(--carte-l) * 0.3);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.5px;
+}
+
+.carte .coin i {
+  display: block;
+  font-style: normal;
+  font-size: calc(var(--carte-l) * 0.26);
+}
+
+.carte .centre {
+  position: absolute;
+  right: calc(var(--carte-l) * 0.09);
+  bottom: calc(var(--carte-l) * 0.06);
+  font-size: calc(var(--carte-l) * 0.5);
+  line-height: 1;
+  opacity: .9;
+}
+
+/* Les cartes se recouvrent : une ombre portée sur le bord gauche fait lire
+   l'éventail comme une pile, et non comme un bandeau blanc. */
+#ma-main .carte,
+#pose .carte {
+  box-shadow: -4px 0 8px #00000047, 0 2px 5px #0007, inset 0 0 0 1px #ffffff80;
+}
+
+#ma-main .carte { cursor: pointer; }
+
+#ma-main .carte.jouable:hover { transform: translateY(-7px); }
+
+#ma-main .carte.choisie {
+  transform: translateY(-18px);
+  box-shadow: 0 8px 16px #0008, inset 0 0 0 2px var(--laiton);
+}
+
+#ma-main .carte.morte {
+  filter: grayscale(.75) brightness(.72);
+  cursor: default;
+}
+
+/* -------------------------------------------------------------- le voile */
+
+#voile {
+  position: fixed;
+  inset: 0;
+  background: #04140fdd;
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 10;
+}
+
+#voile[hidden] { display: none !important; }
+
+.panneau {
+  background: linear-gradient(#14503f, #0c3527);
+  border: 1px solid #ffffff20;
+  border-radius: 18px;
+  padding: 20px 18px;
+  width: min(420px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  box-shadow: 0 18px 50px #000a;
+}
+
+.panneau h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  letter-spacing: .3px;
+}
+
+.panneau p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--texte-pale);
+  line-height: 1.45;
+}
+
+.panneau .cartes-recues {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.classement {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.classement li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 4px;
+  border-bottom: 1px solid #ffffff14;
+  font-size: 15px;
+}
+
+.classement li:last-child { border-bottom: none; }
+
+.classement .place {
+  color: var(--texte-pale);
+  font-size: 12px;
+  min-width: 22px;
+}
+
+.classement .sur-un-deux {
+  font-size: 11px;
+  color: #e0736a;
+}
+
+#choix-rendu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+#choix-rendu .carte { cursor: pointer; }
+
+#choix-rendu .carte.choisie {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 16px #0008, inset 0 0 0 2px var(--laiton);
+}
+
+@media (min-width: 700px) {
+  :root { --carte-l: 68px; }
+  #table { max-width: 860px; margin: 0 auto; }
+}</style>
+</head>
+<body>
+
+<div id="table">
+  <div id="adversaires"></div>
+
+  <div id="tapis">
+    <div id="annonce"></div>
+    <div id="pose"></div>
+    <div id="exigence"></div>
+  </div>
+
+  <div id="moi">
+    <div id="ma-ligne"></div>
+    <div id="ma-main"></div>
+    <div id="actions">
+      <button class="action" id="passer" type="button">Passer</button>
+      <button class="action primaire" id="poser" type="button">Poser</button>
+    </div>
+  </div>
+</div>
+
+<div id="voile" hidden></div>
+
+<script>(()=>{var j=["\u2660","\u2665","\u2666","\u2663"],oe=[3,4,5,6,7,8,9,10,11,12,13,14,15],v=15,w={3:"3",4:"4",5:"5",6:"6",7:"7",8:"8",9:"9",10:"10",11:"V",12:"D",13:"R",14:"A",15:"2"};function S(e){return w[e]}function C(e){return w[e.rank]+e.suit}function D(){let e=[];for(let n of oe)for(let r of j)e.push({id:n+r,rank:n,suit:r});return e}function b(e){return e.slice().sort((n,r)=>r.rank-n.rank||j.indexOf(n.suit)-j.indexOf(r.suit))}function U(e){let n=new Map;for(let r of e){let t=n.get(r.rank);t?t.push(r):n.set(r.rank,[r])}return new Map([...n.entries()].sort((r,t)=>r[0]-t[0]))}function G(e){let n=e+1831565813|0,r=n;return r=Math.imul(r^r>>>15,r|1),r^=r+Math.imul(r^r>>>7,r|61),{value:((r^r>>>14)>>>0)/4294967296,seed:n}}function I(e,n){let r=e.slice(),t=n;for(let o=r.length-1;o>0;o--){let s=G(t);t=s.seed;let a=Math.floor(s.value*(o+1));[r[o],r[a]]=[r[a],r[o]]}return{items:r,seed:t}}var N=4,F=6,O=class extends Error{};function d(e){throw new O(e)}function m(e,n){let r=e.players.find(t=>t.id===n);return r||d(`Joueur inconnu : ${n}`),r}function P(e){return m(e,e.order[e.turn])}function te(e,n){return e.players.filter(r=>r.hand.length>0&&!r.passed&&r.id!==n)}function ie(e,n){let r=m(e,n);if(e.phase!=="jeu"||P(e).id!==n||r.hand.length===0)return[];let t=e.requirement,o=[];for(let[s,a]of U(r.hand))if(t){if(s<=t.rank||a.length<t.count)continue;o.push(a.slice(0,t.count))}else for(let i=1;i<=a.length;i++)o.push(a.slice(0,i));return o.sort((s,a)=>s[0].rank-a[0].rank||s.length-a.length)}function se(e,n){return e.phase==="jeu"&&P(e).id===n&&e.requirement!==null}function ae(e,n){let{items:r,seed:t}=I(D(),e.rng);e.rng=t;for(let o of e.players)o.hand=[];r.forEach((o,s)=>{let a=(n+s)%e.order.length;m(e,e.order[a]).hand.push(o)});for(let o of e.players)o.hand=b(o.hand)}function J(e,n=Date.now()){(e.length<N||e.length>F)&&d(`Le Larbin se joue de ${N} \xE0 ${F} joueurs (re\xE7u : ${e.length}).`),new Set(e.map(o=>o.id)).size!==e.length&&d("Identifiants de joueurs en double.");let t={players:e.map(o=>({id:o.id,name:o.name,hand:[],role:null,passed:!1,finishedAt:null,finishedOnTwo:!1,joinedLate:!1,isBot:o.isBot??!1})),order:e.map(o=>o.id),round:0,phase:"jeu",turn:0,pile:[],requirement:null,lastPlayer:null,finishOrder:[],pendingReturns:[],rng:n>>>0,log:[]};return _(t),t}function _(e){e.round+=1,e.pile=[],e.requirement=null,e.lastPlayer=null,e.finishOrder=[],e.pendingReturns=[];for(let t of e.players)t.passed=!1,t.finishedAt=null,t.finishedOnTwo=!1;let n=e.players.find(t=>t.role==="boss"),r=n?e.order.indexOf(n.id):le(e);if(ae(e,r),e.log.push(`--- Manche ${e.round} ---`),!n){e.phase="jeu",e.turn=r,e.log.push(`${m(e,e.order[r]).name} ouvre la premi\xE8re manche.`);return}ue(e),e.turn=e.order.indexOf(n.id),e.phase=e.pendingReturns.length>0?"echange":"jeu"}function le(e){let n=G(e.rng);return e.rng=n.seed,Math.floor(n.value*e.order.length)}function ue(e){let n=t=>e.players.find(o=>o.role===t)??null,r=[["larbin","boss",2],["sur-larbin","sous-boss",1]];for(let[t,o,s]of r){let a=n(t),i=n(o);if(!a||!i)continue;let l=b(a.hand).slice(0,s);a.hand=a.hand.filter(c=>!l.includes(c)),i.hand=b([...i.hand,...l]),e.log.push(`${a.name} (${t}) donne ${l.map(C).join(" ")} \xE0 ${i.name}.`),e.pendingReturns.push({from:i.id,to:a.id,count:s,received:l})}}function W(e,n){let r=structuredClone(e);switch(n.type){case"poser":de(r,n.player,n.cards);break;case"passer":pe(r,n.player);break;case"rendre":ce(r,n.player,n.cards);break;case"manche-suivante":ge(r);break;default:d("Action inconnue.")}return r}function ce(e,n,r){e.phase!=="echange"&&d("Ce n'est pas la phase d'\xE9change.");let t=e.pendingReturns.find(i=>i.from===n);t||d(`${m(e,n).name} n'a rien \xE0 rendre.`),r.length!==t.count&&d(`Il faut rendre exactement ${t.count} carte(s).`),new Set(r).size!==r.length&&d("Cartes en double.");let o=m(e,n),s=r.map(i=>{let l=o.hand.find(c=>c.id===i);return l||d(`${i} n'est pas dans la main de ${o.name}.`),l});o.hand=o.hand.filter(i=>!s.includes(i));let a=m(e,t.to);if(a.hand=b([...a.hand,...s]),e.log.push(`${o.name} rend ${s.map(C).join(" ")} \xE0 ${a.name}.`),e.pendingReturns=e.pendingReturns.filter(i=>i!==t),e.pendingReturns.length===0){e.phase="jeu";let i=e.players.find(l=>l.role==="boss");i&&(e.turn=e.order.indexOf(i.id)),e.log.push(`${P(e).name} ouvre la manche.`)}}function de(e,n,r){e.phase!=="jeu"&&d("Ce n'est pas le moment de poser."),P(e).id!==n&&d(`Ce n'est pas le tour de ${m(e,n).name}.`),r.length===0&&d("Il faut poser au moins une carte."),new Set(r).size!==r.length&&d("Cartes en double.");let t=m(e,n),o=r.map(i=>{let l=t.hand.find(c=>c.id===i);return l||d(`${i} n'est pas dans la main de ${t.name}.`),l}),s=o[0].rank;o.some(i=>i.rank!==s)&&d("Toutes les cartes pos\xE9es doivent \xEAtre de m\xEAme hauteur.");let a=e.requirement;if(a&&(o.length!==a.count&&d(`Il faut poser exactement ${a.count} carte(s), pas ${o.length}.`),s<=a.rank&&d(`${S(s)} ne bat pas ${S(a.rank)} : il faut monter strictement.`)),t.hand=t.hand.filter(i=>!o.includes(i)),e.pile.push({player:n,cards:o}),e.requirement={rank:s,count:o.length},e.lastPlayer=n,e.log.push(`${t.name} pose ${o.map(C).join(" ")}.`),t.hand.length===0&&(t.finishedAt=e.finishOrder.length,t.finishedOnTwo=s===v,e.finishOrder.push(n),e.log.push(t.finishedOnTwo?`${t.name} termine sur un 2 : Larbin d'office !`:`${t.name} a fini (${fe(e.finishOrder.length)}).`)),e.players.filter(i=>i.hand.length>0).length<=1){he(e);return}K(e)}function pe(e,n){e.phase!=="jeu"&&d("Ce n'est pas le moment de passer."),P(e).id!==n&&d(`Ce n'est pas le tour de ${m(e,n).name}.`),e.requirement||d("On ne passe pas quand on ouvre une s\xE9rie : il faut poser.");let r=m(e,n);r.passed=!0,e.log.push(`${r.name} passe.`),K(e)}function K(e){let n=te(e,e.lastPlayer);if(n.length===0){X(e);return}let r=e.order.length;for(let t=1;t<=r;t++){let o=(e.turn+t)%r;if(n.some(s=>s.id===e.order[o])){e.turn=o;return}}X(e)}function X(e){let n=e.lastPlayer;e.log.push("S\xE9rie termin\xE9e."),e.pile=[],e.requirement=null,e.lastPlayer=null;for(let o of e.players)o.passed=!1;let r=e.order.length,t=n?e.order.indexOf(n):e.turn;for(let o=0;o<r;o++){let s=(t+o)%r;if(m(e,e.order[s]).hand.length>0){e.turn=s,e.log.push(`${P(e).name} ouvre une nouvelle s\xE9rie.`);return}}}function fe(e){return e===1?"1er":`${e}e`}function me(e){let n=e.players.find(i=>i.hand.length>0);n&&!e.finishOrder.includes(n.id)&&(n.finishedAt=e.finishOrder.length,e.finishOrder.push(n.id));let r=e.finishOrder.filter(i=>!m(e,i).finishedOnTwo),t=e.finishOrder.filter(i=>m(e,i).finishedOnTwo),o=[...r,...t],s=o.length;o.forEach((i,l)=>{let c="neutre";l===0?c="boss":l===1?c="sous-boss":l===s-1?c="larbin":l===s-2&&(c="sur-larbin"),m(e,i).role=c});let a=e.players.find(i=>i.joinedLate);if(a&&a.role!=="larbin"){let i=e.players.find(l=>l.role==="larbin");i&&(i.role=a.role,a.role="larbin")}for(let i of e.players)i.joinedLate=!1}function he(e){me(e),e.phase="fin-de-manche",e.pile=[],e.requirement=null;for(let n of e.players)n.passed=!1;for(let n of e.finishOrder){let r=m(e,n);e.log.push(`${r.name} : ${r.role}.`)}}function ge(e){e.phase!=="fin-de-manche"&&d("La manche n'est pas termin\xE9e."),_(e)}function $(e,n){let r=m(e,n);return{me:structuredClone(r),round:e.round,phase:e.phase,turnPlayer:e.order[e.turn],requirement:e.requirement,pile:structuredClone(e.pile),lastPlayer:e.lastPlayer,pendingReturn:e.pendingReturns.find(t=>t.from===n)??null,others:e.order.filter(t=>t!==n).map(t=>{let o=m(e,t);return{id:o.id,name:o.name,count:o.hand.length,role:o.role,passed:o.passed,finishedAt:o.finishedAt,isBot:o.isBot}}),legal:ie(e,n),canPass:se(e,n),log:e.log.slice(-12)}}function A(e){if(e.phase==="echange"&&e.pendingReturn){let r=b(e.me.hand).slice(-e.pendingReturn.count);return{type:"rendre",player:e.me.id,cards:r.map(t=>t.id)}}if(e.phase!=="jeu"||e.turnPlayer!==e.me.id)return null;if(e.legal.length===0)return{type:"passer",player:e.me.id};let n=ye(e);return n?{type:"poser",player:e.me.id,cards:n.map(r=>r.id)}:{type:"passer",player:e.me.id}}function ye(e){let n=e.me.hand.length,r=e.others.some(h=>h.count>0&&h.count<=2),o=e.legal.filter(h=>h.length===n).find(h=>h[0].rank!==v);if(o)return o;let s=h=>n-h.length,a=h=>{let x=e.me.hand.filter(y=>!h.includes(y));return x.length>0&&x.every(y=>y.rank===v)},i=null,l=-1/0;for(let h of e.legal){let x=h[0].rank,y=100-x*4;y+=(h.length-1)*3,be(e.me.hand,h)&&(y-=12),x===v&&(y-=n>2?45:10),a(h)&&(y-=60),s(h)===0&&(y+=40),r&&(y+=x),y>l&&(l=y,i=h)}if(!e.canPass)return i;let c=i?i[0].rank:v,k=e.requirement?.rank??3;return c>=14&&n>3&&k<=11&&!r?null:i}function be(e,n){let r=n[0].rank;return e.filter(t=>t.rank===r).length>n.length}var f="moi",$e=[{id:"gina",name:"Gina"},{id:"hugo",name:"Hugo"},{id:"lila",name:"Lila"}],ke=750,ve=450,u=Re(),g=[],T="",Y=0,V,p=e=>document.getElementById(e);function Re(){return J([{id:f,name:"Vous"},...$e.map(e=>({...e,isBot:!0}))])}var xe=e=>e.suit==="\u2665"||e.suit==="\u2666";function E(e,n=""){return`<button class="carte ${xe(e)?"rouge":""} ${n}" data-id="${e.id}" type="button"><span class="coin">${S(e.rank)}<i>${e.suit}</i></span><span class="centre">${e.suit}</span></button>`}var Se={donne:"donnez",rend:"rendez",pose:"posez",passe:"passez",ouvre:"ouvrez",termine:"terminez"};function Z(e){return e.replace(/ à Vous\b/g," \xE0 vous").replace(/^Vous a fini\b/,"Vous avez fini").replace(/^Vous( \([^)]+\))? (donne|rend|pose|passe|ouvre|termine)\b/,(n,r,t)=>`Vous${r??""} ${Se[t]}`)}function Pe(e){p("adversaires").innerHTML=e.others.map(n=>{let r=e.turnPlayer===n.id&&e.phase==="jeu",t=Math.min(3,n.count),o=n.count===0?`sorti ${n.finishedAt+1}${n.finishedAt===0?"er":"e"}`:n.passed?"a pass\xE9":"";return`<div class="joueur ${r?"actif":""} ${n.count===0?"sorti":""}">
+      <div class="dos-pile">
+        ${'<div class="dos"></div>'.repeat(t)}
+        ${n.count>0?`<span class="compte">${n.count}</span>`:""}
+      </div>
+      <span class="nom">${n.name}</span>
+      ${n.role?`<span class="role ${n.role}">${n.role}</span>`:""}
+      <span class="etat">${o}</span>
+    </div>`}).join("")}var Q="";function Le(e){let n=e.pile[e.pile.length-1],r=n?`${n.player}:${n.cards.map(o=>o.id).join(",")}`:"";r!==Q&&(Q=r,p("pose").innerHTML=n?b(n.cards).map(o=>E(o)).join(""):"");let t=p("exigence");if(e.requirement){let{count:o,rank:s}=e.requirement,a=o===1?"une carte":`${o} cartes`;t.textContent=`Il faut ${a} au-dessus du ${S(s)}`,t.classList.remove("vide")}else t.textContent="Tapis libre \u2014 posez ce que vous voulez",t.classList.add("vide");p("annonce").textContent=Z(T)}function Ce(e){let n=ne(e),r=e.turnPlayer===f&&e.phase==="jeu";p("ma-main").innerHTML=b(e.me.hand).map(l=>{let c=n.has(l.rank),k=[g.includes(l.id)?"choisie":"",r&&c?"jouable":"",r&&!c?"morte":""].join(" ");return E(l,k)}).join(""),ee(e.me.hand.length);let t=e.me.role?`<span class="role ${e.me.role}">${e.me.role}</span>`:"";p("ma-ligne").innerHTML=`${t}<span>Manche ${e.round} \u2014 ${e.me.hand.length} cartes</span>`;let o=p("poser"),s=p("passer"),a=re(e),i=e.requirement?e.requirement.count-g.length:0;o.disabled=!a,o.textContent=!a&&g.length>0&&i>0?`Encore ${i} carte${i>1?"s":""}`:"Poser",s.disabled=!(r&&e.canPass)}function ee(e){let n=p("ma-main"),r=n.querySelector(".carte");if(!r||e<2){n.style.setProperty("--chevauchement","0px");return}let t=r.offsetWidth,o=n.clientWidth-12,s=e*t-o;n.style.setProperty("--chevauchement",s>0?`${s/(e-1)+.5}px`:"0px")}function L(){let e=$(u,f);Pe(e),Le(e),Ce(e)}function ne(e){return new Set(e.legal.map(n=>n[0].rank))}function Ee(e,n){return e.requirement?e.requirement.count:e.me.hand.filter(r=>r.rank===n).length}function re(e){if(g.length===0||e.turnPlayer!==f||e.phase!=="jeu")return null;let n=g.map(o=>e.me.hand.find(s=>s.id===o)).filter(o=>!!o);if(n.length!==g.length)return null;let r=n[0].rank;return n.some(o=>o.rank!==r)?null:e.legal.some(o=>o[0].rank===r&&o.length===n.length)?n:null}function Me(e){let n=$(u,f);if(n.phase!=="jeu"||n.turnPlayer!==f)return;let r=n.me.hand.find(a=>a.id===e);if(!r||!ne(n).has(r.rank))return;if(g.includes(e)){g=g.filter(a=>a!==e),L();return}let o=g.every(a=>{let i=n.me.hand.find(l=>l.id===a);return i&&i.rank===r.rank})?g:[],s=Ee(n,r.rank);g=[...o,e].slice(-s),L()}function R(e){u=W(u,e),g=[],T=u.log[u.log.length-1]??"",L(),M()}function q(e,n){clearTimeout(V),V=setTimeout(n,e)}function M(){if(clearTimeout(V),u.phase==="fin-de-manche"){Ge();return}if(u.phase==="echange"){if(u.pendingReturns.find(o=>o.from===f)){Te();return}let t=u.pendingReturns[0];q(ve,()=>{let o=A($(u,t.from));o&&R(o)});return}if(u.round>Y&&u.round>1){je();return}let e=u.order[u.turn];if(e!==f){q(ke,()=>{let r=A($(u,e));r&&R(r)});return}let n=$(u,f);n.legal.length===0&&n.canPass&&(T="Vous ne pouvez pas monter.",L(),q(1100,()=>R({type:"passer",player:f})))}var H={boss:"Boss","sous-boss":"Sous-Boss",neutre:"Neutre","sur-larbin":"Sur-Larbin",larbin:"Larbin"};function z(e){p("voile").innerHTML=`<div class="panneau">${e}</div>`,p("voile").hidden=!1}function B(){p("voile").hidden=!0,p("voile").innerHTML=""}function Te(){let e=$(u,f),n=e.pendingReturn,r=e.others.find(i=>i.id===n.to),t=n.count===1,o=t?"une carte":`${n.count} cartes`;z(`
+    <h2>Le tribut du ${H[r.role]}</h2>
+    <p>${r.name} vous c\xE8de d'office ${t?"sa meilleure carte":"ses deux meilleures cartes"}.
+       \xC0 vous de lui rendre ${o}, ${t?"celle":"celles"} que vous voulez.</p>
+    <div class="cartes-recues">${b(n.received).map(i=>E(i)).join("")}</div>
+    <div id="choix-rendu">${b(e.me.hand).map(i=>E(i)).join("")}</div>
+    <button class="action primaire" id="valider-rendu" disabled type="button">
+      Rendre ${o}
+    </button>
+  `);let s=[],a=p("valider-rendu");p("choix-rendu").addEventListener("click",i=>{let l=i.target.closest(".carte");if(!l)return;let c=l.dataset.id;s.includes(c)?s=s.filter(k=>k!==c):s.length<n.count?s.push(c):s=[...s.slice(1),c],p("choix-rendu").querySelectorAll(".carte").forEach(k=>{k.classList.toggle("choisie",s.includes(k.dataset.id))}),a.disabled=s.length!==n.count}),a.addEventListener("click",()=>{B(),R({type:"rendre",player:f,cards:s})})}function je(){Y=u.round;let e=u.log.lastIndexOf(`--- Manche ${u.round} ---`),n=u.log.slice(e+1).filter(t=>/ donne | rend /.test(t));if(n.length===0){M();return}let r=u.players.find(t=>t.role==="boss");z(`
+    <h2>Manche ${u.round}</h2>
+    <p>${n.map(t=>"\u2022 "+Z(t)).join("<br>")}</p>
+    <p>${r.id===f?"Vous ouvrez":`${r.name} ouvre`} la manche.</p>
+    <button class="action primaire" id="commencer" type="button">Jouer</button>
+  `),p("commencer").addEventListener("click",()=>{B(),M()})}function Ge(){let e=u.finishOrder.map((t,o)=>{let s=u.players.find(l=>l.id===t),a=t===f?"Vous":s.name,i=s.finishedOnTwo?'<span class="sur-un-deux">fini sur un 2</span>':"";return`<li>
+      <span class="place">${o+1}${o===0?"er":"e"}</span>
+      <span>${a} ${i}</span>
+      <span class="role ${s.role}">${H[s.role]}</span>
+    </li>`}).join(""),n=u.players.find(t=>t.id===f),r=n.role==="boss"?"Vous \xEAtes le Boss.":n.role==="larbin"?"Vous voil\xE0 Larbin. La prochaine manche va piquer.":`Vous finissez ${H[n.role]}.`;z(`
+    <h2>Fin de la manche ${u.round}</h2>
+    <p>${r}</p>
+    <ul class="classement">${e}</ul>
+    <button class="action primaire" id="suivante" type="button">Manche suivante</button>
+  `),p("suivante").addEventListener("click",()=>{B(),T="",R({type:"manche-suivante"})})}p("ma-main").addEventListener("click",e=>{let n=e.target.closest(".carte");n&&Me(n.dataset.id)});p("poser").addEventListener("click",()=>{let e=re($(u,f));e&&R({type:"poser",player:f,cards:e.map(n=>n.id)})});p("passer").addEventListener("click",()=>{$(u,f).canPass&&R({type:"passer",player:f})});window.addEventListener("resize",()=>ee(u.players.find(e=>e.id===f).hand.length));L();M();})();</script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+/* Le Larbin — tapis de feutre, cartes crème, laiton pour les actions.
+   Pensé pour le téléphone d'abord ; le grand écran ne fait qu'agrandir. */
+
+:root {
+  --feutre: #0d3b2e;
+  --feutre-clair: #175643;
+  --feutre-haut: #1a5a46;
+  --creme: #f7f1e3;
+  --encre: #1b211f;
+  --rouge: #b5342b;
+  --laiton: #d9a441;
+  --laiton-sombre: #a97b26;
+  --texte: #e8e2d4;
+  --texte-pale: #a9b6ad;
+
+  --carte-l: clamp(48px, 13.5vw, 64px);
+  --carte-h: calc(var(--carte-l) * 1.42);
+  --rayon: calc(var(--carte-l) * 0.11);
+  --chevauchement: 0px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 22%, #1a5a46 0%, var(--feutre) 55%, #06231a 100%);
+  color: var(--texte);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#table {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  gap: 6px;
+}
+
+/* ------------------------------------------------------------ adversaires */
+
+#adversaires {
+  display: flex;
+  justify-content: center;
+  gap: clamp(6px, 2.5vw, 18px);
+  flex-wrap: wrap;
+}
+
+.joueur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 9px 7px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  min-width: 74px;
+  transition: border-color .25s, background .25s, transform .25s;
+}
+
+.joueur.actif {
+  border-color: var(--laiton);
+  background: #ffffff0f;
+  box-shadow: 0 0 16px #d9a44133;
+}
+
+.joueur.sorti { opacity: .55; }
+
+.joueur .nom {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
+.joueur .etat {
+  font-size: 11px;
+  color: var(--texte-pale);
+  min-height: 14px;
+}
+
+.dos-pile {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: calc(var(--carte-h) * 0.42);
+}
+
+.dos {
+  width: calc(var(--carte-l) * 0.42);
+  height: calc(var(--carte-h) * 0.42);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(45deg, #8d2f2a 0 4px, #7a2723 4px 8px);
+  border: 1px solid #00000055;
+  box-shadow: 0 1px 3px #0006;
+}
+
+.dos + .dos { margin-left: calc(var(--carte-l) * -0.28); }
+
+.compte {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--texte);
+  background: #00000040;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.role {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.role.boss { color: var(--laiton); }
+.role.sous-boss { color: #cbd8c8; }
+.role.neutre { color: var(--texte-pale); }
+.role.sur-larbin { color: #d99b7a; }
+.role.larbin { color: #e0736a; }
+
+/* ------------------------------------------------------------------ tapis */
+
+#tapis {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  min-height: 0;
+}
+
+#annonce {
+  font-size: 13px;
+  color: var(--texte-pale);
+  height: 18px;
+  text-align: center;
+  transition: opacity .2s;
+}
+
+#pose {
+  display: flex;
+  justify-content: center;
+  min-height: var(--carte-h);
+}
+
+#pose .carte + .carte { margin-left: calc(var(--carte-l) * -0.42); }
+
+#pose .carte {
+  animation: arrivee .28s cubic-bezier(.2, .9, .3, 1.2) backwards;
+}
+
+@keyframes arrivee {
+  from { transform: translateY(-26px) scale(.86); opacity: 0; }
+}
+
+#exigence {
+  font-size: 13px;
+  color: var(--texte);
+  background: #00000038;
+  padding: 4px 12px;
+  border-radius: 999px;
+  min-height: 25px;
+  display: flex;
+  align-items: center;
+}
+
+#exigence.vide { background: none; color: var(--texte-pale); }
+
+/* ------------------------------------------------------------- ma main */
+
+#moi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#ma-ligne {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--texte-pale);
+}
+
+#ma-main {
+  display: flex;
+  justify-content: center;
+  padding-top: 18px;
+  width: 100%;
+}
+
+#ma-main .carte + .carte { margin-left: calc(-1 * var(--chevauchement)); }
+
+#actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+}
+
+button.action {
+  flex: 1;
+  padding: 13px 10px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 12px;
+  border: 1px solid #ffffff26;
+  background: #ffffff12;
+  color: var(--texte);
+  cursor: pointer;
+  transition: transform .12s, background .2s, opacity .2s;
+}
+
+button.action:active { transform: scale(.97); }
+
+button.action.primaire {
+  background: linear-gradient(#e3b355, var(--laiton-sombre));
+  border-color: #f0cd84;
+  color: #2a1c04;
+}
+
+button.action:disabled {
+  opacity: .38;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------- les cartes */
+
+.carte {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--carte-l);
+  height: var(--carte-h);
+  border-radius: var(--rayon);
+  border: 1px solid #00000038;
+  padding: 0;
+  background: linear-gradient(160deg, #fffdf6 0%, var(--creme) 62%, #ece2cd 100%);
+  color: var(--encre);
+  box-shadow: 0 2px 5px #0007, inset 0 0 0 1px #ffffff80;
+  font-family: inherit;
+  cursor: default;
+  transition: transform .18s cubic-bezier(.2, .8, .3, 1.2), box-shadow .18s, filter .2s;
+}
+
+.carte.rouge { color: var(--rouge); }
+
+.carte .coin {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: calc(var(--carte-l) * 0.3);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.5px;
+}
+
+.carte .coin i {
+  display: block;
+  font-style: normal;
+  font-size: calc(var(--carte-l) * 0.26);
+}
+
+.carte .centre {
+  position: absolute;
+  right: calc(var(--carte-l) * 0.09);
+  bottom: calc(var(--carte-l) * 0.06);
+  font-size: calc(var(--carte-l) * 0.5);
+  line-height: 1;
+  opacity: .9;
+}
+
+/* Les cartes se recouvrent : une ombre portée sur le bord gauche fait lire
+   l'éventail comme une pile, et non comme un bandeau blanc. */
+#ma-main .carte,
+#pose .carte {
+  box-shadow: -4px 0 8px #00000047, 0 2px 5px #0007, inset 0 0 0 1px #ffffff80;
+}
+
+#ma-main .carte { cursor: pointer; }
+
+#ma-main .carte.jouable:hover { transform: translateY(-7px); }
+
+#ma-main .carte.choisie {
+  transform: translateY(-18px);
+  box-shadow: 0 8px 16px #0008, inset 0 0 0 2px var(--laiton);
+}
+
+#ma-main .carte.morte {
+  filter: grayscale(.75) brightness(.72);
+  cursor: default;
+}
+
+/* -------------------------------------------------------------- le voile */
+
+#voile {
+  position: fixed;
+  inset: 0;
+  background: #04140fdd;
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 10;
+}
+
+#voile[hidden] { display: none !important; }
+
+.panneau {
+  background: linear-gradient(#14503f, #0c3527);
+  border: 1px solid #ffffff20;
+  border-radius: 18px;
+  padding: 20px 18px;
+  width: min(420px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  box-shadow: 0 18px 50px #000a;
+}
+
+.panneau h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  letter-spacing: .3px;
+}
+
+.panneau p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--texte-pale);
+  line-height: 1.45;
+}
+
+.panneau .cartes-recues {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.classement {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.classement li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 4px;
+  border-bottom: 1px solid #ffffff14;
+  font-size: 15px;
+}
+
+.classement li:last-child { border-bottom: none; }
+
+.classement .place {
+  color: var(--texte-pale);
+  font-size: 12px;
+  min-width: 22px;
+}
+
+.classement .sur-un-deux {
+  font-size: 11px;
+  color: #e0736a;
+}
+
+#choix-rendu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+#choix-rendu .carte { cursor: pointer; }
+
+#choix-rendu .carte.choisie {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 16px #0008, inset 0 0 0 2px var(--laiton);
+}
+
+@media (min-width: 700px) {
+  :root { --carte-l: 68px; }
+  #table { max-width: 860px; margin: 0 auto; }
+}
