@@ -41,11 +41,13 @@ export function currentPlayer(state: GameState): Player {
   return player(state, state.order[state.turn]);
 }
 
-/** Joueurs ayant encore des cartes et n'ayant pas passé : ils peuvent encore monter. */
-function contenders(state: GameState, exclude: string | null): Player[] {
-  return state.players.filter(
-    (p) => p.hand.length > 0 && !p.passed && p.id !== exclude,
-  );
+/**
+ * Ceux qui n'ont pas encore pris la parole dans la série et ont de quoi le
+ * faire. Une série ne fait qu'un tour de table : dès que la liste est vide,
+ * elle est close.
+ */
+function restentAParler(state: GameState): Player[] {
+  return state.players.filter((p) => p.hand.length > 0 && !p.aAgi);
 }
 
 /**
@@ -102,6 +104,7 @@ export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
     name: s.name,
     hand: [],
     role: null,
+    aAgi: false,
     passed: false,
     finishedAt: null,
     finishedOnTwo: false,
@@ -146,6 +149,7 @@ function startRound(state: GameState): void {
   state.mouvements = [];
   state.passees = [];
   for (const p of state.players) {
+    p.aAgi = false;
     p.passed = false;
     p.finishedAt = null;
     p.finishedOnTwo = false;
@@ -385,6 +389,8 @@ function doPlay(state: GameState, id: string, cardIds: string[]): void {
   }
 
   p.hand = p.hand.filter((c) => !cards.includes(c));
+  p.aAgi = true;
+  if (!req) state.pile = [];        // on ouvre : le tapis se ramasse maintenant
   state.pile.push({ player: id, cards });
   state.passees.push(...cards);
   state.requirement = { rank, count: cards.length };
@@ -415,22 +421,26 @@ function doPass(state: GameState, id: string): void {
   if (!state.requirement) fail('On ne passe pas quand on ouvre une série : il faut poser.');
 
   const p = player(state, id);
+  p.aAgi = true;
   p.passed = true;
   state.log.push(`${p.name} passe.`);
   advance(state);
 }
 
-/** Donne la main au prochain joueur encore dans la série, ou clôt la série. */
+/**
+ * Passe la parole au voisin de gauche qui ne l'a pas encore prise. Le tour de
+ * table bouclé, la série s'arrête — même si quelqu'un aurait pu monter encore.
+ */
 function advance(state: GameState): void {
-  const still = contenders(state, state.lastPlayer);
-  if (still.length === 0) {
+  const restent = restentAParler(state);
+  if (restent.length === 0) {
     endSeries(state);
     return;
   }
   const size = state.order.length;
   for (let step = 1; step <= size; step++) {
     const seat = (state.turn + step) % size;
-    if (still.some((p) => p.id === state.order[seat])) {
+    if (restent.some((p) => p.id === state.order[seat])) {
       state.turn = seat;
       return;
     }
@@ -446,10 +456,14 @@ function advance(state: GameState): void {
 function endSeries(state: GameState): void {
   const winner = state.lastPlayer;
   state.log.push('Série terminée.');
-  state.pile = [];
+  // Les cartes gagnantes restent sur le tapis jusqu'à ce que quelqu'un rouvre :
+  // à une vraie table, on ne ramasse pas avant que le suivant ait posé.
   state.requirement = null;
   state.lastPlayer = null;
-  for (const p of state.players) p.passed = false;
+  for (const p of state.players) {
+    p.aAgi = false;
+    p.passed = false;
+  }
 
   const size = state.order.length;
   const from = winner ? state.order.indexOf(winner) : state.turn;
@@ -529,7 +543,10 @@ function endRound(state: GameState): void {
 
   state.pile = [];
   state.requirement = null;
-  for (const p of state.players) p.passed = false;
+  for (const p of state.players) {
+    p.aAgi = false;
+    p.passed = false;
+  }
   for (const id of classement) {
     const p = player(state, id);
     state.log.push(`${p.name} : ${p.role}, +${gains.get(id)} (${p.points} pts).`);
@@ -597,7 +614,7 @@ export interface PlayerView {
   } | null;
   others: Array<{
     id: string; name: string; count: number; role: Role | null;
-    passed: boolean; finishedAt: number | null; isBot: boolean; points: number;
+    passed: boolean; aAgi: boolean; finishedAt: number | null; isBot: boolean; points: number;
     finishedOnTwo: boolean;
   }>;
   /** Classement de la manche écoulée, vide tant qu'elle n'est pas finie. */
@@ -640,7 +657,7 @@ export function viewFor(state: GameState, id: string): PlayerView {
         const o = player(state, oid);
         return {
           id: o.id, name: o.name, count: o.hand.length, role: o.role,
-          passed: o.passed, finishedAt: o.finishedAt, isBot: o.isBot, points: o.points,
+          passed: o.passed, aAgi: o.aAgi, finishedAt: o.finishedAt, isBot: o.isBot, points: o.points,
           finishedOnTwo: o.finishedOnTwo,
         };
       }),

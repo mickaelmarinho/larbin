@@ -24,7 +24,9 @@ export interface Player {
   hand: Card[];
   /** Rôle hérité de la manche précédente (null à la première manche). */
   role: Role | null;
-  /** A passé son tour dans la série en cours : ne peut plus y revenir. */
+  /** A déjà pris la parole dans la série en cours : posé ou passé. */
+  aAgi: boolean;
+  /** A passé plutôt que de poser — pour l'affichage. */
   passed: boolean;
   /** Position dans l'ordre de sortie de la manche en cours (null tant qu'il a des cartes). */
   finishedAt: number | null;

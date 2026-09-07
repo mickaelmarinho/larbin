@@ -583,3 +583,9 @@ button.mini {
   line-height: 1;
   cursor: pointer;
 }
+
+/* La série est close : les cartes attendent d'être ramassées. */
+#pose.finie .carte {
+  opacity: .38;
+  filter: saturate(.6);
+}

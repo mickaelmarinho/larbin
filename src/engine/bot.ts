@@ -45,9 +45,10 @@ function pick(view: PlayerView): Card[] | null {
   const handSize = view.me.hand.length;
   const menace = view.others.some((o) => o.count > 0 && o.count <= 2);
 
-  // Tous les autres ont passé ou sont sortis : poser emporte la série pour rien.
+  // Tous les autres ont déjà parlé : la série ne fait qu'un tour, donc poser
+  // l'emporte à coup sûr — inutile de se priver.
   const serieAcquise = view.requirement !== null
-    && view.others.every((o) => o.count === 0 || o.passed);
+    && view.others.every((o) => o.count === 0 || o.aAgi);
 
   // Un coup qui vide la main : on le prend, sauf s'il se termine sur un 2.
   const sorties = view.legal.filter((play) => play.length === handSize);

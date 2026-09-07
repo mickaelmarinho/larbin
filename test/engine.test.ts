@@ -136,20 +136,39 @@ test('on ne passe pas quand on ouvre une série', () => {
   assert.throws(() => apply(state, { type: 'passer', player: 'a' }), RegleViolee);
 });
 
-test('un joueur qui a passé ne revient plus dans la série en cours', () => {
+test('une série ne fait qu’un tour de table', () => {
   let state = partie({
-    a: ['4♠', '3♥'], b: ['5♠', '3♦'], c: ['6♠', '3♣'], d: ['R♠', 'A♥'],
+    a: ['7♠', 'D♥'], b: ['9♠', '3♦'], c: ['6♠', '3♣'], d: ['V♠', '4♥'],
+  });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('7♠').id] });
+  state = apply(state, { type: 'poser', player: 'b', cards: [carte('9♠').id] });
+  state = apply(state, { type: 'passer', player: 'c' });
+  state = apply(state, { type: 'poser', player: 'd', cards: [carte('V♠').id] });
+
+  // Chacun a parlé une fois : la série s'arrête là.
+  assert.equal(state.requirement, null, 'le tour bouclé, la série est close');
+  assert.equal(state.order[state.turn], 'd', 'le plus fort ouvre la suivante');
+  // Les cartes gagnantes restent visibles jusqu'à ce que d rouvre.
+  assert.deepEqual(ids(state.pile[state.pile.length - 1].cards), [carte('V♠').id]);
+
+  // a avait une dame en main, mais il a déjà joué : il ne remonte pas.
+  assert.throws(
+    () => apply(state, { type: 'poser', player: 'a', cards: [carte('D♥').id] }),
+    RegleViolee,
+  );
+});
+
+test('celui qui a passé ne rejoue pas non plus dans la série', () => {
+  let state = partie({
+    a: ['4♠', '3♥'], b: ['5♠', 'A♦'], c: ['6♠', '3♣'], d: ['R♠', 'A♥'],
   });
   state = apply(state, { type: 'poser', player: 'a', cards: [carte('4♠').id] });
-  state = apply(state, { type: 'passer', player: 'b' });      // b se met hors jeu
-  state = apply(state, { type: 'poser', player: 'c', cards: [carte('6♠').id] });
-  state = apply(state, { type: 'poser', player: 'd', cards: [carte('R♠').id] });
+  state = apply(state, { type: 'passer', player: 'b' });
 
-  // Le tour revient à a (b est passé), pas à b.
-  assert.equal(state.order[state.turn], 'a');
+  assert.equal(state.order[state.turn], 'c', 'la parole va au suivant');
   assert.equal(legalPlays(state, 'b').length, 0);
   assert.throws(
-    () => apply(state, { type: 'poser', player: 'b', cards: [carte('3♦').id] }),
+    () => apply(state, { type: 'poser', player: 'b', cards: [carte('A♦').id] }),
     RegleViolee,
   );
 });
@@ -162,12 +181,14 @@ test('le dernier joueur à avoir posé ouvre la série suivante', () => {
   state = apply(state, { type: 'poser', player: 'b', cards: [carte('R♠').id] });
   state = apply(state, { type: 'passer', player: 'c' });
   state = apply(state, { type: 'passer', player: 'd' });
-  state = apply(state, { type: 'passer', player: 'a' });
 
   assert.equal(state.requirement, null, 'la série est close');
-  assert.equal(state.pile.length, 0);
   assert.equal(state.order[state.turn], 'b', 'b avait le dernier mot');
-  assert.ok(state.players.every((p) => !p.passed), 'tout le monde revient en jeu');
+  assert.deepEqual(ids(state.pile[state.pile.length - 1].cards), [carte('R♠').id]);
+  assert.ok(
+    state.players.every((p) => !p.passed && !p.aAgi),
+    'tout le monde reprend la parole pour la série suivante',
+  );
 });
 
 test('si le maître de la série a fini ses cartes, son voisin ouvre la suivante', () => {

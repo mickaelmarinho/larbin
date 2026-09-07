@@ -21,14 +21,24 @@ sur une série.
 
 ## Une série
 
+**Une série fait un tour de table, et un seul.** C'est là que le Larbin se
+sépare du Président : chacun ne prend la parole qu'une fois.
+
 - Le joueur qui ouvre pose une carte seule, une doublette, une triplette ou une
   quadruplette (toujours de même hauteur).
-- Les suivants doivent poser **le même nombre de cartes**, de valeur
-  **strictement supérieure**. Sinon — ou s'ils préfèrent garder leur jeu — ils
-  passent.
-- **Qui a passé ne revient plus** dans la série en cours.
-- Quand plus personne ne peut ou ne veut monter, la série s'arrête. Le dernier
-  joueur à avoir posé ouvre la suivante.
+- Chacun à sa suite doit poser **le même nombre de cartes**, de valeur
+  **strictement supérieure**. Sinon — ou s'il préfère garder son jeu — il passe.
+- **On ne parle qu'une fois** : ni celui qui a posé, ni celui qui a passé ne
+  revient dans la série en cours.
+- Le tour bouclé, la série s'arrête. Le dernier joueur à avoir posé — c'est-à-dire
+  le plus fort — ouvre la suivante.
+
+Concrètement : A pose un 7, B monte à 9, C passe, D pose un Valet. Le tour est
+fini. A avait beau garder une Dame, il ne rejoue pas : c'est D qui ouvre.
+
+Cela change complètement le rythme. Une grosse carte ne se garde pas pour
+« repasser plus tard dans la série » — il n'y aura pas de plus tard. On la sort
+au bon tour, ou on la garde pour la série suivante.
 
 ## Fin de manche
 

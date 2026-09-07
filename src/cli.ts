@@ -31,6 +31,7 @@ function afficher(state: GameState): void {
     const role = o.role ? ` ${C.pale}(${o.role})${C.reset}` : '';
     const etat = o.count === 0 ? `${C.vert}sorti ${o.finishedAt! + 1}e${C.reset}`
       : o.passed ? `${C.pale}a passé${C.reset}`
+      : o.aAgi ? `${o.count} cartes ${C.pale}(a joué)${C.reset}`
       : `${o.count} cartes`;
     console.log(`  ${o.name}${role} : ${etat}`);
   }

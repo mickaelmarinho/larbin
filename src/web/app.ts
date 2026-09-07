@@ -97,9 +97,11 @@ function rendreAdversaires(vue: PlayerView): void {
   $('adversaires').innerHTML = vue.others.map((o) => {
     const actif = vue.turnPlayer === o.id && vue.phase === 'jeu';
     const dos = Math.min(3, o.count);
+    // Une série ne fait qu'un tour : savoir qui a déjà parlé change tout.
     const etatTexte = o.count === 0
       ? `sorti ${o.finishedAt! + 1}${o.finishedAt === 0 ? 'er' : 'e'}`
-      : o.passed ? 'a passé' : '';
+      : o.passed ? 'a passé'
+      : o.aAgi ? 'a joué' : '';
     return `<div class="joueur ${actif ? 'actif' : ''} ${o.count === 0 ? 'sorti' : ''}">
       <div class="dos-pile">
         ${'<div class="dos"></div>'.repeat(dos)}
@@ -112,6 +114,20 @@ function rendreAdversaires(vue: PlayerView): void {
   }).join('');
 }
 
+/**
+ * Le dernier coup joué. Quand une série se clôt, le moteur écrit trois lignes
+ * d'affilée — le coup, la fin de série, le nouvel ouvreur — et on perdrait le
+ * coup gagnant en ne montrant que la dernière.
+ */
+function dernierCoup(vue: PlayerView): string {
+  for (let i = vue.log.length - 1; i >= 0; i--) {
+    const ligne = vue.log[i];
+    if (ligne.startsWith('--- Manche')) break;   // ne pas remonter dans la manche d'avant
+    if (/ (pose|passe)[ .]/.test(ligne)) return ligne;
+  }
+  return vue.log[vue.log.length - 1] ?? '';
+}
+
 function rendreTapis(vue: PlayerView): void {
   const dernier = vue.pile[vue.pile.length - 1];
   const signature = dernier ? `${dernier.player}:${dernier.cards.map((c) => c.id).join(',')}` : '';
@@ -120,6 +136,8 @@ function rendreTapis(vue: PlayerView): void {
     $('pose').classList.toggle('de-moi', dernier?.player === vue.me.id);
     $('pose').innerHTML = dernier ? sortHand(dernier.cards).map((c) => carteHTML(c)).join('') : '';
   }
+  // Série close : les cartes restent visibles, mais elles ne comptent plus.
+  $('pose').classList.toggle('finie', vue.requirement === null && vue.pile.length > 0);
 
   const exigence = $('exigence');
   if (vue.requirement) {
@@ -259,7 +277,7 @@ function agir(action: Action): void {
 
 function surChangement(): void {
   const vue = table?.vue() ?? null;
-  if (vue) annonce = vue.log[vue.log.length - 1] ?? '';
+  if (vue) annonce = dernierCoup(vue);
   rendre();
   boucle();
 }
