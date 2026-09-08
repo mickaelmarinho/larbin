@@ -123,7 +123,10 @@ function dernierCoup(vue: PlayerView): string {
   for (let i = vue.log.length - 1; i >= 0; i--) {
     const ligne = vue.log[i];
     if (ligne.startsWith('--- Manche')) break;   // ne pas remonter dans la manche d'avant
-    if (/ (pose|passe)[ .]/.test(ligne)) return ligne;
+    if (!/ (pose|passe)[ .]/.test(ligne)) continue;
+    // Sans cette mention, la série s'arrêterait sans qu'on comprenne pourquoi.
+    const coupe = vue.log[i + 1]?.startsWith('Le 2 coupe');
+    return coupe ? `${ligne.replace(/\.$/, '')} — le 2 coupe.` : ligne;
   }
   return vue.log[vue.log.length - 1] ?? '';
 }

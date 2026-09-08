@@ -412,6 +412,14 @@ function doPlay(state: GameState, id: string, cardIds: string[]): void {
     endRound(state);
     return;
   }
+
+  // Le 2 coupe net : personne ne peut monter, on n'attend pas que le tour finisse.
+  if (rank === DEUX) {
+    state.log.push('Le 2 coupe : la série s\'arrête là.');
+    endSeries(state);
+    return;
+  }
+
   advance(state);
 }
 

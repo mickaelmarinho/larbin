@@ -158,6 +158,44 @@ test('une série ne fait qu’un tour de table', () => {
   );
 });
 
+test('le 2 coupe net : la série s’arrête sans finir le tour', () => {
+  let state = partie({
+    a: ['2♠', '3♥'], b: ['A♠', '3♦'], c: ['A♥', '3♣'], d: ['A♦', '4♥'],
+  });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('2♠').id] });
+
+  // b, c et d n'ont même pas eu à dire qu'ils passaient.
+  assert.equal(state.requirement, null, 'la série est coupée');
+  assert.equal(state.order[state.turn], 'a', 'celui qui coupe rouvre');
+  assert.ok(state.players.every((p) => !p.aAgi), 'personne n’a été forcé de parler');
+  assert.deepEqual(ids(state.pile[state.pile.length - 1].cards), [carte('2♠').id]);
+
+  // Et a rouvre bel et bien, avec ce qu'il veut.
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('3♥').id] });
+  assert.deepEqual(state.requirement, { rank: 3, count: 1 });
+});
+
+test('une doublette de 2 coupe aussi', () => {
+  let state = partie({
+    a: ['2♠', '2♥', '3♥'], b: ['A♠', 'A♦'], c: ['A♥', '3♣'], d: ['R♦', '4♥'],
+  });
+  state = apply(state, { type: 'poser', player: 'a', cards: ['2♠', '2♥'].map((l) => carte(l).id) });
+
+  assert.equal(state.requirement, null);
+  assert.equal(state.order[state.turn], 'a');
+});
+
+test('couper avec son dernier 2 laisse la main au voisin', () => {
+  let state = partie({
+    a: ['2♠'], b: ['A♠', '3♦'], c: ['A♥', '3♣'], d: ['A♦', '4♥'],
+  });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('2♠').id] });
+
+  assert.deepEqual(state.finishOrder, ['a']);
+  assert.equal(state.order[state.turn], 'b', 'a n’a plus de cartes : son voisin ouvre');
+  assert.equal(state.requirement, null);
+});
+
 test('celui qui a passé ne rejoue pas non plus dans la série', () => {
   let state = partie({
     a: ['4♠', '3♥'], b: ['5♠', 'A♦'], c: ['6♠', '3♣'], d: ['R♠', 'A♥'],
@@ -256,10 +294,7 @@ test('finir en posant un 2 rend Larbin, même en sortant premier', () => {
   state = apply(state, { type: 'poser', player: 'a', cards: [carte('2♠').id] });
   assert.equal(state.players.find((p) => p.id === 'a')!.finishedOnTwo, true);
 
-  // Personne ne bat un 2 : la série s'arrête et b ouvre la suivante.
-  state = apply(state, { type: 'passer', player: 'b' });
-  state = apply(state, { type: 'passer', player: 'c' });
-  state = apply(state, { type: 'passer', player: 'd' });
+  // Le 2 coupe : ni b ni c ni d n'ont eu à passer, et b ouvre déjà.
   assert.equal(state.order[state.turn], 'b');
 
   state = apply(state, { type: 'poser', player: 'b', cards: [carte('4♠').id] });
@@ -277,9 +312,6 @@ test('finir sur une doublette de 2 compte aussi', () => {
     a: ['2♠', '2♥'], b: ['4♠', '4♥'], c: ['5♠', '5♥'], d: ['R♠', 'A♥'],
   });
   state = apply(state, { type: 'poser', player: 'a', cards: ['2♠', '2♥'].map((l) => carte(l).id) });
-  state = apply(state, { type: 'passer', player: 'b' });
-  state = apply(state, { type: 'passer', player: 'c' });
-  state = apply(state, { type: 'passer', player: 'd' });
   state = apply(state, { type: 'poser', player: 'b', cards: ['4♠', '4♥'].map((l) => carte(l).id) });
   state = apply(state, { type: 'poser', player: 'c', cards: ['5♠', '5♥'].map((l) => carte(l).id) });
   assert.equal(state.players.find((p) => p.id === 'a')!.role, 'larbin');
@@ -542,9 +574,6 @@ test('une manche rapporte le nombre de joueurs laissés derrière soi', () => {
 test('finir sur un 2 coûte aussi des points', () => {
   let state = partie({ a: ['2♠'], b: ['4♠'], c: ['5♠'], d: ['R♠', 'A♥'] });
   state = apply(state, { type: 'poser', player: 'a', cards: [carte('2♠').id] });
-  state = apply(state, { type: 'passer', player: 'b' });
-  state = apply(state, { type: 'passer', player: 'c' });
-  state = apply(state, { type: 'passer', player: 'd' });
   state = apply(state, { type: 'poser', player: 'b', cards: [carte('4♠').id] });
   state = apply(state, { type: 'poser', player: 'c', cards: [carte('5♠').id] });
 

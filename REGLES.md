@@ -19,6 +19,14 @@ brief ne tranchait pas.
 Le 2 est la carte la plus forte : celui qui l'a garde toujours le dernier mot
 sur une série.
 
+**Le 2 coupe net.** Dès qu'il est posé — seul, en doublette ou davantage — la
+série s'arrête sur-le-champ : les joueurs suivants n'ont même pas à dire qu'ils
+passent, puisque rien ne peut monter. Celui qui a coupé rouvre aussitôt.
+
+C'est une arme, mais elle se retourne : **terminer sa manche en posant un 2 rend
+Larbin d'office**. On coupe donc volontiers en cours de manche, jamais sur sa
+dernière carte.
+
 ## Une série
 
 **Une série fait un tour de table, et un seul.** C'est là que le Larbin se
