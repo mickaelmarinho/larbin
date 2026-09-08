@@ -76,15 +76,13 @@ d'arrivée.
 - Les Neutres n'échangent rien.
 - Le Boss ouvre la manche.
 
-La seule liberté est la **couleur**, et seulement en cas d'égalité — des deux
-côtés. Si vos deux cartes les plus basses sont deux 6, vous décidez si vous
-lâchez le cœur, le trèfle, le carreau ou le pique ; et si le Larbin a trois As
-au sommet de sa main, c'est lui qui décide lesquels il cède.
+**Personne n'a rien à décider, pas même la couleur.** Au Larbin les couleurs ne
+valent rien : le jeu ne compare que les hauteurs, et un 6♥ vaut exactement un
+6♣. Choisir entre les deux serait une question sans réponse — le jeu tranche
+donc seul, et l'échange se fait d'un bloc au début de la manche.
 
-L'échange se règle donc en deux temps : le bas donne d'abord, le haut rend
-ensuite — car ses plus basses ne se comptent qu'une fois qu'il a reçu. Le moteur
-applique tout ce qui ne demande aucun arbitrage et ne s'arrête que lorsqu'une
-couleur reste à départager.
+Il se règle en deux temps, dans cet ordre : le bas donne d'abord, le haut rend
+ensuite — car ses plus basses ne se comptent qu'une fois qu'il a reçu.
 
 **Les échanges sont discrets.** Chacun ne voit que les cartes qui passent par ses
 propres mains. La table apprend seulement qu'un échange a eu lieu entre untel et

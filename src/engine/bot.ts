@@ -14,13 +14,6 @@ import { DEUX } from './cards.ts';
  *  - accélérer quand un adversaire est sur le point de sortir.
  */
 export function botAction(view: PlayerView): Action | null {
-  if (view.phase === 'echange' && view.echange) {
-    // L'échange est imposé dans les deux sens : il ne reste qu'à trancher la couleur.
-    const { forcees, candidats, aChoisir } = view.echange.choix;
-    const cedees = [...forcees, ...candidats.slice(0, aChoisir)];
-    return { type: 'echanger', player: view.me.id, cards: cedees.map((c) => c.id) };
-  }
-
   if (view.phase !== 'jeu' || view.turnPlayer !== view.me.id) return null;
   if (view.legal.length === 0) return { type: 'passer', player: view.me.id };
 

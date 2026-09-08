@@ -1,5 +1,5 @@
 import type {
-  Action, Card, Echange, GameState, Mouvement, Player, Rank, Role, SensEchange,
+  Action, Card, GameState, Mouvement, Player, Rank, Role, SensEchange,
 } from './types.ts';
 import {
   DAME_DE_COEUR, DEUX, RANKS, cardLabel, groupByRank, makeDeck, rankLabel, sortHand,
@@ -124,7 +124,6 @@ export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
     lastPlayer: null,
     finishOrder: [],
     classement: [],
-    echanges: [],
     mouvements: [],
     passees: [],
     objectif: OBJECTIF_PAR_ADVERSAIRE * (seeds.length - 1),
@@ -145,7 +144,6 @@ function startRound(state: GameState): void {
   state.lastPlayer = null;
   state.finishOrder = [];
   state.classement = [];
-  state.echanges = [];
   state.mouvements = [];
   state.passees = [];
   for (const p of state.players) {
@@ -173,7 +171,7 @@ function startRound(state: GameState): void {
 
   planExchanges(state);
   state.turn = state.order.indexOf(boss.id);
-  state.phase = state.echanges.length > 0 ? 'echange' : 'jeu';
+  state.phase = 'jeu';
 }
 
 function randomSeat(state: GameState): number {
@@ -214,16 +212,6 @@ export function cartesImposees(hand: Card[], count: number, sens: SensEchange): 
     : { forcees, candidats, aChoisir: placesEnJeu };
 }
 
-/** Les hauteurs qu'un joueur est tenu de céder, dans l'ordre où la règle les désigne. */
-function rangsImposes(hand: Card[], count: number, sens: SensEchange): Rank[] {
-  const choix = cartesImposees(hand, count, sens);
-  const frontiere = choix.candidats[0]?.rank;
-  return [
-    ...choix.forcees.map((c) => c.rank),
-    ...Array<Rank>(choix.aChoisir).fill(frontiere!),
-  ].sort((a, b) => a - b);
-}
-
 /**
  * Le bas cède ses meilleures cartes au haut.
  *
@@ -231,26 +219,20 @@ function rangsImposes(hand: Card[], count: number, sens: SensEchange): Rank[] {
  * passe d'une main à l'autre ne regarde que les deux intéressés. Le journal,
  * lui, est commun à toute la table.
  */
-function donner(state: GameState, echange: Echange, cards: Card[]): void {
-  const bas = player(state, echange.bas);
-  const haut = player(state, echange.haut);
+function donner(state: GameState, bas: Player, haut: Player, cards: Card[]): void {
   const ids = new Set(cards.map((c) => c.id));
   bas.hand = bas.hand.filter((c) => !ids.has(c.id));
   haut.hand = sortHand([...haut.hand, ...cards]);
-  echange.donnees = cards;
   state.mouvements.push({ de: bas.id, vers: haut.id, cartes: cards, sens: 'donner' });
 }
 
 /** Le haut rend ses plus basses au bas : l'échange est soldé. */
-function rendre(state: GameState, echange: Echange, cards: Card[]): void {
-  const bas = player(state, echange.bas);
-  const haut = player(state, echange.haut);
+function rendre(state: GameState, bas: Player, haut: Player, cards: Card[]): void {
   const ids = new Set(cards.map((c) => c.id));
   haut.hand = haut.hand.filter((c) => !ids.has(c.id));
   bas.hand = sortHand([...bas.hand, ...cards]);
   state.mouvements.push({ de: haut.id, vers: bas.id, cartes: cards, sens: 'rendre' });
   state.log.push(`${bas.name} et ${haut.name} ont fait leur échange.`);
-  state.echanges = state.echanges.filter((e) => e !== echange);
 }
 
 /**
@@ -258,17 +240,17 @@ function rendre(state: GameState, echange: Echange, cards: Card[]): void {
  * s'arrête sur chaque décision qui revient à un joueur — c'est-à-dire une
  * couleur à départager, jamais une hauteur.
  */
-function avancerEchanges(state: GameState): void {
-  for (const echange of [...state.echanges]) {
-    if (echange.donnees === null) {
-      const don = cartesImposees(player(state, echange.bas).hand, echange.count, 'donner');
-      if (don.aChoisir > 0) continue;              // le bas doit choisir sa couleur
-      donner(state, echange, don.forcees);
-    }
-    const tribut = cartesImposees(player(state, echange.haut).hand, echange.count, 'rendre');
-    if (tribut.aChoisir > 0) continue;             // le haut doit choisir la sienne
-    rendre(state, echange, tribut.forcees);
-  }
+/**
+ * Les cartes que la règle désigne, couleur comprise.
+ *
+ * Au Larbin les couleurs ne valent rien : le moteur ne compare que les hauteurs.
+ * Choisir entre le 6♥ et le 6♣ serait donc une décision sans conséquence — on
+ * tranche pour le joueur plutôt que de lui poser une question qui n'en est pas
+ * une.
+ */
+function cartesCedees(hand: Card[], count: number, sens: SensEchange): Card[] {
+  const { forcees, candidats, aChoisir } = cartesImposees(hand, count, sens);
+  return [...forcees, ...candidats.slice(0, aChoisir)];
 }
 
 /**
@@ -288,24 +270,12 @@ function planExchanges(state: GameState): void {
     const bas = byRole(basRole);
     const haut = byRole(hautRole);
     if (!bas || !haut) continue;
-    state.echanges.push({ bas: bas.id, haut: haut.id, count, donnees: null });
+
+    // Le don d'abord : les plus basses du haut ne se comptent qu'une fois qu'il
+    // a reçu.
+    donner(state, bas, haut, cartesCedees(bas.hand, count, 'donner'));
+    rendre(state, bas, haut, cartesCedees(haut.hand, count, 'rendre'));
   }
-
-  avancerEchanges(state);
-}
-
-/** Qui doit trancher une couleur, et dans quel sens. */
-export function attenteDe(state: GameState, id: string): { echange: Echange; sens: SensEchange } | null {
-  for (const echange of state.echanges) {
-    if (echange.donnees === null && echange.bas === id) return { echange, sens: 'donner' };
-    if (echange.donnees !== null && echange.haut === id) return { echange, sens: 'rendre' };
-  }
-  return null;
-}
-
-/** Tous les joueurs dont on attend une décision. */
-export function joueursEnAttente(state: GameState): string[] {
-  return state.echanges.map((e) => (e.donnees === null ? e.bas : e.haut));
 }
 
 /* -------------------------------------------------------------- actions */
@@ -315,51 +285,11 @@ export function apply(state: GameState, action: Action): GameState {
   switch (action.type) {
     case 'poser': doPlay(next, action.player, action.cards); break;
     case 'passer': doPass(next, action.player); break;
-    case 'echanger': doExchange(next, action.player, action.cards); break;
     case 'manche-suivante': doNextRound(next); break;
     case 'nouvelle-partie': doNewGame(next); break;
     default: fail('Action inconnue.');
   }
   return next;
-}
-
-function doExchange(state: GameState, id: string, cardIds: string[]): void {
-  if (state.phase !== 'echange') fail("Ce n'est pas la phase d'échange.");
-  const attente = attenteDe(state, id);
-  if (!attente) fail(`${player(state, id).name} n'a rien à échanger.`);
-
-  const { echange, sens } = attente;
-  if (cardIds.length !== echange.count) {
-    fail(`Il faut ${sens} exactement ${echange.count} carte(s).`);
-  }
-  if (new Set(cardIds).size !== cardIds.length) fail('Cartes en double.');
-
-  const moi = player(state, id);
-  const cards = cardIds.map((cid) => {
-    const card = moi.hand.find((c) => c.id === cid);
-    if (!card) fail(`${cid} n'est pas dans la main de ${moi.name}.`);
-    return card;
-  });
-
-  // La hauteur est imposée dans les deux sens ; seule la couleur se choisit.
-  const dus = rangsImposes(moi.hand, echange.count, sens);
-  const proposes = cards.map((c) => c.rank).sort((a, b) => a - b);
-  if (dus.join(',') !== proposes.join(',')) {
-    const quoi = sens === 'donner' ? 'vos meilleures' : 'vos plus basses';
-    fail(`L'échange est imposé : il faut ${sens} ${quoi} (${dus.map(rankLabel).join(' et ')}).`);
-  }
-
-  if (sens === 'donner') donner(state, echange, cards);
-  else rendre(state, echange, cards);
-
-  avancerEchanges(state);
-
-  if (state.echanges.length === 0) {
-    state.phase = 'jeu';
-    const boss = state.players.find((p) => p.role === 'boss');
-    if (boss) state.turn = state.order.indexOf(boss.id);
-    state.log.push(`${currentPlayer(state).name} ouvre la manche.`);
-  }
 }
 
 function doPlay(state: GameState, id: string, cardIds: string[]): void {
@@ -610,16 +540,6 @@ export interface PlayerView {
   requirement: GameState['requirement'];
   pile: GameState['pile'];
   lastPlayer: string | null;
-  /** L'échange en attente de ma décision : la couleur, et rien d'autre. */
-  echange: {
-    sens: SensEchange;
-    /** L'autre joueur de l'échange. */
-    avec: string;
-    count: number;
-    /** Ce que l'autre vient de me céder (vide quand c'est à moi de donner). */
-    recues: Card[];
-    choix: Choix;
-  } | null;
   others: Array<{
     id: string; name: string; count: number; role: Role | null;
     passed: boolean; aAgi: boolean; finishedAt: number | null; isBot: boolean; points: number;
@@ -645,7 +565,6 @@ export interface PlayerView {
 
 export function viewFor(state: GameState, id: string): PlayerView {
   const me = player(state, id);
-  const attente = attenteDe(state, id);
   return {
     me: structuredClone(me),
     round: state.round,
@@ -654,13 +573,6 @@ export function viewFor(state: GameState, id: string): PlayerView {
     requirement: state.requirement,
     pile: structuredClone(state.pile),
     lastPlayer: state.lastPlayer,
-    echange: attente ? {
-      sens: attente.sens,
-      avec: attente.sens === 'donner' ? attente.echange.haut : attente.echange.bas,
-      count: attente.echange.count,
-      recues: attente.echange.donnees ?? [],
-      choix: cartesImposees(me.hand, attente.echange.count, attente.sens),
-    } : null,
     others: state.order
       .filter((oid) => oid !== id)
       .map((oid) => {

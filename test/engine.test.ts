@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 
 import type { Card, GameState, Rank } from '../src/engine/types.ts';
 import {
-  RegleViolee, apply, assignRoles, cartesImposees, createGame, joueursEnAttente,
-  legalPlays, viewFor,
+  RegleViolee, apply, assignRoles, cartesImposees, createGame, legalPlays, viewFor,
 } from '../src/engine/game.ts';
 import { botAction } from '../src/engine/bot.ts';
 import { makeDeck, sortHand } from '../src/engine/cards.ts';
@@ -43,7 +42,6 @@ function partie(mains: Record<string, string[]>, turn = 0): GameState {
   state.requirement = null;
   state.lastPlayer = null;
   state.finishOrder = [];
-  state.echanges = [];
   return state;
 }
 
@@ -329,33 +327,6 @@ function mancheSuivante(seed: number, n = 4): GameState {
   return apply(state, { type: 'manche-suivante' });
 }
 
-/** Un début de manche où le don est fait : seul le tribut du Boss reste à trancher. */
-function enEchange(mainDuBoss: string[], count = 2): GameState {
-  const state = partie({
-    a: mainDuBoss, b: ['R♠'], c: ['D♠'], d: ['V♠'],
-  });
-  state.players.find((p) => p.id === 'a')!.role = 'boss';
-  state.players.find((p) => p.id === 'd')!.role = 'larbin';
-  state.phase = 'echange';
-  state.echanges = [{ bas: 'd', haut: 'a', count, donnees: [carte('V♠')] }];
-  return state;
-}
-
-/**
- * Un début de manche où c'est au Larbin de choisir ce qu'il cède.
- * Le Boss garde des petites cartes, sinon il rendrait aussitôt ce qu'il reçoit.
- */
-function enDon(mainDuLarbin: string[], count = 2): GameState {
-  const state = partie({
-    a: ['R♠', '4♦', '3♣'], b: ['D♠'], c: ['V♠'], d: mainDuLarbin,
-  });
-  state.players.find((p) => p.id === 'a')!.role = 'boss';
-  state.players.find((p) => p.id === 'd')!.role = 'larbin';
-  state.phase = 'echange';
-  state.echanges = [{ bas: 'd', haut: 'a', count, donnees: null }];
-  return state;
-}
-
 test('le tribut désigne les cartes les plus basses', () => {
   const main = (labels: string[]) => labels.map(carte);
 
@@ -398,45 +369,6 @@ test('en donnant, ce sont les cartes les plus hautes', () => {
   assert.deepEqual(ids(frontiere.candidats).sort(), ['14♥', '14♦', '14♣'].sort());
 });
 
-test('le Larbin choisit lui aussi la couleur de ce qu’il cède', () => {
-  const state = enDon(['2♠', 'A♥', 'A♦', 'A♣', '3♦']);
-  const attendu = viewFor(state, 'd').echange!;
-  assert.equal(attendu.sens, 'donner');
-  assert.equal(attendu.avec, 'a');
-  assert.deepEqual(ids(attendu.choix.forcees), ['15♠']);
-  assert.equal(attendu.choix.aChoisir, 1);
-
-  // N'importe lequel des trois As convient.
-  for (const couleur of ['A♥', 'A♦', 'A♣']) {
-    const suite = apply(state, {
-      type: 'echanger', player: 'd', cards: ['2♠', couleur].map((l) => carte(l).id),
-    });
-    const boss = suite.players.find((p) => p.id === 'a')!;
-    assert.ok(ids(boss.hand).includes(carte(couleur).id), couleur);
-  }
-  // Mais pas une carte plus faible que ses meilleures.
-  assert.throws(
-    () => apply(state, { type: 'echanger', player: 'd', cards: ['2♠', '3♦'].map((l) => carte(l).id) }),
-    RegleViolee,
-  );
-});
-
-test('le don précède le tribut : le Boss compte ses basses après avoir reçu', () => {
-  const state = enDon(['2♠', 'A♥', 'A♦', 'A♣', '3♦']);
-  // Tant que le Larbin n'a pas tranché, le Boss n'a rien à faire.
-  assert.deepEqual(joueursEnAttente(state), ['d']);
-  assert.equal(viewFor(state, 'a').echange, null);
-
-  const apres = apply(state, {
-    type: 'echanger', player: 'd', cards: ['2♠', 'A♥'].map((l) => carte(l).id),
-  });
-  // Le Boss a alors rendu ses deux plus basses sans ambiguïté : tout est soldé.
-  assert.equal(apres.phase, 'jeu');
-  assert.deepEqual(apres.echanges, []);
-  const larbin = apres.players.find((p) => p.id === 'd')!;
-  assert.deepEqual(ids(larbin.hand).sort(), ['14♦', '14♣', '3♦', '4♦', '3♣'].sort());
-});
-
 test('la dame de cœur ouvre la première manche', () => {
   for (const seed of [1, 2, 3, 17, 99]) {
     const state = nouvelle(4, seed);
@@ -449,14 +381,8 @@ test('la dame de cœur ouvre la première manche', () => {
   }
 });
 
-test('l’échange se solde des deux côtés, puis le Boss ouvre', () => {
-  let state = mancheSuivante(5);
-  // On laisse les bots trancher les couleurs, s'il y en avait à trancher.
-  for (let i = 0; i < 10 && state.phase === 'echange'; i++) {
-    const acteur = joueursEnAttente(state)[0];
-    state = apply(state, botAction(viewFor(state, acteur))!);
-  }
-
+test('l’échange se solde tout seul, puis le Boss ouvre', () => {
+  const state = mancheSuivante(5);
   assert.equal(state.phase, 'jeu');
   assert.equal(state.order[state.turn], 'a', 'le Boss ouvre la manche');
   assert.deepEqual(state.players.map((p) => p.hand.length).sort(), [13, 13, 13, 13]);
@@ -465,12 +391,7 @@ test('l’échange se solde des deux côtés, puis le Boss ouvre', () => {
 });
 
 test('on ne voit que ses propres échanges', () => {
-  let state = mancheSuivante(5);
-  for (let i = 0; i < 10 && state.phase === 'echange'; i++) {
-    const acteur = joueursEnAttente(state)[0];
-    state = apply(state, botAction(viewFor(state, acteur))!);
-  }
-
+  const state = mancheSuivante(5);
   // a est le Boss (avec d), b le Sous-Boss (avec c) : ils ne partagent rien.
   const duBoss = viewFor(state, 'a').mesEchanges;
   assert.equal(duBoss.length, 2, 'le don reçu et le tribut rendu');
@@ -491,46 +412,6 @@ test('on ne voit que ses propres échanges', () => {
   );
 });
 
-test('le Boss ne rend pas ce qu’il veut : ce sont ses plus basses', () => {
-  const state = enEchange(['3♠', '5♥', '9♣', 'R♦']);
-
-  // Ses deux plus basses, dans l'ordre qu'on veut : accepté.
-  const bon = apply(state, { type: 'echanger', player: 'a', cards: ['5♥', '3♠'].map((l) => carte(l).id) });
-  assert.equal(bon.phase, 'jeu');
-  assert.equal(bon.players.find((p) => p.id === 'd')!.hand.length, 3);
-
-  // Garder son 3 pour lâcher un 9 : refusé.
-  assert.throws(
-    () => apply(state, { type: 'echanger', player: 'a', cards: ['5♥', '9♣'].map((l) => carte(l).id) }),
-    RegleViolee,
-  );
-  // Deux cartes hautes : refusé aussi.
-  assert.throws(
-    () => apply(state, { type: 'echanger', player: 'a', cards: ['9♣', 'R♦'].map((l) => carte(l).id) }),
-    RegleViolee,
-  );
-});
-
-test('en cas d’égalité, seule la couleur se choisit', () => {
-  const state = enEchange(['3♠', '4♥', '4♦', '4♣', 'R♦']);
-  const tribut = viewFor(state, 'a').echange!.choix;
-  assert.deepEqual(ids(tribut.forcees), ['3♠']);
-  assert.equal(tribut.aChoisir, 1);
-
-  // N'importe laquelle des trois couleurs de 4 convient.
-  for (const couleur of ['4♥', '4♦', '4♣']) {
-    const suite = apply(state, {
-      type: 'echanger', player: 'a', cards: ['3♠', couleur].map((l) => carte(l).id),
-    });
-    assert.equal(suite.phase, 'jeu', couleur);
-  }
-  // Mais pas une autre hauteur.
-  assert.throws(
-    () => apply(state, { type: 'echanger', player: 'a', cards: ['3♠', 'R♦'].map((l) => carte(l).id) }),
-    RegleViolee,
-  );
-});
-
 test('les neutres n’échangent rien', () => {
   const state = mancheSuivante(9, 6);
   const neutres = state.players.filter((p) => p.role === 'neutre');
@@ -541,7 +422,6 @@ test('les neutres n’échangent rien', () => {
       !state.mouvements.some((m) => m.de === n.id || m.vers === n.id),
       `${n.name} ne devrait rien échanger`,
     );
-    assert.ok(!state.echanges.some((e) => e.bas === n.id || e.haut === n.id));
     assert.equal(viewFor(state, n.id).mesEchanges.length, 0);
   }
 });

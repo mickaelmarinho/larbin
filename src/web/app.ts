@@ -310,8 +310,6 @@ function boucle(): void {
 
   if (vue.phase === 'fin-de-partie') return voileFinDePartie(vue);
   if (vue.phase === 'fin-de-manche') return voileFinDeManche(vue);
-  if (vue.phase === 'echange' && vue.echange) return voileEchange(vue);
-  if (vue.phase === 'echange') return cacherVoile();
 
   if (vue.round > mancheAnnoncee && vue.round > 1 && vue.mesEchanges.length > 0) {
     return voileDebutDeManche(vue);
@@ -402,6 +400,9 @@ function voileEchange(vue: PlayerView): void {
  */
 function voileDebutDeManche(vue: PlayerView): void {
   mancheAnnoncee = vue.round;
+  // Sans ça, le premier coup du Boss refermerait le panneau avant qu'on ait eu
+  // le temps de lire ce qui a changé de main.
+  voileManuel = true;
   const boss = [vue.me, ...vue.others].find((p) => p.role === 'boss');
   const nomBoss = !boss ? '' : boss.id === vue.me.id ? 'Vous ouvrez' : `${boss.name} ouvre`;
 
@@ -422,6 +423,7 @@ function voileDebutDeManche(vue: PlayerView): void {
     <button class="action primaire" id="commencer" type="button">Jouer</button>
   `);
   $('commencer').addEventListener('click', () => {
+    voileManuel = false;
     cacherVoile();
     boucle();
   });

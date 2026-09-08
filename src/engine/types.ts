@@ -51,21 +51,6 @@ export interface Requirement {
   count: number;
 }
 
-/**
- * Un échange de début de manche, entre un joueur du bas et un joueur du haut.
- * Il se règle en deux temps : le bas cède ses meilleures cartes, puis le haut
- * lui rend ses plus basses. Les deux sont imposés — seule la couleur se choisit.
- */
-export interface Echange {
-  /** Larbin ou Sur-Larbin : il donne ses meilleures cartes. */
-  bas: string;
-  /** Boss ou Sous-Boss : il rend ses plus basses. */
-  haut: string;
-  count: number;
-  /** Les cartes montées vers le haut ; null tant que le don n'est pas réglé. */
-  donnees: Card[] | null;
-}
-
 /** Dans quel sens un joueur se sépare de ses cartes. */
 export type SensEchange = 'donner' | 'rendre';
 
@@ -81,7 +66,7 @@ export interface Mouvement {
   sens: SensEchange;
 }
 
-export type Phase = 'echange' | 'jeu' | 'fin-de-manche' | 'fin-de-partie';
+export type Phase = 'jeu' | 'fin-de-manche' | 'fin-de-partie';
 
 export interface GameState {
   players: Player[];
@@ -100,7 +85,6 @@ export interface GameState {
   finishOrder: string[];
   /** Classement final de la manche : il tient compte de la pénalité du 2. */
   classement: string[];
-  echanges: Echange[];
   /** Les mouvements de l'échange en cours, filtrés par joueur au moment de la vue. */
   mouvements: Mouvement[];
   /** Toutes les cartes déjà posées dans la manche : chacun les a vues passer. */
@@ -115,6 +99,5 @@ export interface GameState {
 export type Action =
   | { type: 'poser'; player: string; cards: string[] }
   | { type: 'passer'; player: string }
-  | { type: 'echanger'; player: string; cards: string[] }
   | { type: 'manche-suivante' }
   | { type: 'nouvelle-partie' };

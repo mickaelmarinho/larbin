@@ -7,7 +7,7 @@
  */
 import type { Action, GameState } from '../engine/types.ts';
 import {
-  MAX_JOUEURS, MIN_JOUEURS, RegleViolee, apply, createGame, joueursEnAttente, viewFor,
+  MAX_JOUEURS, MIN_JOUEURS, RegleViolee, apply, createGame, viewFor,
   type PlayerView,
 } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
@@ -159,12 +159,8 @@ export class Salon {
     const e = this.etat;
     if (!e || e.phase === 'fin-de-manche' || e.phase === 'fin-de-partie') return null;
 
-    const attendus = e.phase === 'echange' ? joueursEnAttente(e) : [e.order[e.turn]];
-    for (const id of attendus) {
-      const place = this.place(id);
-      if (place && (place.estBot || !place.connecte)) return id;
-    }
-    return null;
+    const place = this.place(e.order[e.turn]);
+    return place && (place.estBot || !place.connecte) ? place.id : null;
   }
 
   /** Le coup que jouerait un bot à la place de ce joueur. */

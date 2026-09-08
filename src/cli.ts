@@ -9,7 +9,7 @@ import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
 import type { Card, GameState } from './engine/types.ts';
-import { RegleViolee, apply, createGame, joueursEnAttente, viewFor } from './engine/game.ts';
+import { RegleViolee, apply, createGame, viewFor } from './engine/game.ts';
 import { botAction } from './engine/bot.ts';
 import { cardLabel, rankLabel, sortHand } from './engine/cards.ts';
 
@@ -53,29 +53,6 @@ function afficher(state: GameState): void {
 async function tourHumain(state: GameState, rl: readline.Interface): Promise<GameState> {
   const vue = viewFor(state, MOI);
 
-  if (vue.phase === 'echange' && vue.echange) {
-    const { sens, avec, count, recues, choix } = vue.echange;
-    const { forcees, candidats, aChoisir } = choix;
-    const autre = vue.others.find((o) => o.id === avec)!;
-
-    console.log('');
-    if (sens === 'donner') {
-      console.log(`Vous êtes ${vue.me.role} : vous cédez à ${autre.name} `
-        + `${count === 1 ? 'votre meilleure carte' : `vos ${count} meilleures cartes`}.`);
-    } else {
-      console.log(`${autre.name} (${autre.role}) vous a donné ${main(recues)}.`);
-      console.log(`En retour vous lui rendez `
-        + `${count === 1 ? 'votre plus basse' : `vos ${count} plus basses`}.`);
-    }
-    if (forcees.length > 0) console.log(`  D'office : ${main(forcees)}`);
-
-    const invite = aChoisir === 1 ? 'Choisissez la couleur' : `Choisissez ${aChoisir} couleurs`;
-    const tranche = await demanderCartes(rl, candidats, aChoisir, invite);
-    return apply(state, {
-      type: 'echanger', player: MOI, cards: [...forcees, ...tranche].map((c) => c.id),
-    });
-  }
-
   afficher(state);
   const exigence = vue.requirement
     ? `${vue.requirement.count} carte(s) au-dessus de ${rankLabel(vue.requirement.rank)}`
@@ -100,23 +77,6 @@ async function tourHumain(state: GameState, rl: readline.Interface): Promise<Gam
       return apply(state, { type: 'poser', player: MOI, cards: vue.legal[n - 1].map((c) => c.id) });
     }
     console.log(`${C.pale}Tapez un numéro${vue.canPass ? ' ou "p"' : ''}.${C.reset}`);
-  }
-}
-
-async function demanderCartes(
-  rl: readline.Interface, hand: Card[], count: number, invite: string,
-): Promise<Card[]> {
-  const triee = sortHand(hand);
-  triee.forEach((c, i) => process.stdout.write(`${String(i + 1).padStart(2)}:${carte(c)}  `));
-  console.log('');
-  for (;;) {
-    const rep = await rl.question(`${invite} (numéros séparés par un espace) > `);
-    const nums = rep.trim().split(/\s+/).map(Number);
-    const valides = nums.length === count
-      && new Set(nums).size === count
-      && nums.every((n) => Number.isInteger(n) && n >= 1 && n <= triee.length);
-    if (valides) return nums.map((n) => triee[n - 1]);
-    console.log(`${C.pale}Il en faut exactement ${count}.${C.reset}`);
   }
 }
 
@@ -164,9 +124,7 @@ async function jouer(): Promise<void> {
         continue;
       }
 
-      const acteur = state.phase === 'echange'
-        ? joueursEnAttente(state)[0]
-        : state.order[state.turn];
+      const acteur = state.order[state.turn];
 
       try {
         state = acteur === MOI ? await tourHumain(state, rl) : tourBot(state, acteur);

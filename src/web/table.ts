@@ -7,7 +7,7 @@
  * une PlayerView et envoie des actions, dans les deux cas.
  */
 import type { Action, GameState } from '../engine/types.ts';
-import { apply, createGame, joueursEnAttente, viewFor, type PlayerView } from '../engine/game.ts';
+import { apply, createGame, viewFor, type PlayerView } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
 import type { EtatSalon, VersClient, VersServeur } from '../reseau/protocole.ts';
 
@@ -26,7 +26,6 @@ export interface Table {
 /* ------------------------------------------------------------------ solo */
 
 const REFLEXION = 750;
-const REFLEXION_ECHANGE = 450;
 const CLE_SAUVEGARDE = 'larbin.partie.v1';
 
 const ADVERSAIRES = [
@@ -93,16 +92,13 @@ export class TableSolo implements Table {
     const e = this.etat;
     if (e.phase === 'fin-de-manche' || e.phase === 'fin-de-partie') return;
 
-    const acteur = e.phase === 'echange'
-      ? joueursEnAttente(e).find((id) => id !== this.moi)
-      : e.order[e.turn];
-    if (!acteur || acteur === this.moi) return;
+    const acteur = e.order[e.turn];
+    if (acteur === this.moi) return;
 
-    const delai = e.phase === 'echange' ? REFLEXION_ECHANGE : REFLEXION;
     this.minuteur = setTimeout(() => {
       const coup = botAction(viewFor(this.etat, acteur));
       if (coup) this.envoyer(coup);
-    }, delai);
+    }, REFLEXION);
   }
 
   private sauver(): void {
