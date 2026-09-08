@@ -12,6 +12,21 @@ brief ne tranchait pas.
 - À la première manche, personne n'a de rôle : **celui qui a la dame de cœur
   ouvre**. Aux manches suivantes, c'est le Boss.
 
+### On ne mélange qu'une fois
+
+Le paquet n'est brassé qu'au tout début de la partie. Ensuite, **on ne mélange
+plus** : à la fin de chaque manche on ramasse le tas tel quel — les cartes dans
+l'ordre où elles sont tombées, puis la main du dernier joueur posée dessus.
+
+C'est le **Boss** qui prépare la manche suivante : il **coupe le paquet où il
+veut**, retourne la première carte pour que toute la table la voie, et **la
+garde**. Le reste se distribue à partir de son voisin de gauche — si bien qu'il
+retombe sur ses pieds avec autant de cartes que les autres.
+
+La coupe est donc le seul hasard qui subsiste, et c'est son privilège. Un joueur
+attentif, qui se souvient de l'ordre dans lequel les cartes sont tombées, peut
+même essayer de couper au bon endroit.
+
 ## Hiérarchie
 
     2 > A > R > D > V > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3

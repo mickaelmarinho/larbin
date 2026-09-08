@@ -66,7 +66,7 @@ export interface Mouvement {
   sens: SensEchange;
 }
 
-export type Phase = 'jeu' | 'fin-de-manche' | 'fin-de-partie';
+export type Phase = 'coupe' | 'jeu' | 'fin-de-manche' | 'fin-de-partie';
 
 export interface GameState {
   players: Player[];
@@ -89,6 +89,13 @@ export interface GameState {
   mouvements: Mouvement[];
   /** Toutes les cartes déjà posées dans la manche : chacun les a vues passer. */
   passees: Card[];
+  /**
+   * Le paquet tel qu'il attend d'être coupé : les cartes de la manche écoulée,
+   * dans l'ordre où elles sont tombées. On ne mélange pas entre deux manches.
+   */
+  paquet: Card[];
+  /** La carte que le Boss a retournée en coupant, et qu'il a gardée. */
+  carteMontree: Card | null;
   /** Score à atteindre pour gagner la partie. */
   objectif: number;
   /** État interne du générateur pseudo-aléatoire (parties rejouables). */
@@ -99,5 +106,6 @@ export interface GameState {
 export type Action =
   | { type: 'poser'; player: string; cards: string[] }
   | { type: 'passer'; player: string }
+  | { type: 'couper'; player: string; position: number }
   | { type: 'manche-suivante' }
   | { type: 'nouvelle-partie' };

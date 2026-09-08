@@ -41,6 +41,8 @@ export class TableSolo implements Table {
   private etat: GameState;
   private minuteur: ReturnType<typeof setTimeout> | undefined;
   private ecouteurs: Array<() => void> = [];
+  /** Un panneau est ouvert : les bots attendent qu'on ait fini de lire. */
+  private suspendu = false;
 
   constructor() {
     this.etat = this.relire() ?? this.neuve();
@@ -70,6 +72,16 @@ export class TableSolo implements Table {
     this.avancer();
   }
 
+  /**
+   * Met les bots en pause pendant qu'un panneau est ouvert. En ligne on ne peut
+   * pas arrêter la table des autres ; en solo, si.
+   */
+  suspendre(oui: boolean): void {
+    this.suspendu = oui;
+    if (oui) clearTimeout(this.minuteur);
+    else this.avancer();
+  }
+
   /** Y a-t-il une partie entamée qu'on effacerait en recommençant ? */
   get entamee(): boolean {
     return this.etat.round > 1 || this.etat.players.some((p) => p.points > 0);
@@ -89,6 +101,7 @@ export class TableSolo implements Table {
   /** Fait jouer les bots, l'un après l'autre, à rythme humain. */
   private avancer(): void {
     clearTimeout(this.minuteur);
+    if (this.suspendu) return;
     const e = this.etat;
     if (e.phase === 'fin-de-manche' || e.phase === 'fin-de-partie') return;
 

@@ -318,13 +318,19 @@ test('finir sur une doublette de 2 compte aussi', () => {
 /* ---------------------------------------------------------- les échanges */
 
 /** Une manche 2 prête à démarrer, avec des rôles connus. */
-function mancheSuivante(seed: number, n = 4): GameState {
+function mancheSuivante(seed: number, n = 4, coupe = 26): GameState {
   const state = nouvelle(n, seed);
   state.finishOrder = state.order.slice();
   for (const p of state.players) p.hand = [];
   assignRoles(state);
   state.phase = 'fin-de-manche';
-  return apply(state, { type: 'manche-suivante' });
+  // Le tas de la manche écoulée : ici on le fabrique de toutes pièces.
+  state.paquet = makeDeck();
+
+  const aCouper = apply(state, { type: 'manche-suivante' });
+  assert.equal(aCouper.phase, 'coupe', 'la manche attend que le Boss coupe');
+  const boss = aCouper.players.find((x) => x.role === 'boss')!;
+  return apply(aCouper, { type: 'couper', player: boss.id, position: coupe });
 }
 
 test('le tribut désigne les cartes les plus basses', () => {
@@ -367,6 +373,60 @@ test('en donnant, ce sont les cartes les plus hautes', () => {
   assert.deepEqual(ids(frontiere.forcees), ['15♠']);
   assert.equal(frontiere.aChoisir, 1);
   assert.deepEqual(ids(frontiere.candidats).sort(), ['14♥', '14♦', '14♣'].sort());
+});
+
+test('on ne mélange plus : le paquet garde l’ordre où les cartes sont tombées', () => {
+  let state = nouvelle(4, 31);
+  state = jouerUneManche(state);
+
+  // Tout ce qui a été joué, plus la main du dernier : le tas, sans un mélange.
+  const attendu = [...ids(state.passees), ...ids(state.players.find((p) => p.hand.length > 0)!.hand)];
+  assert.equal(state.paquet.length, 52);
+  assert.deepEqual(ids(state.paquet), attendu, 'le tas est ramassé tel quel');
+});
+
+test('le Boss coupe, montre une carte et la garde', () => {
+  const aCouper = (() => {
+    const state = nouvelle(4, 12);
+    state.finishOrder = state.order.slice();
+    for (const p of state.players) p.hand = [];
+    assignRoles(state);
+    state.phase = 'fin-de-manche';
+    state.paquet = makeDeck();
+    return apply(state, { type: 'manche-suivante' });
+  })();
+
+  assert.equal(aCouper.phase, 'coupe');
+  assert.equal(aCouper.order[aCouper.turn], 'a', 'c’est au Boss de couper');
+  assert.equal(viewFor(aCouper, 'a').coupe?.taille, 52);
+  assert.equal(viewFor(aCouper, 'b').coupe, null, 'les autres ne coupent pas');
+
+  // Seul le Boss coupe, et seulement à une place qui existe.
+  assert.throws(() => apply(aCouper, { type: 'couper', player: 'b', position: 20 }), RegleViolee);
+  assert.throws(() => apply(aCouper, { type: 'couper', player: 'a', position: 0 }), RegleViolee);
+  assert.throws(() => apply(aCouper, { type: 'couper', player: 'a', position: 52 }), RegleViolee);
+
+  const apres = apply(aCouper, { type: 'couper', player: 'a', position: 20 });
+  const montree = apres.carteMontree!;
+  assert.equal(montree.id, aCouper.paquet[20].id, 'la carte montrée est celle de la coupe');
+
+  const boss = apres.players.find((p) => p.id === 'a')!;
+  assert.ok(ids(boss.hand).includes(montree.id), 'le Boss garde la carte qu’il a montrée');
+  assert.match(apres.log.join('\n'), /coupe et montre/);
+
+  // Chacun retombe sur ses treize cartes malgré la carte prise d'avance.
+  assert.deepEqual(apres.players.map((p) => p.hand.length).sort(), [13, 13, 13, 13]);
+  assert.equal(apres.paquet.length, 0, 'le paquet est distribué');
+  assert.equal(apres.phase, 'jeu');
+  assert.equal(apres.order[apres.turn], 'a', 'et le Boss ouvre');
+});
+
+test('couper à deux endroits différents ne donne pas les mêmes mains', () => {
+  const mains = (position: number) => {
+    const state = mancheSuivante(44, 4, position);
+    return state.players.map((p) => ids(p.hand).join(','));
+  };
+  assert.notDeepEqual(mains(10), mains(35), 'la coupe change la donne');
 });
 
 test('la dame de cœur ouvre la première manche', () => {
@@ -517,9 +577,7 @@ function jouerUneManche(state: GameState): GameState {
   let s = state;
   for (let coup = 0; coup < 2000; coup++) {
     if (s.phase === 'fin-de-manche') return s;
-    const acteur = s.phase === 'echange'
-      ? joueursEnAttente(s)[0]
-      : s.order[s.turn];
+    const acteur = s.order[s.turn];
     const action = botAction(viewFor(s, acteur));
     assert.ok(action, `le bot ${acteur} n'a rien à jouer (phase ${s.phase})`);
     s = apply(s, action);
@@ -533,7 +591,8 @@ test('200 parties de bots : aucune règle violée, aucune carte perdue', () => {
     let state = nouvelle(n, seed * 7919 + 1);
 
     for (let manche = 0; manche < 3; manche++) {
-      const avant = state.players.flatMap((p) => ids(p.hand));
+      // Les 52 cartes sont soit en main, soit dans le paquet qui attend la coupe.
+      const avant = [...state.players.flatMap((p) => ids(p.hand)), ...ids(state.paquet)];
       assert.equal(avant.length, 52, `manche ${manche}, graine ${seed}`);
       assert.equal(new Set(avant).size, 52, 'des cartes en double');
 

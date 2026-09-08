@@ -14,6 +14,18 @@ import { DEUX } from './cards.ts';
  *  - accélérer quand un adversaire est sur le point de sortir.
  */
 export function botAction(view: PlayerView): Action | null {
+  // Couper, c'est un geste sans information : on tranche quelque part au milieu.
+  if (view.coupe) {
+    const milieu = Math.floor(view.coupe.taille / 2);
+    const ecart = Math.floor(view.coupe.taille / 6);
+    const position = milieu + Math.floor(Math.random() * (2 * ecart + 1)) - ecart;
+    return {
+      type: 'couper',
+      player: view.me.id,
+      position: Math.min(Math.max(position, 1), view.coupe.taille - 1),
+    };
+  }
+
   if (view.phase !== 'jeu' || view.turnPlayer !== view.me.id) return null;
   if (view.legal.length === 0) return { type: 'passer', player: view.me.id };
 

@@ -25,6 +25,12 @@ let annonce = '';
 /** Un panneau ouvert par le joueur ne doit pas être balayé par le coup suivant. */
 let voileManuel = false;
 
+/** En solo, la table patiente aussi pendant qu'on lit. */
+function suspendre(oui: boolean): void {
+  voileManuel = oui;
+  if (table instanceof TableSolo) table.suspendre(oui);
+}
+
 const TITRES: Record<Role, string> = {
   boss: 'Boss',
   'sous-boss': 'Sous-Boss',
@@ -310,8 +316,9 @@ function boucle(): void {
 
   if (vue.phase === 'fin-de-partie') return voileFinDePartie(vue);
   if (vue.phase === 'fin-de-manche') return voileFinDeManche(vue);
+  if (vue.phase === 'coupe') return voileCoupe(vue);
 
-  if (vue.round > mancheAnnoncee && vue.round > 1 && vue.mesEchanges.length > 0) {
+  if (vue.round > mancheAnnoncee && vue.round > 1) {
     return voileDebutDeManche(vue);
   }
   mancheAnnoncee = Math.max(mancheAnnoncee, vue.round);
@@ -398,11 +405,55 @@ function voileEchange(vue: PlayerView): void {
  * Le récapitulatif de début de manche ne montre que vos propres échanges :
  * ce qui passe entre deux autres joueurs ne vous regarde pas.
  */
+/**
+ * La coupe du Boss. On ne mélange pas entre deux manches : couper est le seul
+ * hasard qui reste, et c'est son privilège.
+ */
+function voileCoupe(vue: PlayerView): void {
+  const boss = [vue.me, ...vue.others].find((p) => p.role === 'boss');
+
+  if (!vue.coupe) {
+    // Les autres attendent, et méritent de savoir pourquoi.
+    montrerVoile(`
+      <h2>Manche ${vue.round}</h2>
+      <p>${boss ? boss.name : 'Le Boss'} coupe le paquet — on ne mélange pas
+         entre deux manches.</p>
+    `);
+    return;
+  }
+
+  // Ne pas reconstruire le panneau sous les doigts du joueur.
+  if (document.getElementById('coupe-position')) return;
+
+  const taille = vue.coupe.taille;
+  const milieu = Math.floor(taille / 2);
+
+  montrerVoile(`
+    <h2>À vous de couper</h2>
+    <p>Les cartes n'ont pas été mélangées : elles sont dans l'ordre où elles sont
+       tombées la manche dernière. Coupez où vous le sentez — vous retournerez la
+       première carte, et vous la garderez.</p>
+    <label class="champ">Couper après <b id="coupe-compte">${milieu}</b> cartes
+      <input id="coupe-position" type="range" min="1" max="${taille - 1}" value="${milieu}">
+    </label>
+    <button class="action primaire" id="couper" type="button">Couper ici</button>
+  `);
+
+  const curseur = $('coupe-position') as HTMLInputElement;
+  curseur.addEventListener('input', () => {
+    $('coupe-compte').textContent = curseur.value;
+  });
+  $('couper').addEventListener('click', () => {
+    cacherVoile();
+    agir({ type: 'couper', player: vue.me.id, position: Number(curseur.value) });
+  });
+}
+
 function voileDebutDeManche(vue: PlayerView): void {
   mancheAnnoncee = vue.round;
   // Sans ça, le premier coup du Boss refermerait le panneau avant qu'on ait eu
   // le temps de lire ce qui a changé de main.
-  voileManuel = true;
+  suspendre(true);
   const boss = [vue.me, ...vue.others].find((p) => p.role === 'boss');
   const nomBoss = !boss ? '' : boss.id === vue.me.id ? 'Vous ouvrez' : `${boss.name} ouvre`;
 
@@ -416,14 +467,22 @@ function voileDebutDeManche(vue: PlayerView): void {
     return jeCede ? `Vous rendez ${cartes} à ${autre}.` : `${autre} vous rend ${cartes}.`;
   });
 
+  const coupee = vue.carteMontree;
+  const quiCoupe = boss?.id === vue.me.id ? 'Vous coupez et montrez' : `${boss?.name} coupe et montre`;
+  const laCoupe = coupee
+    ? `<p>${quiCoupe} ${rankLabel(coupee.rank)}${coupee.suit} — elle lui revient.</p>`
+        .replace('elle lui revient', boss?.id === vue.me.id ? 'elle vous revient' : 'elle lui revient')
+    : '';
+
   montrerVoile(`
     <h2>Manche ${vue.round}</h2>
-    <p>${phrases.map((p) => `• ${p}`).join('<br>')}</p>
+    ${laCoupe}
+    ${phrases.length ? `<p>${phrases.map((p) => `• ${p}`).join('<br>')}</p>` : ''}
     <p>${nomBoss} la manche.</p>
     <button class="action primaire" id="commencer" type="button">Jouer</button>
   `);
   $('commencer').addEventListener('click', () => {
-    voileManuel = false;
+    suspendre(false);
     cacherVoile();
     boucle();
   });
@@ -658,7 +717,7 @@ $('passer').addEventListener('click', () => {
  * l'accueil comme depuis une partie en cours.
  */
 function voileTapis(retour: () => void): void {
-  voileManuel = true;
+  suspendre(true);
   const actuel = themeCourant();
   const choix = THEMES.map((t) => `
     <button data-theme="${t.cle}" class="${t.cle === actuel.cle ? 'actif' : ''}" type="button">
@@ -684,7 +743,7 @@ function voileTapis(retour: () => void): void {
     });
   });
   $('fermer-tapis').addEventListener('click', () => {
-    voileManuel = false;
+    suspendre(false);
     retour();
   });
 }

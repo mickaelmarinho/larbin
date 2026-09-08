@@ -79,12 +79,9 @@ export function peutPasser(state: GameState, id: string): boolean {
 
 /* ------------------------------------------------------------ distribution */
 
-/** Distribue tout le paquet une carte à la fois, dans le sens des aiguilles d'une montre. */
-function deal(state: GameState, firstSeat: number): void {
-  const { items: deck, seed } = shuffle(makeDeck(), state.rng);
-  state.rng = seed;
-  for (const p of state.players) p.hand = [];
-  deck.forEach((card, i) => {
+/** Distribue un paquet une carte à la fois, dans le sens des aiguilles d'une montre. */
+function distribuer(state: GameState, paquet: Card[], firstSeat: number): void {
+  paquet.forEach((card, i) => {
     const seat = (firstSeat + i) % state.order.length;
     player(state, state.order[seat]).hand.push(card);
   });
@@ -126,6 +123,8 @@ export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
     classement: [],
     mouvements: [],
     passees: [],
+    paquet: [],
+    carteMontree: null,
     objectif: OBJECTIF_PAR_ADVERSAIRE * (seeds.length - 1),
     rng: seed >>> 0,
     log: [],
@@ -153,14 +152,17 @@ function startRound(state: GameState): void {
     p.finishedOnTwo = false;
   }
 
-  const boss = state.players.find((p) => p.role === 'boss');
-  // Le donneur tourne : à la première manche il est tiré au sort.
-  const firstSeat = boss ? state.order.indexOf(boss.id) : randomSeat(state);
-  deal(state, firstSeat);
-
+  state.carteMontree = null;
+  for (const p of state.players) p.hand = [];
   state.log.push(`--- Manche ${state.round} ---`);
 
+  const boss = state.players.find((p) => p.role === 'boss');
   if (!boss) {
+    // Première manche : là, et seulement là, on mélange vraiment.
+    const { items: melange, seed } = shuffle(makeDeck(), state.rng);
+    state.rng = seed;
+    distribuer(state, melange, randomSeat(state));
+
     // Personne n'a encore de rôle : c'est la dame de cœur qui désigne l'ouvreur.
     const ouvreur = state.players.find((p) => p.hand.some((c) => c.id === DAME_DE_COEUR))!;
     state.phase = 'jeu';
@@ -169,9 +171,42 @@ function startRound(state: GameState): void {
     return;
   }
 
-  planExchanges(state);
+  // Les manches suivantes ne se mélangent pas : le Boss coupe, et la table
+  // attend qu'il l'ait fait.
+  state.phase = 'coupe';
   state.turn = state.order.indexOf(boss.id);
+}
+
+/**
+ * Le Boss coupe le paquet où il veut, retourne la carte du dessus pour que
+ * chacun la voie, et la garde. Le reste se distribue à partir de son voisin —
+ * si bien qu'il retombe sur ses pieds avec le même nombre de cartes que les
+ * autres.
+ */
+function doCut(state: GameState, id: string, position: number): void {
+  if (state.phase !== 'coupe') fail("Ce n'est pas le moment de couper.");
+  const boss = state.players.find((p) => p.role === 'boss');
+  if (!boss || boss.id !== id) fail("C'est au Boss de couper le paquet.");
+
+  const paquet = state.paquet;
+  if (!Number.isInteger(position) || position < 1 || position >= paquet.length) {
+    fail(`La coupe se place entre 1 et ${paquet.length - 1}.`);
+  }
+
+  const coupe = [...paquet.slice(position), ...paquet.slice(0, position)];
+  const montree = coupe[0];
+  state.carteMontree = montree;
+  boss.hand.push(montree);
+  state.log.push(`${boss.name} coupe et montre ${cardLabel(montree)} : il la garde.`);
+
+  // Le voisin de gauche du Boss reçoit la première carte distribuée.
+  const apresBoss = (state.order.indexOf(boss.id) + 1) % state.order.length;
+  distribuer(state, coupe.slice(1), apresBoss);
+  state.paquet = [];
+
+  planExchanges(state);
   state.phase = 'jeu';
+  state.turn = state.order.indexOf(boss.id);
 }
 
 function randomSeat(state: GameState): number {
@@ -285,6 +320,7 @@ export function apply(state: GameState, action: Action): GameState {
   switch (action.type) {
     case 'poser': doPlay(next, action.player, action.cards); break;
     case 'passer': doPass(next, action.player); break;
+    case 'couper': doCut(next, action.player, action.position); break;
     case 'manche-suivante': doNextRound(next); break;
     case 'nouvelle-partie': doNewGame(next); break;
     default: fail('Action inconnue.');
@@ -475,6 +511,11 @@ export function pointsDeLaManche(classement: string[]): Map<string, number> {
 
 function endRound(state: GameState): void {
   const classement = assignRoles(state);
+
+  // On ramasse : les cartes tombées dans l'ordre où elles l'ont été, puis la
+  // main du dernier joueur, qu'il pose sur le tas. Rien n'est mélangé.
+  const dernier = state.players.find((p) => p.hand.length > 0);
+  state.paquet = [...state.passees, ...(dernier?.hand ?? [])];
   state.classement = classement;
   const gains = pointsDeLaManche(classement);
   for (const [id, gain] of gains) player(state, id).points += gain;
@@ -551,6 +592,10 @@ export interface PlayerView {
   classement: string[];
   /** Mes échanges de ce début de manche — les miens seulement. */
   mesEchanges: Mouvement[];
+  /** Le paquet qui attend d'être coupé, quand c'est à moi de le faire. */
+  coupe: { taille: number } | null;
+  /** La carte que le Boss a retournée en coupant : toute la table l'a vue. */
+  carteMontree: Card | null;
   /** Score à atteindre pour remporter la partie. */
   objectif: number;
   /**
@@ -585,6 +630,10 @@ export function viewFor(state: GameState, id: string): PlayerView {
       }),
     classement: state.classement.slice(),
     mesEchanges: state.mouvements.filter((m) => m.de === id || m.vers === id),
+    coupe: state.phase === 'coupe' && me.role === 'boss'
+      ? { taille: state.paquet.length }
+      : null,
+    carteMontree: state.carteMontree,
     objectif: state.objectif,
     restantes: cartesRestantes(state, id),
     legal: legalPlays(state, id),

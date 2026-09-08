@@ -53,6 +53,20 @@ function afficher(state: GameState): void {
 async function tourHumain(state: GameState, rl: readline.Interface): Promise<GameState> {
   const vue = viewFor(state, MOI);
 
+  if (vue.coupe) {
+    const taille = vue.coupe.taille;
+    console.log(`\n${C.gras}À vous de couper.${C.reset} Les cartes ne sont pas mélangées :`);
+    console.log('elles sont dans l\'ordre où elles sont tombées la manche dernière.');
+    for (;;) {
+      const rep = await rl.question(`Couper après combien de cartes ? (1 à ${taille - 1}) > `);
+      const position = Number(rep.trim());
+      if (Number.isInteger(position) && position >= 1 && position < taille) {
+        return apply(state, { type: 'couper', player: MOI, position });
+      }
+      console.log(`${C.pale}Un nombre entre 1 et ${taille - 1}.${C.reset}`);
+    }
+  }
+
   afficher(state);
   const exigence = vue.requirement
     ? `${vue.requirement.count} carte(s) au-dessus de ${rankLabel(vue.requirement.rank)}`
@@ -116,6 +130,20 @@ async function jouer(): Promise<void> {
 
   try {
     for (;;) {
+      if (state.phase === 'fin-de-partie') {
+        finDeManche(state);
+        const ordre = [...state.players].sort((a, b) => b.points - a.points);
+        console.log(`\n${C.gras}Partie terminée${C.reset}`);
+        for (const p of ordre) {
+          const nom = p.id === MOI ? 'Vous' : p.name;
+          console.log(`  ${nom.padEnd(8)} ${p.points} pt${p.points > 1 ? 's' : ''}`);
+        }
+        const suite = await rl.question('\nUne nouvelle partie ? (o/n) > ');
+        if (suite.trim().toLowerCase().startsWith('n')) break;
+        state = apply(state, { type: 'nouvelle-partie' });
+        continue;
+      }
+
       if (state.phase === 'fin-de-manche') {
         finDeManche(state);
         const suite = await rl.question('\nUne autre manche ? (o/n) > ');

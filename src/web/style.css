@@ -672,3 +672,10 @@ button.mini {
 .panneau .mention a {
   color: var(--laiton);
 }
+
+/* Le curseur de la coupe. */
+.panneau input[type="range"] {
+  width: 100%;
+  margin-top: 10px;
+  accent-color: var(--laiton);
+}
