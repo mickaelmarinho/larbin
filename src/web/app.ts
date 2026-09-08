@@ -9,6 +9,7 @@ import type { Action, Card, Rank, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
 import { TableEnLigne, TableSolo, type Table } from './table.ts';
+import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -19,6 +20,8 @@ let restantesVisibles = false;
 let poseAffichee = '';
 let minuteur: ReturnType<typeof setTimeout> | undefined;
 let annonce = '';
+/** Un panneau ouvert par le joueur ne doit pas être balayé par le coup suivant. */
+let voileManuel = false;
 
 const TITRES: Record<Role, string> = {
   boss: 'Boss',
@@ -293,7 +296,7 @@ function surChangement(): void {
 
 function boucle(): void {
   clearTimeout(minuteur);
-  if (!table) return;
+  if (!table || voileManuel) return;
 
   const enLigne = table instanceof TableEnLigne ? table : null;
   const vue = table.vue();
@@ -524,6 +527,7 @@ function voileAccueil(): void {
         <input id="code" type="text" maxlength="4" placeholder="CODE" autocapitalize="characters">
         <button class="action" id="rejoindre" type="button">Rejoindre</button>
       </div>`}
+    <button class="action" id="tapis-accueil" type="button">Choisir le tapis</button>
   `);
 
   const nom = () => {
@@ -533,6 +537,8 @@ function voileAccueil(): void {
     } catch { /* peu importe */ }
     return valeur || 'Joueur';
   };
+
+  $('tapis-accueil').addEventListener('click', () => voileTapis(voileAccueil));
 
   $('solo').addEventListener('click', () => {
     cacherVoile();
@@ -633,6 +639,48 @@ $('passer').addEventListener('click', () => {
   if (vue?.canPass) agir({ type: 'passer', player: vue.me.id });
 });
 
+/**
+ * Le choix du tapis : pur habillage, sans effet sur le jeu ni sur ce qu'on voit.
+ * `retour` dit ce qu'il faut réafficher en refermant — on peut y venir depuis
+ * l'accueil comme depuis une partie en cours.
+ */
+function voileTapis(retour: () => void): void {
+  voileManuel = true;
+  const actuel = themeCourant();
+  const choix = THEMES.map((t) => `
+    <button data-theme="${t.cle}" class="${t.cle === actuel.cle ? 'actif' : ''}" type="button">
+      <span class="apercu" style="background:${t.couleurs['--feutre']}">
+        <i style="background:${t.couleurs['--dos']}"></i>
+      </span>
+      ${t.nom}
+    </button>`).join('');
+
+  montrerVoile(`
+    <h2>Le tapis</h2>
+    <p>Choisissez votre table. Ça ne change que l'allure.</p>
+    <div class="tapis-liste">${choix}</div>
+    <button class="action primaire" id="fermer-tapis" type="button">Revenir au jeu</button>
+  `);
+
+  $('voile').querySelectorAll('[data-theme]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const theme = THEMES.find((t) => t.cle === (b as HTMLElement).dataset.theme);
+      if (!theme) return;
+      appliquerTheme(theme);
+      voileTapis(retour);
+    });
+  });
+  $('fermer-tapis').addEventListener('click', () => {
+    voileManuel = false;
+    retour();
+  });
+}
+
+$('tapis-choix').addEventListener('click', () => voileTapis(() => {
+  cacherVoile();
+  boucle();
+}));
+
 $('voir-restantes').addEventListener('click', () => {
   restantesVisibles = !restantesVisibles;
   $('voir-restantes').classList.toggle('actif', restantesVisibles);
@@ -656,6 +704,8 @@ window.addEventListener('resize', () => {
   const vue = table?.vue();
   if (vue) ajusterChevauchement(vue.me.hand.length);
 });
+
+appliquerTheme(themeCourant());
 
 const salonDemande = new URLSearchParams(location.search).get('salon');
 if (salonDemande && location.protocol !== 'file:') {

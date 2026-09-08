@@ -80,6 +80,8 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
 - [x] **Les points** — score par manche, objectif de partie, classement final.
 - [x] **Le multijoueur** — salons, invitation par lien, bots d'appoint,
       reconnexion. Sur le réseau local pour l'instant.
+- [x] **Trois tapis** — Feutre, Bordeaux, Ardoise. Pur habillage : rien qui
+      touche aux règles ni à ce qu'un joueur voit.
 - [x] **Prêt pour la mise en ligne** — image Docker, contrôle de santé, arrêt
       propre. Reste à choisir un hébergeur et à pousser le dépôt.
 
@@ -95,6 +97,7 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
     src/reseau/serveur.ts    HTTP + WebSocket, l'arbitre
     src/web/table.ts         la table vue du client : solo ou en ligne
     src/web/app.ts           l'affichage et les gestes
+    src/web/themes.ts        les habillages de la table
     src/web/style.css        le tapis, les cartes, les panneaux
     src/cli.ts               le jeu en terminal
     scripts/build.mjs        assemble Larbin.html
