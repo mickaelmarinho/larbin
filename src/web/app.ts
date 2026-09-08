@@ -8,7 +8,9 @@
 import type { Action, Card, Rank, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
-import { HOTE_JEU, TableEnLigne, TableSolo, hoteDuJeu, type Table } from './table.ts';
+import {
+  ADRESSE_PUBLIQUE, TableEnLigne, TableSolo, hoteDuJeu, type Table,
+} from './table.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -522,7 +524,7 @@ function voileAccueil(): void {
     <button class="action primaire" id="solo" type="button">Jouer contre les bots</button>
     ${horsLigne ? `<p class="mention">Ce fichier joue en solo, hors ligne.
        Pour une partie à plusieurs, ouvrez
-       <a href="https://${HOTE_JEU}" target="_blank" rel="noopener">${HOTE_JEU}</a>
+       <a href="https://${ADRESSE_PUBLIQUE}" target="_blank" rel="noopener">${ADRESSE_PUBLIQUE}</a>
        — ou lancez <b>Serveur.cmd</b> pour jouer sur votre wifi.</p>` : `
       <button class="action" id="creer" type="button">Créer un salon</button>
       <div class="rejoindre">

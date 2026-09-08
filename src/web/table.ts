@@ -145,6 +145,12 @@ const CLE_JETON = 'larbin.jeton.';
  */
 export const HOTE_JEU = 'larbin.onrender.com';
 
+/**
+ * L'adresse à donner aux joueurs : la page statique, qui s'ouvre tout de suite.
+ * Le serveur de parties, lui, se réveille en coulisse.
+ */
+export const ADRESSE_PUBLIQUE = 'larbin.vercel.app';
+
 let hoteTrouve: Promise<string> | null = null;
 
 /**

@@ -30,7 +30,7 @@ table joue pour vous plutôt que d'attendre indéfiniment.
 
 ## Jouer à distance
 
-Le jeu tourne sur **https://larbin.onrender.com**. Envoyez ce lien à vos proches,
+Le jeu se joue sur **https://larbin.vercel.app**. Envoyez ce lien à vos proches,
 ou dictez-leur le code du salon.
 
 ### Pourquoi deux hébergements
@@ -110,8 +110,9 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
       reconnexion.
 - [x] **Trois tapis** — Feutre, Bordeaux, Ardoise. Pur habillage : rien qui
       touche aux règles ni à ce qu'un joueur voit.
-- [x] **En ligne** — la page chez Vercel, instantanée ; le serveur de parties
-      chez Render, réveillé en coulisse. Chaque poussée sur `main` republie les deux.
+- [x] **En ligne** — https://larbin.vercel.app pour la page, instantanée ;
+      larbin.onrender.com pour les parties, réveillé en coulisse. Chaque poussée
+      sur `main` republie les deux.
 
 ## Comment c'est rangé
 
