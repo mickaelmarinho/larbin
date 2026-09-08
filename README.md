@@ -35,10 +35,14 @@ part de joignable. Le projet est prêt pour ça : un `Dockerfile` construit une
 image qui sert la page et arbitre les parties, sur n'importe quel hébergeur qui
 accepte Docker et laisse passer les WebSockets.
 
-**Avec Render** (offre gratuite, WebSockets acceptés) : poussez le dépôt sur
-GitHub, créez un compte, « New → Web Service », pointez-le sur le dépôt. Le
-fichier `render.yaml` dit le reste. Vous obtenez une adresse en `.onrender.com`
-à partager — le lien d'invitation d'un salon la reprendra tout seul.
+C'est déjà fait : le jeu tourne sur **https://larbin.onrender.com**. Envoyez ce
+lien à vos proches, ou dictez-leur le code du salon. Chaque poussée sur `main`
+redéploie tout seul.
+
+Pour refaire la manœuvre ailleurs : « New → Web Service » chez l'hébergeur,
+pointé sur le dépôt, type d'instance **Free**, région **Frankfurt**, contrôle de
+santé sur `/sante`. Attention, le parcours manuel de Render ne lit pas le
+`render.yaml` — il faut cocher Free à la main, sinon c'est l'offre payante.
 
 Sur l'offre gratuite le service s'endort après un moment sans visite : le
 premier joueur à ouvrir le lien patiente une trentaine de secondes, puis tout
@@ -79,11 +83,11 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
 - [x] **L'interface** — cartes, éventail, panneaux, pensée téléphone d'abord.
 - [x] **Les points** — score par manche, objectif de partie, classement final.
 - [x] **Le multijoueur** — salons, invitation par lien, bots d'appoint,
-      reconnexion. Sur le réseau local pour l'instant.
+      reconnexion.
 - [x] **Trois tapis** — Feutre, Bordeaux, Ardoise. Pur habillage : rien qui
       touche aux règles ni à ce qu'un joueur voit.
-- [x] **Prêt pour la mise en ligne** — image Docker, contrôle de santé, arrêt
-      propre. Reste à choisir un hébergeur et à pousser le dépôt.
+- [x] **En ligne** — https://larbin.onrender.com, servi par Render depuis le
+      dépôt GitHub. Chaque poussée sur `main` redéploie.
 
 ## Comment c'est rangé
 

@@ -306,6 +306,12 @@ function adresseLocale(): string | null {
 }
 
 serveur.listen(PORT, () => {
+  // Chez un hébergeur, l'adresse du réseau local est celle de sa machine
+  // interne : elle n'aide personne et prête à confusion dans les journaux.
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`Le Larbin écoute sur le port ${PORT}.`);
+    return;
+  }
   const ip = adresseLocale();
   console.log(`Le Larbin est servi sur http://localhost:${PORT}`);
   if (ip) console.log(`Depuis le téléphone (même wifi) : http://${ip}:${PORT}`);
