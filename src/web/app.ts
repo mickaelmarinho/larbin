@@ -8,7 +8,7 @@
 import type { Action, Card, Rank, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
-import { TableEnLigne, TableSolo, type Table } from './table.ts';
+import { TableEnLigne, TableSolo, hoteDuJeu, type Table } from './table.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -556,7 +556,14 @@ function voileAccueil(): void {
 function voileSalon(en: TableEnLigne): void {
   const salon = en.salon();
   if (!salon) {
-    montrerVoile('<h2>Connexion…</h2><p>On frappe à la porte du salon.</p>');
+    // Le serveur s'endort après un moment sans visite. Mieux vaut le dire que
+    // de laisser le joueur devant un écran qui ne bouge pas.
+    const secondes = en.attente();
+    const explication = secondes < 4
+      ? 'On frappe à la porte du salon.'
+      : `Le serveur se réveille — il fait la sieste quand personne ne joue.
+         Comptez une trentaine de secondes. (${secondes} s)`;
+    montrerVoile(`<h2>Connexion…</h2><p>${explication}</p>`);
     return;
   }
 
@@ -706,6 +713,10 @@ window.addEventListener('resize', () => {
 });
 
 appliquerTheme(themeCourant());
+
+// On cherche le serveur de parties dès le premier instant : s'il dort ailleurs,
+// il se réveille pendant que le joueur entre son nom.
+void hoteDuJeu();
 
 const salonDemande = new URLSearchParams(location.search).get('salon');
 if (salonDemande && location.protocol !== 'file:') {

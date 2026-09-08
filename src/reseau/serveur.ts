@@ -54,10 +54,16 @@ const TYPES: Record<string, string> = {
 const serveur = http.createServer(async (req, res) => {
   const demande = decodeURIComponent((req.url ?? '/').split('?')[0]);
 
-  // Les hébergeurs interrogent cette adresse pour savoir si le jeu répond.
+  // Les hébergeurs interrogent cette adresse pour savoir si le jeu répond — et
+  // la page, quand elle est servie ailleurs, s'en sert pour réveiller le serveur
+  // et savoir quand il est debout. D'où l'ouverture aux autres origines : c'est
+  // un état public, sans rien de personnel.
   if (demande === '/sante') {
-    res.writeHead(200, { 'Content-Type': 'application/json' })
-      .end(JSON.stringify({ ok: true, salons: salons.size, connexions: connexions.size }));
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-store',
+    }).end(JSON.stringify({ ok: true, salons: salons.size, connexions: connexions.size }));
     return;
   }
 

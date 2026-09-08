@@ -30,23 +30,47 @@ table joue pour vous plutôt que d'attendre indéfiniment.
 
 ## Jouer à distance
 
-Pour jouer sans être sous le même toit, il faut que le serveur tourne quelque
-part de joignable. Le projet est prêt pour ça : un `Dockerfile` construit une
-image qui sert la page et arbitre les parties, sur n'importe quel hébergeur qui
-accepte Docker et laisse passer les WebSockets.
+Le jeu tourne sur **https://larbin.onrender.com**. Envoyez ce lien à vos proches,
+ou dictez-leur le code du salon.
 
-C'est déjà fait : le jeu tourne sur **https://larbin.onrender.com**. Envoyez ce
-lien à vos proches, ou dictez-leur le code du salon. Chaque poussée sur `main`
-redéploie tout seul.
+### Pourquoi deux hébergements
 
-Pour refaire la manœuvre ailleurs : « New → Web Service » chez l'hébergeur,
-pointé sur le dépôt, type d'instance **Free**, région **Frankfurt**, contrôle de
-santé sur `/sante`. Attention, le parcours manuel de Render ne lit pas le
-`render.yaml` — il faut cocher Free à la main, sinon c'est l'offre payante.
+Render endort le service après un quart d'heure sans visite : le premier à
+ouvrir le lien attend une trentaine de secondes que la machine se lève. Comme
+cette attente a lieu pendant le chargement de la page, aucun code ne peut
+l'adoucir — elle se passe avant que le jeu existe.
 
-Sur l'offre gratuite le service s'endort après un moment sans visite : le
-premier joueur à ouvrir le lien patiente une trentaine de secondes, puis tout
-est normal.
+D'où le partage du travail :
+
+- **la page** est un fichier statique, servi instantanément par un hébergeur qui
+  ne dort jamais (Vercel) ;
+- **le serveur de parties** tourne sur Render, et la page le réveille dès son
+  chargement, pendant que le joueur entre son nom.
+
+L'attente existe toujours, mais plus personne ne la voit. Et si le serveur n'est
+pas encore debout au moment de créer un salon, la page le dit au lieu de rester
+figée.
+
+La page trouve son serveur toute seule : elle demande `/sante` à sa propre
+adresse, et si personne ne répond, elle s'adresse à `HOTE_JEU`
+(`src/web/table.ts`). Les deux adresses restent donc jouables — celle de Vercel
+comme celle de Render en direct.
+
+### Mettre la page en ligne
+
+`vercel.json` fait le nécessaire : Vercel lance `npm run build` et ne publie que
+le dossier `public/`, qui ne contient que la page. Le reste du dépôt n'est pas
+exposé.
+
+Sur vercel.com : **Add New → Project**, choisissez le dépôt `larbin`, laissez les
+réglages détectés, **Deploy**. Chaque poussée sur `main` republie.
+
+### Refaire le serveur ailleurs
+
+« New → Web Service » chez l'hébergeur, pointé sur le dépôt, type d'instance
+**Free**, région **Frankfurt**, contrôle de santé sur `/sante`. Attention, le
+parcours manuel de Render ne lit pas le `render.yaml` — il faut cocher Free à la
+main, sinon c'est l'offre payante.
 
 Fly.io, Railway, Koyeb ou un petit VPS conviennent aussi — c'est la même image.
 En local :
@@ -86,8 +110,8 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
       reconnexion.
 - [x] **Trois tapis** — Feutre, Bordeaux, Ardoise. Pur habillage : rien qui
       touche aux règles ni à ce qu'un joueur voit.
-- [x] **En ligne** — https://larbin.onrender.com, servi par Render depuis le
-      dépôt GitHub. Chaque poussée sur `main` redéploie.
+- [x] **En ligne** — la page chez Vercel, instantanée ; le serveur de parties
+      chez Render, réveillé en coulisse. Chaque poussée sur `main` republie les deux.
 
 ## Comment c'est rangé
 
@@ -107,7 +131,8 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
     scripts/build.mjs        assemble Larbin.html
     test/                    règles, points, salons
     Dockerfile               l'image de déploiement
-    render.yaml              la configuration d'un hébergeur possible
+    render.yaml              la configuration du serveur chez Render
+    vercel.json              la configuration de la page chez Vercel
 
 ## Le principe qui tient tout
 

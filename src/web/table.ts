@@ -136,6 +136,44 @@ export class TableSolo implements Table {
 
 const CLE_JETON = 'larbin.jeton.';
 
+/**
+ * Le serveur de parties, quand la page est servie ailleurs.
+ *
+ * La page peut vivre sur un hébergement statique — instantané, jamais endormi —
+ * pendant que l'arbitre des parties tourne ici. C'est ce qui permet d'afficher
+ * le jeu tout de suite et de réveiller le serveur en coulisse.
+ */
+const HOTE_JEU = 'larbin.onrender.com';
+
+let hoteTrouve: Promise<string> | null = null;
+
+/**
+ * Où joindre le serveur de parties. Si la page est servie par le serveur
+ * lui-même — en local, ou en ouvrant son adresse en direct — on reste sur
+ * place. Sinon on va le chercher, et on le réveille au passage.
+ */
+export function hoteDuJeu(): Promise<string> {
+  hoteTrouve ??= (async () => {
+    try {
+      const chezNous = await fetch('/sante', { cache: 'no-store' });
+      // On vérifie la réponse, pas seulement le code : un hébergeur statique
+      // qui renvoie la page d'accueil à toutes les adresses répondrait « 200 ».
+      const info = chezNous.ok ? await chezNous.json().catch(() => null) : null;
+      if (info?.ok === true) return location.host;
+    } catch {
+      // Page ouverte depuis un fichier, ou servie par un hébergement statique.
+    }
+    reveiller();
+    return HOTE_JEU;
+  })();
+  return hoteTrouve;
+}
+
+/** Un appel suffit à sortir le serveur de sa sieste ; la réponse importe peu. */
+export function reveiller(): void {
+  fetch(`https://${HOTE_JEU}/sante`, { cache: 'no-store' }).catch(() => {});
+}
+
 export class TableEnLigne implements Table {
   readonly mode = 'en-ligne';
   moi = '';
@@ -147,10 +185,28 @@ export class TableEnLigne implements Table {
   private ecouteurs: Array<() => void> = [];
   private ferme = false;
   private code: string;
+  private depuis = Date.now();
+  private battement: ReturnType<typeof setInterval> | undefined;
 
   constructor(private nom: string, code: string) {
     this.code = code.toUpperCase();
     this.brancher();
+    // Tant qu'on n'est pas entré, on redonne la main à l'affichage chaque
+    // seconde : c'est ce qui permet de dire au joueur que le serveur se réveille
+    // plutôt que de le laisser devant un écran figé.
+    this.battement = setInterval(() => {
+      if (this.etatSalon) {
+        clearInterval(this.battement);
+        this.battement = undefined;
+        return;
+      }
+      this.prevenir();
+    }, 1000);
+  }
+
+  /** Depuis combien de secondes on attend d'entrer dans le salon. */
+  attente(): number {
+    return this.etatSalon ? 0 : Math.round((Date.now() - this.depuis) / 1000);
   }
 
   vue(): PlayerView | null {
@@ -192,6 +248,7 @@ export class TableEnLigne implements Table {
 
   quitter(): void {
     this.ferme = true;
+    clearInterval(this.battement);
     this.ws?.close();
   }
 
@@ -203,9 +260,12 @@ export class TableEnLigne implements Table {
     for (const cb of this.ecouteurs) cb();
   }
 
-  private brancher(): void {
-    const schema = location.protocol === 'https:' ? 'wss' : 'ws';
-    this.ws = new WebSocket(`${schema}://${location.host}`);
+  private async brancher(): Promise<void> {
+    const hote = await hoteDuJeu();
+    if (this.ferme) return;
+    // Chiffré partout, sauf quand on joue chez soi en clair sur le réseau local.
+    const chiffre = location.protocol === 'https:' || hote !== location.host;
+    this.ws = new WebSocket(`${chiffre ? 'wss' : 'ws'}://${hote}`);
 
     this.ws.addEventListener('open', () => {
       this.dire({

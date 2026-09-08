@@ -5,13 +5,14 @@
  *   node scripts/build.mjs [--watch]
  */
 import { build, context } from 'esbuild';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const racine = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const src = (p) => path.join(racine, 'src', 'web', p);
 const sortie = path.join(racine, 'Larbin.html');
+const publie = path.join(racine, 'public');
 
 const optionsEsbuild = {
   entryPoints: [src('app.ts')],
@@ -37,8 +38,14 @@ async function assembler() {
     .replace('/*SCRIPT*/', () => paquet.trim());
 
   await writeFile(sortie, page, 'utf8');
+
+  // Le même fichier, seul dans un dossier : c'est tout ce qu'un hébergement
+  // statique doit voir. Le reste du dépôt n'a rien à faire en ligne.
+  await mkdir(publie, { recursive: true });
+  await writeFile(path.join(publie, 'index.html'), page, 'utf8');
+
   const ko = (Buffer.byteLength(page) / 1024).toFixed(0);
-  console.log(`Larbin.html assemblé — ${ko} Ko`);
+  console.log(`Larbin.html assemblé — ${ko} Ko (et public/index.html pour l'hébergement)`);
 }
 
 if (process.argv.includes('--watch')) {
