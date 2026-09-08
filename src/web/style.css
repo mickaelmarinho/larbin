@@ -668,3 +668,7 @@ button.mini {
   border-radius: 3px;
   border: 1px solid #00000055;
 }
+
+.panneau .mention a {
+  color: var(--laiton);
+}

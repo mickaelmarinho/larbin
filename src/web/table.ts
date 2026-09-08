@@ -143,7 +143,7 @@ const CLE_JETON = 'larbin.jeton.';
  * pendant que l'arbitre des parties tourne ici. C'est ce qui permet d'afficher
  * le jeu tout de suite et de réveiller le serveur en coulisse.
  */
-const HOTE_JEU = 'larbin.onrender.com';
+export const HOTE_JEU = 'larbin.onrender.com';
 
 let hoteTrouve: Promise<string> | null = null;
 
