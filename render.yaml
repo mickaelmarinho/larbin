@@ -1,0 +1,15 @@
+# Déploiement sur Render (https://render.com), qui a une offre gratuite et
+# laisse passer les WebSockets. Connectez le dépôt, Render lit ce fichier.
+#
+# Sur l'offre gratuite le service s'endort après un moment d'inactivité :
+# le premier joueur à ouvrir le lien attend une trentaine de secondes, puis
+# tout est normal.
+services:
+  - type: web
+    name: larbin
+    runtime: docker
+    plan: free
+    healthCheckPath: /sante
+    envVars:
+      - key: NODE_ENV
+        value: production

@@ -98,11 +98,17 @@ function rendreAdversaires(vue: PlayerView): void {
     const actif = vue.turnPlayer === o.id && vue.phase === 'jeu';
     const dos = Math.min(3, o.count);
     // Une série ne fait qu'un tour : savoir qui a déjà parlé change tout.
-    const etatTexte = o.count === 0
-      ? `sorti ${o.finishedAt! + 1}${o.finishedAt === 0 ? 'er' : 'e'}`
+    // Et quand la table attend quelqu'un qui a décroché, il faut le dire.
+    const etatTexte = !o.connecte ? 'déconnecté'
+      : o.count === 0 ? `sorti ${o.finishedAt! + 1}${o.finishedAt === 0 ? 'er' : 'e'}`
       : o.passed ? 'a passé'
       : o.aAgi ? 'a joué' : '';
-    return `<div class="joueur ${actif ? 'actif' : ''} ${o.count === 0 ? 'sorti' : ''}">
+    const classes = [
+      actif ? 'actif' : '',
+      o.count === 0 ? 'sorti' : '',
+      o.connecte ? '' : 'absent',
+    ].join(' ');
+    return `<div class="joueur ${classes}">
       <div class="dos-pile">
         ${'<div class="dos"></div>'.repeat(dos)}
         ${o.count > 0 ? `<span class="compte">${o.count}</span>` : ''}
@@ -472,13 +478,21 @@ function voileFinDePartie(vue: PlayerView): void {
       <span class="gain">${p.points} pt${p.points > 1 ? 's' : ''}</span>
     </li>`).join('');
 
+  // Remettre les scores à zéro engage toute la table : en ligne, c'est à l'hôte.
+  const enLigne = table instanceof TableEnLigne ? table : null;
+  const jeRelance = !enLigne
+    || (enLigne.salon()?.sieges.find((s) => s.id === enLigne.moi)?.hote ?? false);
+
   montrerVoile(`
     <h2>Partie terminée</h2>
     <p>${verdict}</p>
     <ul class="classement">${lignes}</ul>
-    <button class="action primaire" id="rejouer" type="button">Nouvelle partie</button>
+    ${jeRelance
+      ? '<button class="action primaire" id="rejouer" type="button">Nouvelle partie</button>'
+      : '<p class="mention">L’hôte relancera une partie quand vous voudrez.</p>'}
   `);
-  $('rejouer').addEventListener('click', () => {
+
+  $('rejouer')?.addEventListener('click', () => {
     if (table instanceof TableSolo) {
       cacherVoile();
       mancheAnnoncee = 0;

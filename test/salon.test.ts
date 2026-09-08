@@ -89,6 +89,33 @@ test('chacun ne reçoit que sa propre main', () => {
   assert.notEqual(salon.vuePour(aurelie.id)!.me.id, mickael.id);
 });
 
+test('la table voit qui a décroché', () => {
+  const salon = tableDe(2);
+  salon.demarrer();
+  const [mickael, aurelie] = salon.places;
+
+  assert.ok(salon.vuePour(mickael.id)!.others.every((o) => o.connecte));
+
+  aurelie.connecte = false;
+  const vue = salon.vuePour(mickael.id)!;
+  assert.equal(vue.others.find((o) => o.id === aurelie.id)!.connecte, false);
+  assert.ok(
+    vue.others.filter((o) => o.id !== aurelie.id).every((o) => o.connecte),
+    'les bots et les autres restent présents',
+  );
+});
+
+test('seul l’hôte relance une partie', () => {
+  const salon = tableDe(2);
+  salon.demarrer();
+  const [hote, invite] = salon.places;
+
+  assert.throws(() => salon.jouer(invite.id, { type: 'nouvelle-partie' }), RegleViolee);
+  salon.jouer(hote.id, { type: 'nouvelle-partie' });
+  assert.equal(salon.etat!.round, 1);
+  assert.ok(salon.etat!.players.every((p) => p.points === 0));
+});
+
 test('le jeton ramène à sa place, et à personne d’autre', () => {
   const salon = tableDe(2);
   const mickael = salon.parJeton('jeton-m');

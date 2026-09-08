@@ -66,8 +66,18 @@ export class Salon {
     };
   }
 
+  /**
+   * La vue du moteur, annotée de qui est encore au bout du fil. Le moteur ignore
+   * tout des connexions ; c'est le salon qui sait, et les autres joueurs ont le
+   * droit de savoir pourquoi la table attend.
+   */
   vuePour(id: string): PlayerView | null {
-    return this.etat ? viewFor(this.etat, id) : null;
+    if (!this.etat) return null;
+    const vue = viewFor(this.etat, id);
+    for (const autre of vue.others) {
+      autre.connecte = this.place(autre.id)?.connecte ?? true;
+    }
+    return vue;
   }
 
   /* ------------------------------------------------------------ places */
@@ -132,6 +142,10 @@ export class Salon {
     if (!this.etat) throw new RegleViolee("La partie n'a pas commencé.");
     if ('player' in action && action.player !== id) {
       throw new RegleViolee("On ne joue pas à la place d'un autre.");
+    }
+    // Remettre les scores à zéro engage toute la table : c'est à l'hôte.
+    if (action.type === 'nouvelle-partie' && this.hote !== id) {
+      throw new RegleViolee("Seul l'hôte relance une partie.");
     }
     this.etat = apply(this.etat, action);
     this.derniereActivite = Date.now();

@@ -624,6 +624,8 @@ export interface PlayerView {
     id: string; name: string; count: number; role: Role | null;
     passed: boolean; aAgi: boolean; finishedAt: number | null; isBot: boolean; points: number;
     finishedOnTwo: boolean;
+    /** Faux quand le joueur a décroché. Le moteur l'ignore ; le serveur le renseigne. */
+    connecte: boolean;
   }>;
   /** Classement de la manche écoulée, vide tant qu'elle n'est pas finie. */
   classement: string[];
@@ -666,7 +668,7 @@ export function viewFor(state: GameState, id: string): PlayerView {
         return {
           id: o.id, name: o.name, count: o.hand.length, role: o.role,
           passed: o.passed, aAgi: o.aAgi, finishedAt: o.finishedAt, isBot: o.isBot, points: o.points,
-          finishedOnTwo: o.finishedOnTwo,
+          finishedOnTwo: o.finishedOnTwo, connecte: true,
         };
       }),
     classement: state.classement.slice(),

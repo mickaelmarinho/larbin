@@ -589,3 +589,16 @@ button.mini {
   opacity: .38;
   filter: saturate(.6);
 }
+
+/* Un joueur qui a décroché : la table l'attend, autant que ça se voie. */
+.joueur.absent {
+  opacity: .6;
+}
+
+.joueur.absent .etat {
+  color: #e0a08a;
+}
+
+.joueur.absent .dos {
+  filter: grayscale(.7);
+}

@@ -22,12 +22,39 @@ local (`http://192.168.1.22:5177` par exemple).
 2. Envoyez le lien affiché — ou dictez le code de quatre lettres.
 3. Complétez la table avec des bots si vous n'êtes pas assez, puis lancez.
 
-Tout le monde doit être sur le même wifi. Pour jouer à distance, il faudra
-héberger le serveur quelque part : c'est la prochaine étape.
+Tout le monde doit être sur le même wifi. Pour jouer à distance, voir plus bas.
 
 Une déconnexion n'est pas grave : le navigateur retient votre place et vous la
 rend en rouvrant le lien. Si vous ne revenez pas au bout de 25 secondes, la
 table joue pour vous plutôt que d'attendre indéfiniment.
+
+## Jouer à distance
+
+Pour jouer sans être sous le même toit, il faut que le serveur tourne quelque
+part de joignable. Le projet est prêt pour ça : un `Dockerfile` construit une
+image qui sert la page et arbitre les parties, sur n'importe quel hébergeur qui
+accepte Docker et laisse passer les WebSockets.
+
+**Avec Render** (offre gratuite, WebSockets acceptés) : poussez le dépôt sur
+GitHub, créez un compte, « New → Web Service », pointez-le sur le dépôt. Le
+fichier `render.yaml` dit le reste. Vous obtenez une adresse en `.onrender.com`
+à partager — le lien d'invitation d'un salon la reprendra tout seul.
+
+Sur l'offre gratuite le service s'endort après un moment sans visite : le
+premier joueur à ouvrir le lien patiente une trentaine de secondes, puis tout
+est normal.
+
+Fly.io, Railway, Koyeb ou un petit VPS conviennent aussi — c'est la même image.
+En local :
+
+```
+docker build -t larbin .
+docker run -p 5177:5177 larbin
+```
+
+Le serveur lit la variable `PORT` si l'hébergeur en impose une, répond sur
+`/sante` pour les contrôles automatiques, et prévient les joueurs avant de
+redémarrer.
 
 ## Développer
 
@@ -53,7 +80,8 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
 - [x] **Les points** — score par manche, objectif de partie, classement final.
 - [x] **Le multijoueur** — salons, invitation par lien, bots d'appoint,
       reconnexion. Sur le réseau local pour l'instant.
-- [ ] **La mise en ligne** — pour jouer sans être sous le même toit.
+- [x] **Prêt pour la mise en ligne** — image Docker, contrôle de santé, arrêt
+      propre. Reste à choisir un hébergeur et à pousser le dépôt.
 
 ## Comment c'est rangé
 
@@ -71,6 +99,8 @@ l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique
     src/cli.ts               le jeu en terminal
     scripts/build.mjs        assemble Larbin.html
     test/                    règles, points, salons
+    Dockerfile               l'image de déploiement
+    render.yaml              la configuration d'un hébergeur possible
 
 ## Le principe qui tient tout
 

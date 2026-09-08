@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 
 import { RegleViolee } from '../engine/game.ts';
-import { codeValide, type VersClient, type VersServeur } from './protocole.ts';
+import { codeDeSalon, codeValide, type VersClient, type VersServeur } from './protocole.ts';
 import { Salon } from './salon.ts';
 
 const racine = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
@@ -28,6 +28,13 @@ const REFLEXION = 800;
 const PATIENCE_DECONNEXION = 25_000;
 /** Un salon vide finit par être oublié. */
 const OUBLI = 2 * 60 * 60 * 1000;
+
+/* Garde-fous, pour le jour où l'adresse sera publique. */
+const MAX_SALONS = 300;
+const TAILLE_MAX_MESSAGE = 16 * 1024;
+/** Un joueur clique ; il ne mitraille pas. Au-delà, on ferme. */
+const MESSAGES_MAX = 60;
+const FENETRE_MESSAGES = 5_000;
 
 const salons = new Map<string, Salon>();
 /** À quel salon et à quelle place appartient chaque connexion ouverte. */
@@ -46,6 +53,14 @@ const TYPES: Record<string, string> = {
 
 const serveur = http.createServer(async (req, res) => {
   const demande = decodeURIComponent((req.url ?? '/').split('?')[0]);
+
+  // Les hébergeurs interrogent cette adresse pour savoir si le jeu répond.
+  if (demande === '/sante') {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+      .end(JSON.stringify({ ok: true, salons: salons.size, connexions: connexions.size }));
+    return;
+  }
+
   const relatif = demande === '/' ? 'Larbin.html' : demande.replace(/^\/+/, '');
   const fichier = path.join(racine, relatif);
 
@@ -66,7 +81,16 @@ const serveur = http.createServer(async (req, res) => {
 
 /* ------------------------------------------------------------ WebSocket */
 
-const wss = new WebSocketServer({ server: serveur });
+const wss = new WebSocketServer({ server: serveur, maxPayload: TAILLE_MAX_MESSAGE });
+
+/** Un code de salon libre. La collision est improbable, pas impossible. */
+function codeLibre(): string {
+  for (let essai = 0; essai < 50; essai++) {
+    const code = codeDeSalon();
+    if (!salons.has(code)) return code;
+  }
+  throw new RegleViolee('Trop de salons ouverts, réessayez dans un moment.');
+}
 
 function envoyer(ws: WebSocket, message: VersClient): void {
   if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(message));
@@ -125,7 +149,11 @@ function traiter(ws: WebSocket, message: VersServeur): void {
 
     let salon: Salon;
     if (!demande) {
-      salon = new Salon();
+      if (salons.size >= MAX_SALONS) {
+        envoyer(ws, { type: 'erreur', message: 'Trop de tables ouvertes. Réessayez dans un moment.' });
+        return;
+      }
+      salon = new Salon(codeLibre());
       salons.set(salon.code, salon);
     } else {
       if (!codeValide(demande)) {
@@ -214,7 +242,19 @@ function exigerHote(salon: Salon, id: string): void {
 }
 
 wss.on('connection', (ws) => {
+  // Un joueur clique de temps en temps ; un script, non. On coupe les seconds.
+  let recents: number[] = [];
+
   ws.on('message', (donnees) => {
+    const maintenant = Date.now();
+    recents = recents.filter((t) => maintenant - t < FENETRE_MESSAGES);
+    recents.push(maintenant);
+    if (recents.length > MESSAGES_MAX) {
+      envoyer(ws, { type: 'erreur', message: 'Trop de messages d’un coup.' });
+      ws.close();
+      return;
+    }
+
     let message: VersServeur;
     try {
       message = JSON.parse(String(donnees)) as VersServeur;
@@ -270,3 +310,17 @@ serveur.listen(PORT, () => {
   console.log(`Le Larbin est servi sur http://localhost:${PORT}`);
   if (ip) console.log(`Depuis le téléphone (même wifi) : http://${ip}:${PORT}`);
 });
+
+// Les hébergeurs redémarrent le service à chaque mise à jour : on prévient les
+// joueurs plutôt que de couper le fil sans un mot.
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    for (const ws of connexions.keys()) {
+      envoyer(ws, { type: 'erreur', message: 'Le serveur redémarre — rouvrez le lien dans un instant.' });
+      ws.close();
+    }
+    for (const minuteur of minuteurs.values()) clearTimeout(minuteur);
+    serveur.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 3000).unref();
+  });
+}
