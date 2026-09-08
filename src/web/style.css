@@ -14,6 +14,8 @@
   --creme: #f7f1e3;
   --encre: #1b211f;
   --rouge: #b5342b;
+  /* Le cœur de l'emblème doit tenir sur les trois tapis, bordeaux compris. */
+  --rouge-embleme: #d8453a;
   --laiton: #d9a441;
   --laiton-sombre: #a97b26;
   --texte: #e8e2d4;
@@ -679,3 +681,32 @@ button.mini {
   margin-top: 10px;
   accent-color: var(--laiton);
 }
+
+/* L'emblème en tête d'accueil : la dame de cœur et la couronne. */
+.panneau .embleme {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 0 0 4px;
+  opacity: .95;
+}
+
+/* Un lien discret, pour ce qui se lit sans encombrer. */
+button.lien {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: var(--texte-pale);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+button.lien:hover { color: var(--texte); }
+
+.panneau sup { font-size: .7em; }

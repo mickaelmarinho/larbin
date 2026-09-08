@@ -572,11 +572,50 @@ function voileFinDePartie(vue: PlayerView): void {
 
 /* ------------------------------------------------- accueil et salon */
 
+/** La marque du jeu : la dame de cœur, et la couronne qu'on se dispute. */
+const EMBLEME = `<svg class="embleme" viewBox="0 0 64 64" aria-hidden="true">
+  <path d="M18 24V13l7.5 6L32 9l6.5 10L46 13v11z" fill="var(--laiton)"/>
+  <path d="M32 54C12 41 14 27 24 27c4.2 0 7 3.2 8 5.4 1-2.2 3.8-5.4 8-5.4 10 0 12 14-8 27z"
+        fill="var(--rouge-embleme)"/>
+</svg>`;
+
+/**
+ * D'où vient le jeu. Rangé derrière un lien : qui veut lire lit, les autres
+ * jouent sans avoir eu à contourner un pavé de texte.
+ */
+function voileHistoire(retour: () => void): void {
+  voileManuel = true;
+  montrerVoile(`
+    <h2>D'où vient le Larbin</h2>
+    <p>Le jeu appartient à une famille née en Asie : les <b>jeux d'escalade</b>,
+       où l'on monte, où l'on monte encore, et où le premier débarrassé l'emporte.
+       On lui reconnaît deux grands parents — au Japon le <b>Dai Hin Min</b>,
+       « le grand pauvre », et son miroir le <b>Daifugō</b>, « le grand riche » ;
+       en Chine le <b>Zheng Shangyou</b>, « la course vers le haut ».</p>
+    <p>Ce qui fait la famille, ce n'est pas la mécanique des cartes. C'est
+       l'<b>inversion sociale</b> : le dernier sert le premier, et tout se rejoue
+       à la manche suivante. Les noms japonais le disent mieux que les nôtres.</p>
+    <p>Le jeu gagne l'Occident dans la seconde moitié du XX<sup>e</sup> siècle et
+       prend chez nous des noms de table — Président, Trou du cul, Larbin —
+       chacun avec ses règles maison, transmises de bouche à oreille sans jamais
+       être écrites.</p>
+    <p>Celles-ci sont les vôtres : une série ne fait qu'un tour, le 2 coupe net,
+       on ne mélange pas entre deux manches, et c'est la dame de cœur qui ouvre
+       la toute première partie.</p>
+    <button class="action primaire" id="fermer-histoire" type="button">Revenir</button>
+  `);
+  $('fermer-histoire').addEventListener('click', () => {
+    voileManuel = false;
+    retour();
+  });
+}
+
 function voileAccueil(): void {
   const horsLigne = location.protocol === 'file:';
   const nomConnu = localStorage.getItem('larbin.nom') ?? '';
 
   montrerVoile(`
+    ${EMBLEME}
     <h2>Le Larbin</h2>
     <p>Contre trois bots, ou avec vos proches — chacun sur son téléphone.</p>
     <label class="champ">Votre nom
@@ -593,6 +632,7 @@ function voileAccueil(): void {
         <button class="action" id="rejoindre" type="button">Rejoindre</button>
       </div>`}
     <button class="action" id="tapis-accueil" type="button">Choisir le tapis</button>
+    <button class="lien" id="histoire" type="button">D'où vient ce jeu ?</button>
   `);
 
   const nom = () => {
@@ -604,6 +644,7 @@ function voileAccueil(): void {
   };
 
   $('tapis-accueil').addEventListener('click', () => voileTapis(voileAccueil));
+  $('histoire').addEventListener('click', () => voileHistoire(voileAccueil));
 
   $('solo').addEventListener('click', () => {
     cacherVoile();
