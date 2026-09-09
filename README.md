@@ -1,9 +1,12 @@
 # Le Larbin
 
-Version en ligne du **Larbin**, variante maison du Président / Trou du cul.
-Projet plaisir : y jouer à quatre ou six entre proches, chacun sur son téléphone.
+Version en ligne du **Larbin**, variante maison du Président / Trou du cul :
+y jouer à quatre ou six, chacun sur son téléphone.
 
-Les règles appliquées sont détaillées dans [REGLES.md](REGLES.md).
+Le jeu est en ligne sur **[larbin.vercel.app](https://larbin.vercel.app)**, et
+ses règles sont expliquées sur [/regles](https://larbin.vercel.app/regles) pour
+qui arrive de nulle part. La traduction technique — ce que le moteur applique
+exactement — reste dans [REGLES.md](REGLES.md).
 
 ## Jouer seul, tout de suite
 
