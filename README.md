@@ -103,6 +103,28 @@ npm run jouer   # le banc d'essai en terminal
 Seule l'interface passe par un assemblage : esbuild réunit le moteur et
 l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique.
 
+### Toucher au bot
+
+L'intuition se trompe beaucoup sur ce jeu, et une mesure isolée ment volontiers.
+Toute modification du bot passe donc par l'arène :
+
+```
+node scripts/arene.mjs                  # le candidat contre le bot en place
+node scripts/arene.mjs 2000 --series=4  # plus long, plus sûr
+node scripts/arene.mjs --calibrage      # le bot contre sa copie : doit être indécis
+```
+
+On écrit l'idée dans `src/engine/bot-candidat.ts` — une copie conforme de
+`bot.ts` — et l'arène tranche. Elle joue plusieurs séries sur des donnes
+indépendantes, fait tourner les places autour de la table, et refuse de conclure
+quand l'écart tient dans la marge d'erreur.
+
+Il faut la croire quand elle dit « indécis ». Les trois principes actuellement
+en gras dans `bot.ts` valent **+3 points de pourcentage** sur près de 15 000
+parties — alors que la toute première série en annonçait +4,5. La dispersion
+entre séries est presque le double de la marge binomiale : une seule série ne
+prouve rien.
+
 ## Où en est le chantier
 
 - [x] **Le moteur de règles** — complet, testé, sans dépendance.

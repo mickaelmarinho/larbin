@@ -3,29 +3,16 @@ import type { PlayerView } from './game.ts';
 import { DEUX } from './cards.ts';
 
 /**
- * Adversaire artificiel. Pas de calcul d'arbre : les réflexes d'un joueur
- * correct, assez pour que les parties en solo soient plaisantes.
+ * Le banc d'essai du bot : copie conforme de bot.ts, à modifier librement.
  *
- * Ses principes, tous dictés par la règle du tour unique :
+ * On y tente une idée, puis on la soumet à l'arène :
  *
- *  - se débarrasser d'abord des petites cartes, garder les grosses pour reprendre ;
- *  - ne pas casser une paire ou un brelan pour un point de rien ;
- *  - garder les 2 pour la fin... mais surtout ne pas finir dessus (Larbin d'office) ;
- *  - compter ce qui est déjà tombé, pour savoir ce qui peut encore le battre ;
- *  - **estimer ses chances de tenir la série** plutôt que raisonner en tout ou
- *    rien : une série ne faisant qu'un tour, tenir jusqu'au bout revient à
- *    ouvrir la suivante — donc à choisir le format et à se délester ;
- *  - **compter les prises de parole qui lui restent** : six cartes isolées
- *    demandent six tours, trois paires n'en demandent que trois ;
- *  - **ouvrir gros quand c'est gratuit** : trois 4 d'un coup laissent peu de
- *    monde répondre et vident la main trois fois plus vite ;
- *  - accélérer quand un adversaire est sur le point de sortir.
+ *   node scripts/arene.mjs                  # trois séries contre le bot en place
+ *   node scripts/arene.mjs 2000 --series=4  # plus long, plus sûr
+ *   node scripts/arene.mjs --calibrage      # le témoin contre lui-même : doit être indécis
  *
- * Les trois principes en gras ont été ajoutés après mesure : `node
- * scripts/arene.mjs` les crédite de +3 points de pourcentage de victoires sur
- * la version précédente, sur près de 15 000 parties. Toute modification future
- * devrait passer par le même banc — l'intuition se trompe beaucoup ici, et une
- * série isolée ment volontiers.
+ * Si le verdict est « indécis », l'idée ne vaut rien même si elle paraît
+ * bonne. Si elle gagne, on recopie ce fichier sur bot.ts et on repart d'ici.
  */
 export function botAction(view: PlayerView): Action | null {
   if (view.coupe) {
