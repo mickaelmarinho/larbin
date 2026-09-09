@@ -710,3 +710,79 @@ button.lien {
 button.lien:hover { color: var(--texte); }
 
 .panneau sup { font-size: .7em; }
+
+/* ------------------------------------------------------------- parcours */
+
+/* Le rappel glissé sous le classement de fin de partie. */
+.panneau .trace {
+  margin: 10px 0 0;
+  color: var(--texte-pale);
+  font-size: 14px;
+}
+.panneau .trace button.lien {
+  display: inline;
+  width: auto;
+  margin: 0 0 0 4px;
+  padding: 0;
+  font-size: inherit;
+}
+
+.panneau h3 {
+  margin: 20px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--texte-pale);
+}
+
+.compteurs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0 4px;
+}
+.compteurs div {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ffffff0f;
+}
+.compteurs b {
+  display: block;
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--laiton);
+}
+.compteurs span {
+  font-size: 12px;
+  color: var(--texte-pale);
+}
+
+/* Les rôles obtenus : c'est là qu'on lit vraiment sa saison. */
+.roles { margin-top: 14px; }
+.part {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+.part .nom { flex: 0 0 74px; color: var(--texte-pale); }
+.part .jauge {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #ffffff14;
+  overflow: hidden;
+}
+.part .jauge i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--texte-pale);
+}
+.part .jauge i.boss { background: var(--laiton); }
+.part .jauge i.larbin { background: var(--rouge-embleme); }
+.part .chiffre { flex: 0 0 38px; text-align: right; color: var(--texte); }
+
+/* La liste des parties passees : c'est la place qui compte, pas la date. */
+.classement.parties li { font-size: 13px; color: var(--texte-pale); }
+.classement.parties .place { color: var(--texte); font-size: 13px; }

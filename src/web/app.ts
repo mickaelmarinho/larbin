@@ -12,6 +12,7 @@ import {
   ADRESSE_PUBLIQUE, TableEnLigne, TableSolo, hoteDuJeu, type Table,
 } from './table.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
+import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -24,7 +25,6 @@ let minuteur: ReturnType<typeof setTimeout> | undefined;
 let annonce = '';
 /** Un panneau ouvert par le joueur ne doit pas être balayé par le coup suivant. */
 let voileManuel = false;
-
 /** En solo, la table patiente aussi pendant qu'on lit. */
 function suspendre(oui: boolean): void {
   voileManuel = oui;
@@ -503,6 +503,8 @@ function lignesDuClassement(vue: PlayerView): string {
 }
 
 function voileFinDeManche(vue: PlayerView): void {
+  if (vue.me.role) noterManche(vue.partie, vue.round, vue.me.role, vue.me.finishedOnTwo);
+
   const verdict = vue.me.role === 'boss' ? 'Vous êtes le Boss.'
     : vue.me.role === 'larbin' ? 'Vous voilà Larbin. La prochaine manche va piquer.'
     : `Vous finissez ${TITRES[vue.me.role!]}.`;
@@ -546,6 +548,21 @@ function voileFinDePartie(vue: PlayerView): void {
 
   // Remettre les scores à zéro engage toute la table : en ligne, c'est à l'hôte.
   const enLigne = table instanceof TableEnLigne ? table : null;
+
+  const b = bilan(noterPartie(vue.partie, {
+    date: new Date().toISOString(),
+    mode: enLigne ? 'en-ligne' : 'solo',
+    joueurs: tous.length,
+    place: tous.findIndex((p) => p.id === vue.me.id) + 1,
+    points: vue.me.points,
+    gagnant: vainqueur.id === vue.me.id ? 'Vous' : vainqueur.nom,
+    manches: vue.round,
+  }));
+  // Le moment où l'on referme une partie est celui où l'on décide d'en relancer
+  // une : c'est là, et pas ailleurs, que le compteur a une chance d'être lu.
+  const trace = b.serie >= 2 ? `${b.serie} victoires d'affilée.`
+    : b.parties === 1 ? 'Première partie enregistrée.'
+    : `${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} parties.`;
   const jeRelance = !enLigne
     || (enLigne.salon()?.sieges.find((s) => s.id === enLigne.moi)?.hote ?? false);
 
@@ -553,10 +570,13 @@ function voileFinDePartie(vue: PlayerView): void {
     <h2>Partie terminée</h2>
     <p>${verdict}</p>
     <ul class="classement">${lignes}</ul>
+    <p class="trace">${trace} <button class="lien" id="parcours-fin" type="button">Votre parcours</button></p>
     ${jeRelance
       ? '<button class="action primaire" id="rejouer" type="button">Nouvelle partie</button>'
       : '<p class="mention">L’hôte relancera une partie quand vous voudrez.</p>'}
   `);
+
+  $('parcours-fin').addEventListener('click', () => voileParcours(() => boucle()));
 
   $('rejouer')?.addEventListener('click', () => {
     if (table instanceof TableSolo) {
@@ -584,7 +604,7 @@ const EMBLEME = `<svg class="embleme" viewBox="0 0 64 64" aria-hidden="true">
  * jouent sans avoir eu à contourner un pavé de texte.
  */
 function voileHistoire(retour: () => void): void {
-  voileManuel = true;
+  suspendre(true);
   montrerVoile(`
     <h2>D'où vient le Larbin</h2>
     <p>Le jeu appartient à une famille née en Asie : les <b>jeux d'escalade</b>,
@@ -608,7 +628,75 @@ function voileHistoire(retour: () => void): void {
     <button class="action primaire" id="fermer-histoire" type="button">Revenir</button>
   `);
   $('fermer-histoire').addEventListener('click', () => {
-    voileManuel = false;
+    suspendre(false);
+    retour();
+  });
+}
+
+/** « 12 sept. », sans l'année tant qu'on reste dans celle qui court. */
+function jourCourt(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const memeAnnee = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString('fr-FR', {
+    day: 'numeric', month: 'short', ...(memeAnnee ? {} : { year: 'numeric' }),
+  });
+}
+
+/**
+ * Ce qu'on a laissé derrière soi. Les rôles obtenus disent bien plus que le
+ * nombre de victoires : c'est là qu'on voit qu'on a été Larbin trois fois de
+ * suite, et c'est ce qui donne envie de rejouer.
+ */
+function voileParcours(retour: () => void): void {
+  suspendre(true);
+  const p: Parcours = parcours();
+  const b = bilan(p);
+
+  const roles: Array<[Role, string]> = [
+    ['boss', 'Boss'], ['sous-boss', 'Sous-Boss'], ['neutre', 'Neutre'],
+    ['sur-larbin', 'Sur-Larbin'], ['larbin', 'Larbin'],
+  ];
+  const barres = b.manches === 0 ? '' : `
+    <div class="roles">${roles.map(([cle, nom]) => {
+      const part = Math.round((p.roles[cle] / b.manches) * 100);
+      return `<div class="part">
+        <span class="nom">${nom}</span>
+        <span class="jauge"><i class="${cle}" style="width:${part}%"></i></span>
+        <span class="chiffre">${part} %</span>
+      </div>`;
+    }).join('')}</div>`;
+
+  const dernieres = p.parties.slice(0, 6).map((x) => `<li>
+      <span class="place">${x.place}${x.place === 1 ? 'er' : 'e'}</span>
+      <span>${jourCourt(x.date)}${x.mode === 'en-ligne' ? ' · en ligne' : ''}</span>
+      <span class="gain">${x.points} pt${x.points > 1 ? 's' : ''}</span>
+    </li>`).join('');
+
+  const corps = b.parties === 0
+    ? `<p>Rien encore. Terminez une partie et elle s'inscrira ici — vos
+         victoires, et surtout les rôles que la table vous a réservés.</p>`
+    : `<div class="compteurs">
+         <div><b>${b.parties}</b><span>partie${b.parties > 1 ? 's' : ''}</span></div>
+         <div><b>${b.victoires}</b><span>victoire${b.victoires > 1 ? 's' : ''}</span></div>
+         <div><b>${b.taux} %</b><span>de réussite</span></div>
+         <div><b>${b.meilleureSerie}</b><span>d'affilée, au mieux</span></div>
+       </div>
+       ${barres}
+       ${p.deuxFatals > 0
+         ? `<p class="mention">Vous avez fini ${p.deuxFatals} manche${p.deuxFatals > 1 ? 's' : ''}
+            sur un 2 — et payé le prix fort à chaque fois.</p>`
+         : ''}
+       <h3>Vos dernières parties</h3>
+       <ul class="classement parties">${dernieres}</ul>`;
+
+  montrerVoile(`
+    <h2>Votre parcours</h2>
+    ${corps}
+    <button class="action primaire" id="fermer-parcours" type="button">Revenir</button>
+  `);
+  $('fermer-parcours').addEventListener('click', () => {
+    suspendre(false);
     retour();
   });
 }
@@ -616,6 +704,8 @@ function voileHistoire(retour: () => void): void {
 function voileAccueil(): void {
   const horsLigne = location.protocol === 'file:';
   const nomConnu = localStorage.getItem('larbin.nom') ?? '';
+  // Rien à afficher au premier passage : l'accueil d'un inconnu doit rester net.
+  const b = bilan(parcours());
 
   montrerVoile(`
     ${EMBLEME}
@@ -635,6 +725,10 @@ function voileAccueil(): void {
         <button class="action" id="rejoindre" type="button">Rejoindre</button>
       </div>`}
     <button class="action" id="tapis-accueil" type="button">Choisir le tapis</button>
+    ${b.parties > 0
+      ? `<button class="lien" id="parcours" type="button">Votre parcours —
+         ${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} partie${b.parties > 1 ? 's' : ''}</button>`
+      : ''}
     <button class="lien" id="histoire" type="button">D'où vient ce jeu ?</button>
   `);
 
@@ -647,6 +741,7 @@ function voileAccueil(): void {
   };
 
   $('tapis-accueil').addEventListener('click', () => voileTapis(voileAccueil));
+  $('parcours')?.addEventListener('click', () => voileParcours(voileAccueil));
   $('histoire').addEventListener('click', () => voileHistoire(voileAccueil));
 
   $('solo').addEventListener('click', () => {

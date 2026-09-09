@@ -90,6 +90,11 @@ function distribuer(state: GameState, paquet: Card[], firstSeat: number): void {
 
 /* ------------------------------------------------------------- création */
 
+/** Court, unique en pratique, et lisible dans une sauvegarde. */
+function identifiantDePartie(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
 export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
   if (seeds.length < MIN_JOUEURS || seeds.length > MAX_JOUEURS) {
     fail(`Le Larbin se joue de ${MIN_JOUEURS} à ${MAX_JOUEURS} joueurs (reçu : ${seeds.length}).`);
@@ -111,6 +116,7 @@ export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
   }));
 
   const state: GameState = {
+    partie: identifiantDePartie(),
     players,
     order: seeds.map((s) => s.id),
     round: 0,
@@ -547,6 +553,9 @@ function doNextRound(state: GameState): void {
 
 /** On repart de zéro : mêmes joueurs, mêmes places, scores et rôles effacés. */
 function doNewGame(state: GameState): void {
+  // Une autre partie : elle mérite sa propre identité, sinon celle qui vient de
+  // finir et celle qui commence se confondraient dans les compteurs du joueur.
+  state.partie = identifiantDePartie();
   for (const p of state.players) {
     p.points = 0;
     p.role = null;
@@ -575,6 +584,8 @@ export function cartesRestantes(state: GameState, id: string): Array<[Rank, numb
 /** Ce qu'un joueur a le droit de voir : sa main, et seulement le nombre de cartes des autres. */
 export interface PlayerView {
   me: Player;
+  /** L'identité de la partie en cours : elle survit aux rechargements. */
+  partie: string;
   round: number;
   phase: GameState['phase'];
   turnPlayer: string;
@@ -612,6 +623,7 @@ export function viewFor(state: GameState, id: string): PlayerView {
   const me = player(state, id);
   return {
     me: structuredClone(me),
+    partie: state.partie,
     round: state.round,
     phase: state.phase,
     turnPlayer: state.order[state.turn],

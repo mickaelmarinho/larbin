@@ -69,6 +69,12 @@ export interface Mouvement {
 export type Phase = 'coupe' | 'jeu' | 'fin-de-manche' | 'fin-de-partie';
 
 export interface GameState {
+  /**
+   * Identifie cette partie-ci. Le jeu se sauvegarde et se recharge : sans ce
+   * repère, l'interface ne saurait pas si la manche qu'elle voit se terminer
+   * est nouvelle ou si elle la revoit après un rechargement.
+   */
+  partie: string;
   players: Player[];
   /** Ordre de placement, sens des aiguilles d'une montre. */
   order: string[];
