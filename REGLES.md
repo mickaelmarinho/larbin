@@ -131,8 +131,9 @@ fautif — le cas normal — cela revient exactement à la règle « il devient
 Larbin ».
 
 **Quand la fin de partie ?**
-Aucune. Les manches s'enchaînent tant que les joueurs en ont envie, comme à
-table. Pas de score cumulé pour l'instant.
+Au premier joueur qui atteint 5 points par adversaire — voir « Les points »
+ci-dessus. Rien n'empêche d'enchaîner une nouvelle partie derrière, comme à
+table.
 
 **Le maître de la série a fini ses cartes.**
 Il devrait ouvrir la série suivante, mais il n'a plus rien. C'est alors le

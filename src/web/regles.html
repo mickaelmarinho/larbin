@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d3b2e">
+<title>Règles du Président (Trou du cul) — et le Larbin, la variante à un tour</title>
+<meta name="description" content="Les règles complètes du Président, aussi appelé Trou du cul : distribution, hiérarchie des cartes, rôles, échanges. Et le Larbin, la variante où une série ne fait qu'un tour de table. Jouable en ligne, gratuitement.">
+<link rel="canonical" href="https://larbin.vercel.app/regles">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Le Larbin">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Règles du Président (Trou du cul) — et la variante Larbin">
+<meta property="og:description" content="Distribution, hiérarchie, rôles, échanges : tout le jeu expliqué. Et une variante qui change le rythme du tout au tout.">
+<meta property="og:url" content="https://larbin.vercel.app/regles">
+<meta property="og:image" content="https://larbin.vercel.app/partage.jpg">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="/icone-192.png">
+<link rel="apple-touch-icon" href="/icone-192.png">
+
+<style>
+:root {
+  --feutre: #0d3b2e;
+  --fond-bas: #06231a;
+  --panneau: #14503f;
+  --creme: #f7f1e3;
+  --rouge: #d8453a;
+  --laiton: #d9a441;
+  --texte: #e8e2d4;
+  --pale: #a9b6ad;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(ellipse 130% 70% at 50% 0%, #1a5a46 0%, var(--feutre) 55%, var(--fond-bas) 100%)
+              var(--fond-bas);
+  color: var(--texte);
+  font: 17px/1.65 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+main { max-width: 44rem; margin: 0 auto; padding: 28px 20px 72px; }
+
+.marque { display: flex; align-items: center; gap: 10px; margin-bottom: 34px; }
+.marque svg { width: 34px; height: 34px; flex: none; }
+.marque a { color: var(--texte); text-decoration: none; font-weight: 600; font-size: 18px; }
+
+h1 { font-size: clamp(27px, 6vw, 38px); line-height: 1.2; margin: 0 0 14px; }
+h2 { font-size: clamp(20px, 4.5vw, 25px); margin: 40px 0 12px; color: var(--creme); }
+h3 { font-size: 18px; margin: 26px 0 8px; color: var(--laiton); }
+p, li { color: var(--texte); }
+.chapo { font-size: 19px; color: var(--pale); }
+strong { color: var(--creme); }
+
+a { color: var(--laiton); }
+
+.jouer {
+  display: inline-block;
+  margin: 22px 0 8px;
+  padding: 13px 26px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--laiton), #a97b26);
+  color: #2a1e05;
+  font-weight: 700;
+  font-size: 17px;
+  text-decoration: none;
+}
+.jouer:hover { filter: brightness(1.07); }
+.sous-bouton { font-size: 14px; color: var(--pale); margin-top: 6px; }
+
+/* La hiérarchie : la seule chose que tout le monde vient vérifier. */
+.hierarchie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+.hierarchie li {
+  min-width: 40px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  background: var(--creme);
+  color: #1b211f;
+  font-weight: 600;
+  text-align: center;
+}
+.hierarchie li:first-child { background: var(--laiton); }
+.hierarchie li .c { display: block; font-size: 12px; font-weight: 400; color: #6b6b6b; }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #ffffff1a; }
+th { color: var(--pale); font-weight: 600; font-size: 15px; }
+
+.encadre {
+  margin: 22px 0;
+  padding: 16px 18px;
+  border-left: 3px solid var(--laiton);
+  border-radius: 0 8px 8px 0;
+  background: #ffffff0d;
+}
+.encadre p:first-child { margin-top: 0; }
+.encadre p:last-child { margin-bottom: 0; }
+
+.exemple { color: var(--pale); font-style: italic; }
+
+footer {
+  margin-top: 56px;
+  padding-top: 22px;
+  border-top: 1px solid #ffffff1a;
+  color: var(--pale);
+  font-size: 14px;
+}
+footer a { color: var(--pale); }
+</style>
+</head>
+<body>
+<main>
+
+<div class="marque">
+  <svg viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M18 24V13l7.5 6L32 9l6.5 10L46 13v11z" fill="#d9a441"/>
+    <path d="M32 54C12 41 14 27 24 27c4.2 0 7 3.2 8 5.4 1-2.2 3.8-5.4 8-5.4 10 0 12 14-8 27z" fill="#d8453a"/>
+  </svg>
+  <a href="/">Le Larbin</a>
+</div>
+
+<h1>Les règles du Président, et la variante du Larbin</h1>
+
+<p class="chapo">Le Président — que beaucoup connaissent sous le nom de
+<strong>Trou du cul</strong> — se joue à quatre ou plus, avec un jeu de 52 cartes,
+et tient dans une idée : se débarrasser de ses cartes avant les autres, puis
+faire payer aux derniers leur retard à la manche suivante.</p>
+
+<a class="jouer" href="/">Jouer tout de suite</a>
+<p class="sous-bouton">Contre des bots ou avec vos proches. Gratuit, sans compte, sans installation.</p>
+
+<h2>Ce qu'il faut pour jouer</h2>
+
+<ul>
+  <li><strong>4 à 6 joueurs.</strong> Quatre, c'est l'équilibre : deux gagnants, deux perdants, pas de spectateur.</li>
+  <li><strong>52 cartes</strong>, sans joker.</li>
+  <li>On distribue tout, une par une, dans le sens des aiguilles d'une montre. À cinq ou six, certains ont une carte de plus : c'est sans conséquence.</li>
+</ul>
+
+<p>À la toute première manche, personne n'a encore de rôle. La convention la plus
+répandue — et celle que suit ce jeu — veut que <strong>le joueur qui a la dame de
+cœur ouvre</strong>. Ensuite, c'est toujours le vainqueur de la manche précédente
+qui commence.</p>
+
+<h2>La hiérarchie des cartes</h2>
+
+<p>Elle ne suit pas l'ordre habituel : le 2 est la carte la plus forte du jeu, et
+le 3 la plus faible.</p>
+
+<ol class="hierarchie">
+  <li>2<span class="c">le plus fort</span></li>
+  <li>A</li><li>R</li><li>D</li><li>V</li><li>10</li><li>9</li><li>8</li>
+  <li>7</li><li>6</li><li>5</li><li>4</li>
+  <li>3<span class="c">le plus faible</span></li>
+</ol>
+
+<p><strong>Les couleurs ne comptent pas.</strong> Un 6 de cœur vaut exactement un
+6 de trèfle. Seule la hauteur est comparée — c'est ce qui rend le jeu si rapide à
+apprendre.</p>
+
+<h2>Le déroulement d'une série</h2>
+
+<p>Le joueur qui ouvre pose ce qu'il veut : une carte seule, une paire, un brelan
+ou un carré — toujours de même hauteur. Ce choix fixe le format de la série
+entière.</p>
+
+<p>Chacun à son tour doit alors poser <strong>le même nombre de cartes</strong>,
+d'une hauteur <strong>strictement supérieure</strong>. Qui ne peut pas — ou ne veut
+pas — passe. Quand plus personne ne monte, le dernier à avoir posé ramasse la main :
+il défausse le tas et rouvre une nouvelle série avec ce qu'il veut.</p>
+
+<p class="exemple">Exemple : Anna ouvre sur une paire de 7. Bruno pose une paire de
+10, Chloé une paire de Dames, David passe. Anna n'a plus de paire assez haute :
+elle passe. Chloé ramasse et rouvre.</p>
+
+<h2>Les rôles, à la fin de la manche</h2>
+
+<p>La manche s'arrête quand il ne reste qu'un joueur avec des cartes en main :
+c'est lui le dernier, et l'ordre de sortie distribue les rôles.</p>
+
+<table>
+  <thead><tr><th>Place</th><th>Rôle</th></tr></thead>
+  <tbody>
+    <tr><td>1<sup>er</sup></td><td>Président (ici : le <strong>Boss</strong>)</td></tr>
+    <tr><td>2<sup>e</sup></td><td>Vice-Président (le <strong>Sous-Boss</strong>)</td></tr>
+    <tr><td>places du milieu</td><td>Neutre</td></tr>
+    <tr><td>avant-dernier</td><td>Vice-Trou du cul (le <strong>Sur-Larbin</strong>)</td></tr>
+    <tr><td>dernier</td><td>Trou du cul (le <strong>Larbin</strong>)</td></tr>
+  </tbody>
+</table>
+
+<h2>Les échanges</h2>
+
+<p>C'est le cœur du jeu, et ce qui en fait autre chose qu'une course. Avant la
+manche suivante :</p>
+
+<ul>
+  <li>le <strong>Larbin donne ses deux meilleures cartes</strong> au Boss, qui lui
+      rend deux cartes de son choix — ou, dans la version stricte, ses deux plus
+      basses ;</li>
+  <li>le <strong>Sur-Larbin donne sa meilleure carte</strong> au Sous-Boss, qui lui
+      rend une carte ;</li>
+  <li>les Neutres n'échangent rien.</li>
+</ul>
+
+<p>Le dernier repart donc handicapé, et le premier renforcé. C'est injuste, et
+c'est exactement le sujet : le jeu s'appelle Président parce qu'il met en scène
+une hiérarchie qu'il faut renverser.</p>
+
+<div class="encadre">
+  <p><strong>D'où vient ce jeu ?</strong> D'Asie. Le Président descend d'une
+  famille de jeux dits « d'escalade », dont les deux plus connus sont le japonais
+  <strong>Dai Hin Min</strong> — « le grand pauvre » — et son miroir le
+  <strong>Daifugō</strong>, « le grand riche », ainsi que le chinois
+  <strong>Zheng Shangyou</strong>, « la course vers le haut ». Le jeu gagne
+  l'Occident dans la seconde moitié du XX<sup>e</sup> siècle et y prend des noms de
+  table, transmis de bouche à oreille et rarement écrits — ce qui explique qu'il
+  existe presque autant de règles que de familles.</p>
+</div>
+
+<h2>Le Larbin : la variante à un seul tour</h2>
+
+<p>Le Larbin est une variante maison du Président. Elle en garde la hiérarchie, les
+rôles et les échanges, mais change trois choses — et ces trois choses suffisent à
+en faire un autre jeu.</p>
+
+<h3>1. Une série ne fait qu'un tour de table</h3>
+
+<p>Chacun ne prend la parole <strong>qu'une seule fois</strong> par série. Ni celui
+qui a posé, ni celui qui a passé ne revient dedans. Le tour bouclé, la série
+s'arrête, et le plus fort ouvre la suivante.</p>
+
+<p class="exemple">Anna pose un 7, Bruno monte à 9, Chloé passe, David pose un
+Valet. Fini. Anna avait beau garder une Dame : elle ne rejouera pas dans cette
+série.</p>
+
+<p>La conséquence est immédiate : une grosse carte ne se garde plus « pour
+repasser plus tard ». Il n'y aura pas de plus tard. On la sort au bon tour, ou on
+la garde pour la série suivante. Le jeu devient beaucoup plus nerveux, et beaucoup
+moins pardonnant.</p>
+
+<h3>2. Le 2 coupe net</h3>
+
+<p>Dès qu'un 2 est posé, la série <strong>s'arrête sur-le-champ</strong> : rien ne
+peut monter, les joueurs suivants n'ont même pas à passer. Celui qui a coupé rouvre
+aussitôt.</p>
+
+<p>Mais l'arme se retourne : <strong>terminer sa manche en posant un 2 rend Larbin
+d'office</strong>, quelle que soit la place réellement obtenue. On coupe donc
+volontiers en cours de manche — jamais sur sa dernière carte.</p>
+
+<h3>3. On ne mélange plus</h3>
+
+<p>Le paquet n'est brassé qu'au tout début de la partie. Ensuite, à la fin de chaque
+manche, on ramasse le tas tel quel : les cartes dans l'ordre où elles sont tombées,
+puis la main du dernier joueur posée dessus.</p>
+
+<p>C'est le Boss qui prépare la manche suivante. Il <strong>coupe le paquet où il
+veut</strong>, retourne la première carte pour que toute la table la voie, et
+<strong>la garde</strong>. Le reste se distribue à partir de son voisin de gauche —
+si bien qu'il retombe sur ses pieds avec autant de cartes que les autres.</p>
+
+<p>La coupe devient alors le seul hasard qui subsiste, et c'est le privilège du
+premier. Un joueur attentif, qui se souvient de l'ordre dans lequel les cartes sont
+tombées, peut même viser.</p>
+
+<h3>Les échanges, imposés des deux côtés</h3>
+
+<p>Dans cette variante, <strong>personne ne choisit</strong> : le Larbin donne ses
+deux plus fortes, le Boss rend ses deux plus basses, et pareil d'un cran en dessous
+entre Sur-Larbin et Sous-Boss. Comme les couleurs ne valent rien, il ne reste
+aucune décision à prendre — l'échange se fait donc tout seul, au début de la manche.</p>
+
+<h3>Les points</h3>
+
+<p>Chaque manche rapporte <strong>autant de points qu'on a laissé de joueurs
+derrière soi</strong> : à quatre, 3 au Boss, 2 au Sous-Boss, 1 au Sur-Larbin, rien
+au Larbin. La partie va à <strong>5 points par adversaire</strong> — 15 à quatre
+joueurs, 20 à cinq, 25 à six.</p>
+
+<h2>Jouer</h2>
+
+<p>Le jeu se joue dans le navigateur, sur téléphone comme sur ordinateur. Vous
+pouvez affronter trois bots tout de suite, ou créer un salon et envoyer le code à
+vos proches — chacun sur son écran, personne ne voit le jeu des autres.</p>
+
+<a class="jouer" href="/">Ouvrir le jeu</a>
+<p class="sous-bouton">Rien à installer, aucun compte à créer.</p>
+
+<footer>
+  <p><a href="/">Le Larbin</a> — une variante maison du Président, jouable en ligne.</p>
+</footer>
+
+</main>
+</body>
+</html>

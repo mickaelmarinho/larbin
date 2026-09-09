@@ -20,6 +20,12 @@ import { codeDeSalon, codeValide, type VersClient, type VersServeur } from './pr
 import { Salon } from './salon.ts';
 
 const racine = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
+/**
+ * On ne sert que le site assemblé, jamais le dépôt : sinon le moteur, les tests
+ * et node_modules seraient téléchargeables depuis l'adresse publique. Lancez
+ * `npm run build` avant le serveur.
+ */
+const SITE = path.join(racine, 'public');
 const PORT = Number(process.env.PORT) || 5177;
 
 /** Temps de réflexion des bots : la table doit rester lisible. */
@@ -49,6 +55,10 @@ const TYPES: Record<string, string> = {
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
+  '.webmanifest': 'application/manifest+json',
 };
 
 const serveur = http.createServer(async (req, res) => {
@@ -67,10 +77,12 @@ const serveur = http.createServer(async (req, res) => {
     return;
   }
 
-  const relatif = demande === '/' ? 'Larbin.html' : demande.replace(/^\/+/, '');
-  const fichier = path.join(racine, relatif);
+  // « /regles » plutôt que « /regles.html » : la même adresse qu'en production.
+  const nu = demande.replace(/^\/+/, '');
+  const relatif = nu === '' ? 'index.html' : path.extname(nu) ? nu : `${nu}.html`;
+  const fichier = path.join(SITE, relatif);
 
-  if (!fichier.startsWith(racine)) {
+  if (!fichier.startsWith(SITE)) {
     res.writeHead(403).end('Interdit');
     return;
   }

@@ -5,7 +5,7 @@
  *   node scripts/build.mjs [--watch]
  */
 import { build, context } from 'esbuild';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -13,6 +13,16 @@ const racine = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const src = (p) => path.join(racine, 'src', 'web', p);
 const sortie = path.join(racine, 'Larbin.html');
 const publie = path.join(racine, 'public');
+
+/**
+ * Le fichier unique et le site ne veulent pas le même en-tête : l'un se promène
+ * hors ligne et doit rester muet, l'autre a une adresse, une image de partage et
+ * une mesure d'audience. Un seul gabarit, deux découpes.
+ */
+const horsLigne = (page) => page
+  .replace(/<!--EN-LIGNE[\s\S]*?EN-LIGNE-->\n?/, '')
+  .replace(/\n{3,}/g, '\n\n');
+const enLigne = (page) => page.replace('<!--EN-LIGNE', '').replace('EN-LIGNE-->', '');
 
 const optionsEsbuild = {
   entryPoints: [src('app.ts')],
@@ -25,9 +35,10 @@ const optionsEsbuild = {
 };
 
 async function assembler() {
-  const [gabarit, style, paquet] = await Promise.all([
+  const [gabarit, style, regles, paquet] = await Promise.all([
     readFile(src('index.html'), 'utf8'),
     readFile(src('style.css'), 'utf8'),
+    readFile(src('regles.html'), 'utf8'),
     build(optionsEsbuild).then((r) => r.outputFiles[0].text),
   ]);
 
@@ -37,15 +48,19 @@ async function assembler() {
     .replace('/*STYLE*/', () => style.trim())
     .replace('/*SCRIPT*/', () => paquet.trim());
 
-  await writeFile(sortie, page, 'utf8');
+  const seul = horsLigne(page);
+  await writeFile(sortie, seul, 'utf8');
 
-  // Le même fichier, seul dans un dossier : c'est tout ce qu'un hébergement
-  // statique doit voir. Le reste du dépôt n'a rien à faire en ligne.
+  // Le dossier publié : la page du jeu, celle des règles, et les fichiers que
+  // navigateurs et moteurs de recherche viennent chercher à la racine. Le reste
+  // du dépôt n'a rien à faire en ligne.
   await mkdir(publie, { recursive: true });
-  await writeFile(path.join(publie, 'index.html'), page, 'utf8');
+  await writeFile(path.join(publie, 'index.html'), enLigne(page), 'utf8');
+  await writeFile(path.join(publie, 'regles.html'), regles, 'utf8');
+  await cp(src('statique'), publie, { recursive: true });
 
-  const ko = (Buffer.byteLength(page) / 1024).toFixed(0);
-  console.log(`Larbin.html assemblé — ${ko} Ko (et public/index.html pour l'hébergement)`);
+  const ko = (Buffer.byteLength(seul) / 1024).toFixed(0);
+  console.log(`Larbin.html assemblé — ${ko} Ko, et public/ prêt pour l'hébergement`);
 }
 
 if (process.argv.includes('--watch')) {

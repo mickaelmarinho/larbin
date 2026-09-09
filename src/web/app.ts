@@ -602,6 +602,9 @@ function voileHistoire(retour: () => void): void {
     <p>Celles-ci sont les vôtres : une série ne fait qu'un tour, le 2 coupe net,
        on ne mélange pas entre deux manches, et c'est la dame de cœur qui ouvre
        la toute première partie.</p>
+    <p class="mention"><a href="https://${ADRESSE_PUBLIQUE}/regles" target="_blank"
+       rel="noopener">Les règles, en entier</a> — celles du Président comme celles
+       d'ici.</p>
     <button class="action primaire" id="fermer-histoire" type="button">Revenir</button>
   `);
   $('fermer-histoire').addEventListener('click', () => {
