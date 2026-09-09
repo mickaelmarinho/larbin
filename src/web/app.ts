@@ -571,12 +571,25 @@ function voileFinDePartie(vue: PlayerView): void {
     <p>${verdict}</p>
     <ul class="classement">${lignes}</ul>
     <p class="trace">${trace} <button class="lien" id="parcours-fin" type="button">Votre parcours</button></p>
+    <button class="action" id="partager" type="button">Partager le résultat</button>
     ${jeRelance
       ? '<button class="action primaire" id="rejouer" type="button">Nouvelle partie</button>'
       : '<p class="mention">L’hôte relancera une partie quand vous voudrez.</p>'}
   `);
 
   $('parcours-fin').addEventListener('click', () => voileParcours(() => boucle()));
+
+  // Le message se raconte tout seul : la place, les points, les manches. Perdre
+  // se partage aussi bien que gagner — mieux, même, quand c'est pour lancer un défi.
+  const maPlace = tous.findIndex((p) => p.id === vue.me.id) + 1;
+  const recit = maPlace === 1
+    ? `J'ai gagné au Larbin : ${vue.me.points} points en ${vue.round} manches, devant `
+      + `${tous.slice(1).map((p) => p.nom).join(', ')}.`
+    : `Le Larbin m'a laissé ${maPlace}e sur ${tous.length} — ${vue.me.points} points `
+      + `en ${vue.round} manches. ${vainqueur.nom} a gagné. À vous de faire mieux.`;
+  $('partager').addEventListener('click', (e) => {
+    void partager(e.currentTarget as HTMLElement, recit, `https://${ADRESSE_PUBLIQUE}`);
+  });
 
   $('rejouer')?.addEventListener('click', () => {
     if (table instanceof TableSolo) {
@@ -631,6 +644,38 @@ function voileHistoire(retour: () => void): void {
     suspendre(false);
     retour();
   });
+}
+
+/**
+ * Faire sortir quelque chose de cet écran-ci.
+ *
+ * Sur téléphone — là où le jeu se joue — le navigateur ouvre la feuille de
+ * partage du système, et le message part dans la conversation où il a sa place.
+ * Ailleurs, on se rabat sur le presse-papiers. Dans les deux cas l'adresse
+ * voyage avec le texte : c'est tout l'intérêt de l'affaire.
+ */
+async function partager(bouton: HTMLElement, texte: string, url: string): Promise<void> {
+  const repondre = (mot: string) => {
+    const avant = bouton.textContent;
+    bouton.textContent = mot;
+    setTimeout(() => { bouton.textContent = avant; }, 2200);
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ text: texte, url });
+      return;
+    } catch (err) {
+      // Partage refusé par le joueur : ce n'est pas un échec, on n'insiste pas.
+      if ((err as Error)?.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(`${texte} ${url}`);
+    repondre('Copié');
+  } catch {
+    repondre('Copie impossible');
+  }
 }
 
 /** « 12 sept. », sans l'année tant qu'on reste dans celle qui court. */
@@ -787,7 +832,7 @@ function voileSalon(en: TableEnLigne): void {
     <p>Partagez ce lien, ou dictez le code : <b>${salon.code}</b>.</p>
     <div class="rejoindre">
       <input id="lien" type="text" readonly value="${lien}">
-      <button class="action" id="copier" type="button">Copier</button>
+      <button class="action" id="copier" type="button">${navigator.share ? 'Envoyer' : 'Copier'}</button>
     </div>
     <ul class="classement">${sieges}</ul>
     ${erreur ? `<p class="mention alerte">${erreur}</p>` : ''}
@@ -803,6 +848,10 @@ function voileSalon(en: TableEnLigne): void {
   en.oublierErreur();
 
   $('copier').addEventListener('click', async () => {
+    if (navigator.share) {
+      await partager($('copier'), `Une partie de Larbin ? Le code du salon est ${salon.code}.`, lien);
+      return;
+    }
     try {
       await navigator.clipboard.writeText(lien);
       $('copier').textContent = 'Copié';
