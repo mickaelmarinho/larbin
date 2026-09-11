@@ -652,3 +652,40 @@ test('la vue d’un joueur ne révèle pas les mains adverses', () => {
   assert.deepEqual(vue.others.map((o) => o.count), [13, 13, 13]);
   assert.ok(!JSON.stringify(vue.others).includes('suit'), 'aucune carte adverse ne fuite');
 });
+
+/* ----------------------------------------------------- le bot et les 2 */
+
+// Signalé par un joueur : les bots finissaient souvent sur un 2, donc Larbin.
+// Cause : la vue clone la main du joueur, et le bot comparait les cartes par
+// référence — « ma main après ce coup » voyait toujours la main entière, si
+// bien que le garde-fou contre les fins sur un 2 ne s'est jamais déclenché.
+
+test('le bot qui ouvre ne se laisse pas une main de 2 seuls', () => {
+  const state = partie({
+    a: ['2♠', '9♥'],
+    b: ['3♠', '4♠', '5♠'],
+    c: ['3♥', '4♥', '5♥'],
+    d: ['3♦', '4♦', '5♦'],
+  }, 0);
+  const coup = botAction(viewFor(state, 'a'));
+  assert.equal(coup?.type, 'poser');
+  assert.deepEqual(
+    coup?.type === 'poser' ? coup.cards : [],
+    [carte('2♠').id],
+    'poser le 9 laisserait un 2 seul : il faut couper d’abord, puis finir sur le 9',
+  );
+});
+
+test('le bot passe plutôt que de finir sur un 2', () => {
+  let state = partie({
+    a: ['2♠', '2♥'],
+    b: ['3♠', '4♠', '5♠'],
+    c: ['3♥', '4♥', '5♥'],
+    d: ['10♠', '10♥', '7♠'],
+  }, 3);
+  state = apply(state, { type: 'poser', player: 'd', cards: [carte('10♠').id, carte('10♥').id] });
+
+  const vue = viewFor(state, 'a');
+  assert.ok(vue.canPass, 'la situation de test suppose qu’on puisse passer');
+  assert.equal(botAction(vue)?.type, 'passer', 'sa paire de 2 le ferait finir Larbin');
+});

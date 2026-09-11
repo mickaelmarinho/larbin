@@ -119,11 +119,17 @@ On écrit l'idée dans `src/engine/bot-candidat.ts` — une copie conforme de
 indépendantes, fait tourner les places autour de la table, et refuse de conclure
 quand l'écart tient dans la marge d'erreur.
 
-Il faut la croire quand elle dit « indécis ». Les trois principes actuellement
-en gras dans `bot.ts` valent **+3 points de pourcentage** sur près de 15 000
-parties — alors que la toute première série en annonçait +4,5. La dispersion
-entre séries est presque le double de la marge binomiale : une seule série ne
-prouve rien.
+Il faut la croire quand elle dit « indécis » : la dispersion entre séries est
+presque le double de la marge binomiale, et une seule série ne prouve rien.
+
+Il ne faut pas pour autant la croire sur tout. Elle compare deux bots entre
+eux, et un défaut qu'ils partagent ne s'y voit jamais. C'est un joueur qui a
+remarqué que les bots finissaient souvent sur un 2 : ils comparaient les cartes
+par référence au lieu de leur identifiant, et leur garde-fou ne s'était jamais
+déclenché — pas plus que l'un des principes qu'une mesure précédente croyait
+avoir validés. L'arène compte désormais les fins sur un 2 : le correctif les a
+fait passer de 12 % des manches, par joueur, à zéro, et le bot corrigé remporte
+75,8 % ± 1,1 des parties décisives face à l'ancien.
 
 ## Où en est le chantier
 

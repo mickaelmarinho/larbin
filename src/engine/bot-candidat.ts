@@ -13,6 +13,8 @@ import { DEUX } from './cards.ts';
  *
  * Si le verdict est « indécis », l'idée ne vaut rien même si elle paraît
  * bonne. Si elle gagne, on recopie ce fichier sur bot.ts et on repart d'ici.
+ * Et on regarde aussi la ligne « fins sur un 2 » : un défaut partagé par les
+ * deux camps ne se voit jamais dans le taux de victoire.
  */
 export function botAction(view: PlayerView): Action | null {
   if (view.coupe) {
@@ -35,32 +37,22 @@ export function botAction(view: PlayerView): Action | null {
     : { type: 'passer', player: view.me.id };
 }
 
-/**
- * Chance, grossièrement estimée, que ce coup tienne jusqu'à la fin de la série.
- *
- * On regarde qui doit encore parler, combien de cartes chacun tient, et
- * combien de hauteurs supérieures restent en circulation. Ce n'est pas un
- * calcul exact — il faudrait connaître les mains — mais un ordre de grandeur
- * suffit pour départager deux coups.
- */
+/** Chance, grossièrement estimée, que ce coup tienne jusqu'à la fin de la série. */
 function survie(view: PlayerView, rank: Rank, count: number): number {
   const parlants = view.others.filter((o) => o.count > 0 && !o.aAgi && !o.passed);
   if (parlants.length === 0) return 1;
 
-  // Combien de coups au-dessus dorment encore dans les mains adverses ?
   let occasions = 0;
   for (const [hauteur, reste] of view.restantes) {
     if (hauteur > rank && reste >= count) occasions += Math.floor(reste / count);
   }
   if (occasions === 0) return 1;
 
-  // Ces cartes sont réparties entre les joueurs encore en jeu, moi compris.
   const cartesEnJeu = view.me.hand.length
     + view.others.reduce((total, o) => total + o.count, 0);
 
   let tient = 1;
   for (const o of parlants) {
-    // Probabilité qu'une occasion donnée soit chez lui, puis qu'il en ait une.
     const chezLui = Math.min(1, o.count / Math.max(1, cartesEnJeu));
     tient *= Math.max(0, 1 - Math.min(1, occasions * chezLui ** count));
   }
@@ -79,17 +71,25 @@ function pick(view: PlayerView): Card[] | null {
   const serieAcquise = view.requirement !== null
     && view.others.every((o) => o.count === 0 || o.aAgi);
 
-  // Un coup qui vide la main : on le prend, sauf s'il se termine sur un 2.
   const sorties = view.legal.filter((play) => play.length === handSize);
   const propre = sorties.find((play) => play[0].rank !== DEUX);
   if (propre) return propre;
 
-  if (serieAcquise) return view.legal[0];
-
-  const finirSurUnDeux = (play: Card[]) => {
-    const reste = view.me.hand.filter((c) => !play.includes(c));
-    return reste.length > 0 && reste.every((c) => c.rank === DEUX);
+  // Par identifiant, jamais par référence : la vue clone la main du joueur.
+  const reste = (play: Card[]) => {
+    const posees = new Set(play.map((c) => c.id));
+    return view.me.hand.filter((c) => !posees.has(c.id));
   };
+
+  const condamne = (play: Card[]) => {
+    const apres = reste(play);
+    if (apres.length === 0) return play[0].rank === DEUX;
+    return apres.every((c) => c.rank === DEUX);
+  };
+  const candidats = view.legal.filter((play) => !condamne(play));
+  if (candidats.length === 0) return view.canPass ? null : view.legal[0];
+
+  if (serieAcquise) return candidats[0];
 
   const toursActuels = tours(view.me.hand);
   const ouverture = view.requirement === null;
@@ -98,27 +98,24 @@ function pick(view: PlayerView): Card[] | null {
   let bestScore = -Infinity;
   let bestSurvie = 0;
 
-  for (const play of view.legal) {
+  for (const play of candidats) {
     const rank = play[0].rank;
+    const apres = reste(play);
     let score = 100 - rank * 4;
     score += (play.length - 1) * 3;
     if (casseUnGroupe(view.me.hand, play)) score -= 12;
-    if (rank === DEUX) score -= handSize > 2 ? 45 : 10;
-    if (finirSurUnDeux(play)) score -= 60;
     if (play.length === handSize) score += 40;
     if (menace) score += rank;
 
-    // Tenir la série, c'est ouvrir la suivante : le gain est proportionnel à
-    // la chance d'y arriver, et non plus une prime tout ou rien.
+    if (rank === DEUX && handSize > 6) score -= 20;
+    const deuxGardes = apres.filter((c) => c.rank === DEUX).length;
+    if (deuxGardes > 0) score -= (70 * deuxGardes) / (apres.length - deuxGardes + 1);
+
     const p = survie(view, rank, play.length);
     score += p * 26;
 
-    // Un tour de parole en moins vaut mieux qu'un tour de parole en plus.
-    const reste = view.me.hand.filter((c) => !play.includes(c));
-    score += (toursActuels - tours(reste)) * 7;
+    score += (toursActuels - tours(apres)) * 7;
 
-    // À l'ouverture, sortir un groupe entier de petites cartes est presque
-    // toujours excellent : peu de monde peut répondre à trois cartes.
     if (ouverture && play.length >= 2) score += play.length * 4;
 
     if (score > bestScore) {
@@ -130,7 +127,6 @@ function pick(view: PlayerView): Card[] | null {
 
   if (!view.canPass || !best) return best;
 
-  // Reprendre la main quand on a de bonnes chances de la garder.
   if (bestSurvie > 0.75 && best[0].rank !== DEUX) return best;
 
   const requirement = view.requirement?.rank ?? 3;
