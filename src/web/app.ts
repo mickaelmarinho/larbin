@@ -9,13 +9,14 @@ import type { Action, Card, Rank, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
 import {
-  ADRESSE_PUBLIQUE, TABLE_PUBLIQUE, TableEnLigne, TableSolo, activite, hoteDuJeu,
+  ADRESSE_PUBLIQUE, DUREE_REACTION, TABLE_PUBLIQUE, TableEnLigne, TableSolo, activite, hoteDuJeu,
   tablesPubliques, type ResumeTable, type Table,
 } from './table.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
 import { TableDidacticiel, type Morale } from './didacticiel.ts';
 import { RIEN, quoiEntendre, type Instant } from './bruitages.ts';
+import { REACTIONS } from '../reseau/protocole.ts';
 import { jouerSons, ouvrirAuPremierGeste, reglerSons, sonsActifs } from './sons.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -36,6 +37,11 @@ let voileManuel = false;
 let minuteurTables: ReturnType<typeof setTimeout> | undefined;
 /** La dernière photographie de la table, pour savoir ce qui vient de s'y passer. */
 let entendu: Instant = RIEN;
+/** La palette des réactions est-elle ouverte ? */
+let paletteOuverte = false;
+let minuteurBulles: ReturnType<typeof setTimeout> | undefined;
+/** La plus récente réaction déjà entendue, pour ne sonner qu'aux nouvelles. */
+let derniereBulleEntendue = 0;
 /** En solo, la table patiente aussi pendant qu'on lit. */
 function suspendre(oui: boolean): void {
   voileManuel = oui;
@@ -115,6 +121,26 @@ function rendreScores(vue: PlayerView): void {
   $('tableau-scores').innerHTML = `${marques.join('')}<span class="objectif">objectif ${vue.objectif}</span>`;
 }
 
+/**
+ * La bulle d'un joueur qui vient de réagir. L'affichage est redessiné à chaque
+ * message du serveur : pour que la bulle ne rejaillisse pas à chaque fois, on
+ * reprend son animation là où elle en était, avec un délai négatif.
+ */
+function bulle(id: string): string {
+  if (!(table instanceof TableEnLigne)) return '';
+  const r = table.reactions().get(id);
+  if (!r) return '';
+  return `<span class="bulle" style="animation-delay:-${Date.now() - r.recueA}ms">${r.reaction}</span>`;
+}
+
+/** Redessine au moment où la plus proche des bulles doit s'effacer. */
+function programmerBulles(): void {
+  clearTimeout(minuteurBulles);
+  if (!(table instanceof TableEnLigne)) return;
+  const restes = [...table.reactions().values()].map((r) => DUREE_REACTION - (Date.now() - r.recueA));
+  if (restes.length > 0) minuteurBulles = setTimeout(rendre, Math.max(50, Math.min(...restes) + 20));
+}
+
 function rendreAdversaires(vue: PlayerView): void {
   $('adversaires').innerHTML = vue.others.map((o) => {
     const actif = vue.turnPlayer === o.id && vue.phase === 'jeu';
@@ -138,6 +164,7 @@ function rendreAdversaires(vue: PlayerView): void {
       <span class="nom">${o.name}</span>
       ${o.role ? `<span class="role ${o.role}">${o.role}</span>` : ''}
       <span class="etat">${etatTexte}</span>
+      ${bulle(o.id)}
     </div>`;
   }).join('');
 }
@@ -214,7 +241,13 @@ function rendreMaMain(vue: PlayerView): void {
   ajusterChevauchement(vue.me.hand.length);
 
   const role = vue.me.role ? `<span class="role ${vue.me.role}">${vue.me.role}</span>` : '';
-  $('ma-ligne').innerHTML = `${role}<span>Manche ${vue.round} — ${vue.me.hand.length} cartes</span>`;
+  // En ligne, de quoi réagir : un bouton, et la palette quand on l'ouvre.
+  const reagir = table instanceof TableEnLigne
+    ? `${bulle(vue.me.id)}<button id="reagir" class="${paletteOuverte ? 'actif' : ''}" type="button"
+         title="Réagir">😊</button>${paletteOuverte ? `<div class="palette">${REACTIONS
+      .map((r) => `<button data-reaction="${r}" type="button">${r}</button>`).join('')}</div>` : ''}`
+    : '';
+  $('ma-ligne').innerHTML = `${role}<span>Manche ${vue.round} — ${vue.me.hand.length} cartes</span>${reagir}`;
 
   const poser = $('poser') as HTMLButtonElement;
   const passer = $('passer') as HTMLButtonElement;
@@ -248,6 +281,7 @@ function rendre(): void {
   rendreTapis(vue);
   rendreRestantes(vue);
   rendreMaMain(vue);
+  programmerBulles();
 }
 
 /* ------------------------------------------------------------- décisions */
@@ -320,6 +354,15 @@ function ecouter(vue: PlayerView | null): void {
   const maintenant: Instant = { vue, salon: table instanceof TableEnLigne ? table.salon() : null };
   jouerSons(quoiEntendre(entendu, maintenant, table.moi, table.mode === 'en-ligne'));
   entendu = maintenant;
+
+  // La réaction d'un autre fait un petit « pop » ; la sienne, on la connaît.
+  if (table instanceof TableEnLigne) {
+    for (const [de, r] of table.reactions()) {
+      if (r.recueA <= derniereBulleEntendue) continue;
+      derniereBulleEntendue = r.recueA;
+      if (de !== table.moi) jouerSons(['reaction']);
+    }
+  }
 }
 
 /** La clochette de la barre : barrée quand les sons sont coupés. */
@@ -1248,6 +1291,8 @@ function installer(nouvelle: Table): void {
   annonce = '';
   // Une nouvelle table n'a pas de passé : sa première image ne sonne pas.
   entendu = RIEN;
+  paletteOuverte = false;
+  derniereBulleEntendue = 0;
   table.abonner(surChangement);
   surChangement();
 }
@@ -1255,6 +1300,24 @@ function installer(nouvelle: Table): void {
 $('ma-main').addEventListener('click', (e) => {
   const cible = (e.target as HTMLElement).closest('.carte') as HTMLElement | null;
   if (cible) choisirCarte(cible.dataset.id!);
+});
+
+// La palette vit dans #ma-ligne, redessinée à chaque changement : on écoute le
+// conteneur plutôt que ses boutons.
+$('ma-ligne').addEventListener('click', (e) => {
+  if (!(table instanceof TableEnLigne)) return;
+  const cible = e.target as HTMLElement;
+  if (cible.closest('#reagir')) {
+    paletteOuverte = !paletteOuverte;
+    rendre();
+    return;
+  }
+  const choix = (cible.closest('[data-reaction]') as HTMLElement | null)?.dataset.reaction;
+  const reaction = REACTIONS.find((r) => r === choix);
+  if (!reaction) return;
+  table.reagir(reaction);
+  paletteOuverte = false;
+  rendre();
 });
 
 $('poser').addEventListener('click', () => {

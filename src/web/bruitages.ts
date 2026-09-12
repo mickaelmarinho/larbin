@@ -9,7 +9,8 @@
 import type { PlayerView } from '../engine/game.ts';
 import type { EtatSalon } from '../reseau/protocole.ts';
 
-export type Son = 'carte' | 'deux' | 'passe' | 'a-vous' | 'arrivee' | 'depart' | 'fin-de-manche';
+export type Son = 'carte' | 'deux' | 'passe' | 'a-vous' | 'arrivee' | 'depart' | 'fin-de-manche'
+  | 'reaction';
 
 export interface Instant {
   vue: PlayerView | null;

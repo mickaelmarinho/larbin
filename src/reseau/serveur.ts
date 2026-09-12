@@ -400,6 +400,16 @@ function traiter(ws: WebSocket, message: VersServeur): void {
       case 'action':
         salon.jouer(id, message.action);
         break;
+      case 'reaction': {
+        // Rien ne change à la table : on relaie à ceux qui y sont, sans
+        // redessiner ni toucher aux minuteurs.
+        const reaction = salon.reagir(id, message.reaction);
+        if (!reaction) return;
+        for (const [autre, lienAutre] of connexions) {
+          if (lienAutre.salon === salon) envoyer(autre, { type: 'reaction', de: id, reaction });
+        }
+        return;
+      }
       default:
         return;
     }

@@ -9,7 +9,9 @@
 import type { Action, GameState } from '../engine/types.ts';
 import { apply, createGame, viewFor, type PlayerView } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
-import type { EtatSalon, VersClient, VersServeur } from '../reseau/protocole.ts';
+import {
+  estReaction, type EtatSalon, type Reaction, type VersClient, type VersServeur,
+} from '../reseau/protocole.ts';
 
 export type Mode = 'solo' | 'en-ligne' | 'didacticiel';
 
@@ -252,6 +254,9 @@ export async function activite(): Promise<Activite | null> {
  */
 export const TABLE_PUBLIQUE = '*';
 
+/** Combien de temps une réaction reste affichée au-dessus d'un joueur. */
+export const DUREE_REACTION = 3500;
+
 export class TableEnLigne implements Table {
   readonly mode = 'en-ligne';
   moi = '';
@@ -269,6 +274,8 @@ export class TableEnLigne implements Table {
   private readonly chercheTablePublique: boolean;
   private depuis = Date.now();
   private battement: ReturnType<typeof setInterval> | undefined;
+  /** La dernière réaction de chacun, et quand elle est arrivée. */
+  private reactionsRecues = new Map<string, { reaction: Reaction; recueA: number }>();
 
   constructor(private nom: string, code: string) {
     this.chercheTablePublique = code === TABLE_PUBLIQUE;
@@ -360,6 +367,19 @@ export class TableEnLigne implements Table {
     return Math.max(0, Math.ceil((reste - (Date.now() - this.etatRecuA)) / 1000));
   }
 
+  /** Lancer une réaction à la table. */
+  reagir(reaction: Reaction): void {
+    this.dire({ type: 'reaction', reaction });
+  }
+
+  /** Les réactions encore à l'écran, par joueur. Les plus anciennes s'effacent. */
+  reactions(maintenant = Date.now()): Map<string, { reaction: Reaction; recueA: number }> {
+    for (const [id, r] of this.reactionsRecues) {
+      if (maintenant - r.recueA >= DUREE_REACTION) this.reactionsRecues.delete(id);
+    }
+    return this.reactionsRecues;
+  }
+
   quitter(): void {
     this.ferme = true;
     clearInterval(this.battement);
@@ -419,6 +439,12 @@ export class TableEnLigne implements Table {
           break;
         case 'erreur':
           this.message = recu.message;
+          break;
+        case 'reaction':
+          // On ne se fie qu'à la liste connue : ce texte finit dans la page.
+          if (estReaction(recu.reaction)) {
+            this.reactionsRecues.set(recu.de, { reaction: recu.reaction, recueA: Date.now() });
+          }
           break;
       }
       this.prevenir();

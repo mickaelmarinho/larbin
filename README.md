@@ -104,6 +104,18 @@ la page n'y gagne pas un octet. Ce qui déclenche chaque son se décide à part
 (`src/web/bruitages.ts`), en comparant deux instants de la table — c'est ce qui
 permet de l'éprouver sans haut-parleur.
 
+### Réagir
+
+En ligne, le bouton 😊 à côté de votre main ouvre une palette de huit
+réactions : 👍 😂 😱 😤 👏 🔥 🤞 👑. Celle qu'on choisit s'affiche quelques
+secondes en bulle au-dessus de son nom, chez tout le monde à la table, avec un
+petit « pop » pour les autres.
+
+Il n'y a volontairement **pas de texte libre** : rien à modérer, rien qui se
+lise mal venant d'un inconnu. Le serveur refuse tout ce qui n'est pas dans la
+liste, ne relaie qu'à la table concernée, et ignore sans bruit les réactions
+lancées à moins d'une seconde et demie d'intervalle.
+
 ## Jouer à distance
 
 Le jeu se joue sur **https://larbin.vercel.app**. Envoyez ce lien à vos proches,
@@ -187,6 +199,7 @@ npm run serveur                                    # dans une autre fenêtre
 node scripts/reseau/e2e-publique.mjs localhost:5177  # prêt, compte à rebours, départ
 node scripts/reseau/e2e-tables.mjs localhost:5177    # liste, reprise d'un bot, salon privé
 node scripts/reseau/e2e-inactif.mjs localhost:5177   # le joueur muet (une minute d'attente)
+node scripts/reseau/e2e-reactions.mjs localhost:5177 # réactions : relayées, filtrées, espacées
 node scripts/reseau/un-visiteur.mjs localhost:5177   # s'assoit et reste, pour regarder l'écran
 ```
 

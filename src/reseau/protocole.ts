@@ -9,6 +9,17 @@
 import type { Action } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 
+/**
+ * Les réactions qu'on peut lancer à table. Une poignée, toujours la même : pas
+ * de texte libre, donc rien à modérer, et rien qui se lise mal venant d'un
+ * inconnu.
+ */
+export const REACTIONS = ['👍', '😂', '😱', '😤', '👏', '🔥', '🤞', '👑'] as const;
+export type Reaction = (typeof REACTIONS)[number];
+
+export const estReaction = (x: unknown): x is Reaction =>
+  typeof x === 'string' && (REACTIONS as readonly string[]).includes(x);
+
 /** Une place à la table, telle qu'on la voit depuis le salon. */
 export interface Siege {
   id: string;
@@ -52,13 +63,16 @@ export type VersServeur =
   | { type: 'ajouter-bot' }
   | { type: 'retirer'; id: string }
   | { type: 'demarrer' }
-  | { type: 'action'; action: Action };
+  | { type: 'action'; action: Action }
+  | { type: 'reaction'; reaction: string };
 
 export type VersClient =
   | { type: 'bienvenue'; jeton: string; moi: string; salon: string }
   | { type: 'salon'; etat: EtatSalon }
   | { type: 'vue'; vue: PlayerView }
-  | { type: 'erreur'; message: string };
+  | { type: 'erreur'; message: string }
+  /** Quelqu'un à la table a réagi : `de` est l'identifiant de sa place. */
+  | { type: 'reaction'; de: string; reaction: Reaction };
 
 /** Codes de salon : quatre lettres, sans les caractères qu'on confond à l'oral. */
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';

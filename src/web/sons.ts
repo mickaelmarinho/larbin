@@ -108,6 +108,8 @@ const PARTITION: Record<Son, (c: AudioContext, t: number) => void> = {
     ton(c, 880, t + 0.02, 0.2, 0.1, 'triangle');
   },
   passe: (c, t) => ton(c, 330, t, 0.09, 0.05, 'sine', 250),
+  // Une réaction : un « pop » bref et aigu, qui ne se confond avec aucun coup.
+  reaction: (c, t) => ton(c, 1320, t, 0.12, 0.045, 'sine', 1760),
   'a-vous': (c, t) => {
     ton(c, 660, t, 0.16, 0.07);
     ton(c, 990, t + 0.11, 0.24, 0.06);

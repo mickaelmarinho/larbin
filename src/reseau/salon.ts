@@ -16,7 +16,12 @@ import {
   type PlayerView,
 } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
-import { codeDeSalon, nomPropre, type EtatSalon, type Siege } from './protocole.ts';
+import {
+  codeDeSalon, estReaction, nomPropre, type EtatSalon, type Reaction, type Siege,
+} from './protocole.ts';
+
+/** Le temps minimal entre deux réactions d'un même joueur. */
+export const ECART_REACTIONS = 1500;
 
 const NOMS_DE_BOTS = ['Gina', 'Hugo', 'Lila', 'Naïm', 'Zoé'];
 
@@ -49,6 +54,8 @@ export class Salon {
    * transmettre, pour que chacun sache le temps qu'il lui reste.
    */
   aJouerAvant: number | null = null;
+  /** Quand chacun a réagi pour la dernière fois. */
+  private derniereReaction = new Map<string, number>();
 
   constructor(code = codeDeSalon(), options: { publique?: boolean } = {}) {
     this.code = code;
@@ -293,6 +300,21 @@ export class Salon {
    * présent qui ne se décide pas. Null entre deux manches, où elle n'attend
    * personne en particulier.
    */
+  /**
+   * Une réaction lancée à la table. Réservée à ceux qui y sont assis, et
+   * espacée : trop rapprochée, on l'ignore sans bruit plutôt que de gronder
+   * quelqu'un qui a tapoté deux fois. Renvoie ce qu'il faut relayer, ou null.
+   */
+  reagir(id: string, reaction: unknown, maintenant = Date.now()): Reaction | null {
+    const place = this.place(id);
+    if (!place || place.estBot) throw new RegleViolee('Il faut être assis à la table.');
+    if (!estReaction(reaction)) throw new RegleViolee('Réaction inconnue.');
+    const avant = this.derniereReaction.get(id);
+    if (avant !== undefined && maintenant - avant < ECART_REACTIONS) return null;
+    this.derniereReaction.set(id, maintenant);
+    return reaction;
+  }
+
   get acteurAttendu(): string | null {
     const e = this.etat;
     if (!e || e.phase === 'fin-de-manche' || e.phase === 'fin-de-partie') return null;
