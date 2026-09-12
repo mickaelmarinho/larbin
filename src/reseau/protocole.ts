@@ -37,6 +37,11 @@ export interface EtatSalon {
   publique: boolean;
   /** Millisecondes avant le lancement automatique, ou null s'il n'y en a pas. */
   departDans: number | null;
+  /**
+   * Millisecondes avant que la table ne joue à la place de celui dont c'est le
+   * tour. Null quand elle n'attend personne, ou qu'elle attend un bot.
+   */
+  delaiPourJouer: number | null;
 }
 
 export type VersServeur =

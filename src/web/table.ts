@@ -349,6 +349,17 @@ export class TableEnLigne implements Table {
     this.dire({ type: 'taille', taille: joueurs });
   }
 
+  /**
+   * Secondes avant que la table ne joue à la place de celui dont c'est le tour,
+   * ou null. Comme le compte à rebours du départ, on décompte depuis la
+   * réception, sans se fier à l'horloge du serveur.
+   */
+  delaiPourJouer(): number | null {
+    const reste = this.etatSalon?.delaiPourJouer;
+    if (reste == null) return null;
+    return Math.max(0, Math.ceil((reste - (Date.now() - this.etatRecuA)) / 1000));
+  }
+
   quitter(): void {
     this.ferme = true;
     clearInterval(this.battement);

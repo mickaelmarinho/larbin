@@ -141,6 +141,34 @@ test('les bots jouent, et on couvre un joueur parti sans prévenir', () => {
   assert.ok(salon.coupAutomatique(tour), 'il y a toujours un coup à jouer pour lui');
 });
 
+test('la table sait qui elle attend, même s’il est présent et muet', () => {
+  const salon = tableDe(2);
+  salon.demarrer();
+  const humain = salon.places.find((p) => !p.estBot)!;
+  salon.etat!.turn = salon.etat!.order.indexOf(humain.id);
+
+  assert.equal(salon.acteurAttendu, humain.id, 'elle sait qu’elle l’attend');
+  assert.equal(salon.acteurAutomatique(), null, 'mais elle ne joue pas à sa place d’office');
+
+  // C'est le serveur qui décide quand cesser d'attendre ; le salon, lui, sait
+  // seulement qu'un absent se couvre tout de suite.
+  humain.connecte = false;
+  assert.equal(salon.acteurAutomatique(), humain.id, 'absent, elle le couvre');
+});
+
+test('entre deux manches, la table n’attend personne en particulier', () => {
+  const salon = tableDe(2);
+  salon.demarrer();
+  for (const p of salon.places) p.connecte = false;
+  for (let i = 0; i < 4000; i++) {
+    const qui = salon.acteurAutomatique();
+    if (!qui) break;
+    salon.jouer(qui, salon.coupAutomatique(qui)!);
+  }
+  assert.equal(salon.etat!.phase, 'fin-de-manche');
+  assert.equal(salon.acteurAttendu, null, 'sinon on jouerait « à la place » de personne');
+});
+
 test('une partie complète se joue de bout en bout sur le serveur', () => {
   const salon = tableDe(2);
   salon.demarrer();

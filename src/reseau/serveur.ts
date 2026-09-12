@@ -32,6 +32,13 @@ const PORT = Number(process.env.PORT) || 5177;
 const REFLEXION = 800;
 /** Au-delà, on joue à la place d'un joueur déconnecté pour ne pas bloquer les autres. */
 const PATIENCE_DECONNEXION = 25_000;
+/**
+ * Et au-delà de cela, on joue aussi pour un joueur présent mais muet. Entre
+ * amis on s'appelle pour le réveiller ; entre inconnus, personne ne peut le
+ * faire, et un seul onglet oublié figerait la table indéfiniment. Large, pour
+ * qu'une vraie hésitation ne soit jamais coupée — et annoncé à l'écran.
+ */
+const PATIENCE_INACTIF = 60_000;
 /** Un salon vide finit par être oublié. */
 const OUBLI = 2 * 60 * 60 * 1000;
 /**
@@ -208,8 +215,8 @@ function lancer(salon: Salon): void {
     return;
   }
   salon.completerEtDemarrer();
-  diffuser(salon);
   avancer(salon);
+  diffuser(salon);
 }
 
 /**
@@ -218,15 +225,23 @@ function lancer(salon: Salon): void {
  */
 function avancer(salon: Salon): void {
   clearTimeout(minuteurs.get(salon));
-  const acteur = salon.acteurAutomatique();
-  if (!acteur) return;
+  salon.aJouerAvant = null;
 
-  const place = salon.place(acteur)!;
-  const delai = place.estBot ? REFLEXION : PATIENCE_DECONNEXION;
+  const acteur = salon.acteurAttendu;
+  if (!acteur) return;
+  const place = salon.place(acteur);
+  if (!place) return;
+
+  const delai = place.estBot ? REFLEXION
+    : place.connecte ? PATIENCE_INACTIF
+    : PATIENCE_DECONNEXION;
+  // Un joueur a le droit de savoir combien de temps il lui reste ; un bot, non.
+  if (!place.estBot) salon.aJouerAvant = Date.now() + delai;
 
   minuteurs.set(salon, setTimeout(() => {
-    // La situation a pu changer pendant l'attente.
-    if (salon.acteurAutomatique() !== acteur) {
+    // La situation a pu changer pendant l'attente. Si le minuteur arrive au
+    // bout, c'est que personne n'a rien fait : toute action l'aurait réarmé.
+    if (salon.acteurAttendu !== acteur) {
       avancer(salon);
       return;
     }
@@ -234,11 +249,15 @@ function avancer(salon: Salon): void {
     if (!coup) return;
     try {
       salon.jouer(acteur, coup);
-    } catch {
+    } catch (err) {
+      // Cela ne devrait pas arriver : un coup de bot est toujours légal. Si
+      // c'était le cas, la table s'arrêterait là — autant que ça se voie dans
+      // le journal plutôt que dans le silence.
+      console.error('Coup automatique refusé', err);
       return;
     }
-    diffuser(salon);
     avancer(salon);
+    diffuser(salon);
   }, delai));
 }
 
@@ -332,8 +351,10 @@ function traiter(ws: WebSocket, message: VersServeur): void {
     envoyer(ws, { type: 'bienvenue', jeton: place.jeton, moi: place.id, salon: salon.code });
     // Un lien vers une table publique mène au même accord.
     ajusterLancement(salon);
-    diffuser(salon);
+    // On arme le minuteur avant de diffuser : sinon le délai annoncé serait
+    // celui du tour précédent.
     avancer(salon);
+    diffuser(salon);
     return;
   }
 
@@ -388,8 +409,8 @@ function traiter(ws: WebSocket, message: VersServeur): void {
     return;
   }
 
-  diffuser(salon);
   avancer(salon);
+  diffuser(salon);
 }
 
 function exigerHote(salon: Salon, id: string): void {
@@ -445,8 +466,8 @@ wss.on('connection', (ws) => {
       // Le départ des uns peut faire l'accord des autres, ou le défaire.
       ajusterLancement(lien.salon);
     }
-    diffuser(lien.salon);
     avancer(lien.salon);
+    diffuser(lien.salon);
   });
 });
 

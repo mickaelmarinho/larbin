@@ -330,6 +330,26 @@ function boucle(): void {
   mancheAnnoncee = Math.max(mancheAnnoncee, vue.round);
   cacherVoile();
 
+  // Un joueur présent mais muet finirait par bloquer la table : elle joue pour
+  // lui au bout d'une minute. Autant l'avertir, plutôt que de le faire dans
+  // son dos — et seulement sur la fin, pour ne pas mettre la pression.
+  if (enLigne && vue.turnPlayer === vue.me.id && vue.legal.length > 0) {
+    const reste = enLigne.delaiPourJouer();
+    if (reste !== null) {
+      if (reste <= 15) {
+        $('annonce').textContent = reste > 0
+          ? `À vous — la table jouera pour vous dans ${reste} s.`
+          : 'La table joue pour vous…';
+      }
+      // On se redonne la main chaque seconde, même quand il reste du temps :
+      // pendant son tour, le joueur ne reçoit plus rien du serveur, donc rien
+      // ne viendrait réévaluer le délai — et l'avertissement, placé sous cette
+      // condition, ne serait jamais apparu.
+      minuteur = setTimeout(boucle, 1000);
+      return;
+    }
+  }
+
   // Aucun coup possible : la règle impose de passer, autant le faire pour vous.
   if (vue.turnPlayer === vue.me.id && vue.legal.length === 0 && vue.canPass) {
     annonce = 'Vous ne pouvez pas monter.';

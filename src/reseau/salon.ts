@@ -43,6 +43,12 @@ export class Salon {
   lancement: number | null = null;
   /** À combien on joue ici. Le jeu en accepte quatre à six. */
   taille = MIN_JOUEURS;
+  /**
+   * Instant où la table jouera à la place de celui dont c'est le tour. Le
+   * serveur le renseigne en armant son minuteur ; le salon ne fait que le
+   * transmettre, pour que chacun sache le temps qu'il lui reste.
+   */
+  aJouerAvant: number | null = null;
 
   constructor(code = codeDeSalon(), options: { publique?: boolean } = {}) {
     this.code = code;
@@ -141,6 +147,9 @@ export class Salon {
       publique: this.publique,
       departDans: this.lancement !== null && !this.commencee
         ? Math.max(0, this.lancement - Date.now())
+        : null,
+      delaiPourJouer: this.aJouerAvant !== null
+        ? Math.max(0, this.aJouerAvant - Date.now())
         : null,
     };
   }
@@ -277,6 +286,17 @@ export class Salon {
     }
     this.etat = apply(this.etat, action);
     this.derniereActivite = Date.now();
+  }
+
+  /**
+   * Qui la table attend, quel qu'il soit : un bot, un absent, ou un joueur
+   * présent qui ne se décide pas. Null entre deux manches, où elle n'attend
+   * personne en particulier.
+   */
+  get acteurAttendu(): string | null {
+    const e = this.etat;
+    if (!e || e.phase === 'fin-de-manche' || e.phase === 'fin-de-partie') return null;
+    return e.order[e.turn] ?? null;
   }
 
   /**

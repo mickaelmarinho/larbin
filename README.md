@@ -31,6 +31,13 @@ Une déconnexion n'est pas grave : le navigateur retient votre place et vous la
 rend en rouvrant le lien. Si vous ne revenez pas au bout de 25 secondes, la
 table joue pour vous plutôt que d'attendre indéfiniment.
 
+Rester là sans jouer bloquerait tout autant : au bout d'une minute, la table
+joue donc aussi pour un joueur présent mais muet. Elle l'avertit dans les
+quinze dernières secondes — « la table jouera pour vous dans 12 s » —, car
+jouer dans le dos de quelqu'un serait déloyal, même pour sauver la partie.
+Entre amis on s'appelle pour réveiller le distrait ; entre inconnus, personne
+ne peut le faire.
+
 ### Jouer avec des inconnus
 
 **Jouer avec d'autres visiteurs** assoit à une table publique, sans code ni
