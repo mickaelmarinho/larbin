@@ -152,7 +152,7 @@ const CLE_JETON = 'larbin.jeton.';
  * pendant que l'arbitre des parties tourne ici. C'est ce qui permet d'afficher
  * le jeu tout de suite et de réveiller le serveur en coulisse.
  */
-export const HOTE_JEU = 'larbin.onrender.com';
+export const HOTE_JEU = 'p01--larbin--xp64cmfbzy56.code.run';
 
 /**
  * L'adresse à donner aux joueurs : la page statique, qui s'ouvre tout de suite.

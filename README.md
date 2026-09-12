@@ -171,8 +171,8 @@ node scripts/reseau/e2e-inactif.mjs localhost:5177   # le joueur muet (une minut
 node scripts/reseau/un-visiteur.mjs localhost:5177   # s'assoit et reste, pour regarder l'écran
 ```
 
-Elles fonctionnent aussi sur `larbin.onrender.com`. Deux avertissements dans ce
-cas : l'hébergeur met une trentaine de secondes à se réveiller, et une dizaine
+Elles fonctionnent aussi sur le serveur en ligne (p01--larbin--xp64cmfbzy56.code.run). Deux avertissements dans ce
+cas : un hébergeur qui endort ses serveurs met du temps à les réveiller, et une dizaine
 de secondes à apprendre qu'une socket s'est fermée — les essais observent donc
 au lieu de parier sur un délai. Et pendant un redéploiement, le serveur est
 remplacé en cours de route : une suite lancée à ce moment-là échoue sur les
@@ -217,7 +217,7 @@ fait passer de 12 % des manches, par joueur, à zéro, et le bot corrigé rempor
 - [x] **Trois tapis** — Feutre, Bordeaux, Ardoise. Pur habillage : rien qui
       touche aux règles ni à ce qu'un joueur voit.
 - [x] **En ligne** — https://larbin.vercel.app pour la page, instantanée ;
-      larbin.onrender.com pour les parties, réveillé en coulisse. Chaque poussée
+      Northflank (p01--larbin--xp64cmfbzy56.code.run) pour les parties, toujours éveillé. Chaque poussée
       sur `main` republie les deux.
 
 ## Comment c'est rangé

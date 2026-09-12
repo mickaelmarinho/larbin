@@ -2,7 +2,7 @@
 // siège tenu par un bot dans une partie déjà commencée.
 //
 //   node scripts/reseau/e2e-tables.mjs localhost:5177
-//   node scripts/reseau/e2e-tables.mjs larbin.onrender.com
+//   node scripts/reseau/e2e-tables.mjs p01--larbin--xp64cmfbzy56.code.run
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);

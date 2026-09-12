@@ -1,7 +1,7 @@
 // Essai de bout en bout des tables publiques contre un vrai serveur.
 //
 //   node scripts/reseau/e2e-publique.mjs localhost:5177
-//   node scripts/reseau/e2e-publique.mjs larbin.onrender.com
+//   node scripts/reseau/e2e-publique.mjs p01--larbin--xp64cmfbzy56.code.run
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
