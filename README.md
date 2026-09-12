@@ -85,6 +85,25 @@ Personne n'y attend donc jamais devant un écran vide, ce qui est la raison
 d'être de ce fonctionnement : une salle d'attente classique, à faible
 fréquentation, ne montre que son propre désert.
 
+### Les sons
+
+Discrets, courts, et coupables d'un geste : la **clochette** de la barre du
+haut, ou l'interrupteur des salles d'attente. Le réglage est retenu par le
+navigateur.
+
+- une carte posée frotte le tapis, un 2 claque un peu plus ;
+- une passe fait un petit « toc » ;
+- en ligne, un carillon quand c'est à vous — pas en solo, où les bots répondent
+  trop vite pour que ce soit autre chose qu'une rengaine ;
+- une clochette qui monte quand quelqu'un s'assoit à votre table, qui descend
+  quand il s'en va ; les bots vont et viennent en silence ;
+- trois notes à la fin d'une manche.
+
+Aucun fichier audio : tout est synthétisé dans le navigateur (`src/web/sons.ts`),
+la page n'y gagne pas un octet. Ce qui déclenche chaque son se décide à part
+(`src/web/bruitages.ts`), en comparant deux instants de la table — c'est ce qui
+permet de l'éprouver sans haut-parleur.
+
 ## Jouer à distance
 
 Le jeu se joue sur **https://larbin.vercel.app**. Envoyez ce lien à vos proches,

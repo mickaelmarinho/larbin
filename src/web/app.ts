@@ -15,6 +15,8 @@ import {
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
 import { TableDidacticiel, type Morale } from './didacticiel.ts';
+import { RIEN, quoiEntendre, type Instant } from './bruitages.ts';
+import { jouerSons, ouvrirAuPremierGeste, reglerSons, sonsActifs } from './sons.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -32,6 +34,8 @@ let annonce = '';
 let voileManuel = false;
 /** Le rafraîchissement de la liste des tables, tant qu'elle est affichée. */
 let minuteurTables: ReturnType<typeof setTimeout> | undefined;
+/** La dernière photographie de la table, pour savoir ce qui vient de s'y passer. */
+let entendu: Instant = RIEN;
 /** En solo, la table patiente aussi pendant qu'on lit. */
 function suspendre(oui: boolean): void {
   voileManuel = oui;
@@ -305,8 +309,41 @@ function agir(action: Action): void {
 function surChangement(): void {
   const vue = table?.vue() ?? null;
   if (vue) annonce = dernierCoup(vue);
+  ecouter(vue);
   rendre();
   boucle();
+}
+
+/** Compare la table à ce qu'elle était, et fait entendre ce qui a changé. */
+function ecouter(vue: PlayerView | null): void {
+  if (!table) return;
+  const maintenant: Instant = { vue, salon: table instanceof TableEnLigne ? table.salon() : null };
+  jouerSons(quoiEntendre(entendu, maintenant, table.moi, table.mode === 'en-ligne'));
+  entendu = maintenant;
+}
+
+/** La clochette de la barre : barrée quand les sons sont coupés. */
+function afficherClochette(): void {
+  const actifs = sonsActifs();
+  $('sons').textContent = actifs ? '🔔' : '🔕';
+  $('sons').title = actifs ? 'Couper les sons' : 'Remettre les sons';
+  $('sons').classList.toggle('coupes', !actifs);
+}
+
+/**
+ * Le même réglage dans les salles d'attente, où la barre n'est pas visible —
+ * c'est justement là qu'on guette l'arrivée des autres.
+ */
+const interrupteurSons = () => `<button class="lien" id="sons-salon" type="button">${sonsActifs()
+  ? '🔔 Sons activés — couper' : '🔕 Sons coupés — remettre'}</button>`;
+
+function brancherInterrupteurSons(): void {
+  $('sons-salon').addEventListener('click', () => {
+    reglerSons(!sonsActifs());
+    afficherClochette();
+    $('sons-salon').outerHTML = interrupteurSons();
+    brancherInterrupteurSons();
+  });
 }
 
 function boucle(): void {
@@ -1091,8 +1128,10 @@ function voileTablePublique(
       ? 'Je ne suis plus prêt' : 'Je suis prêt'}</button>
     <button class="action" id="maintenant" type="button">Commencer avec des bots</button>
     <button class="action" id="quitter" type="button">Quitter</button>
+    ${interrupteurSons()}
   `);
 
+  brancherInterrupteurSons();
   $('pret').addEventListener('click', () => en.pret(!moi?.pret));
   $('voile').querySelectorAll('[data-taille]').forEach((b) => {
     b.addEventListener('click', () => en.taille(Number((b as HTMLElement).dataset.taille)));
@@ -1169,9 +1208,11 @@ function voileSalon(en: TableEnLigne): void {
         Commencer la partie
       </button>` : '<p class="mention">L’hôte lancera la partie.</p>'}
     <button class="action" id="quitter" type="button">Quitter</button>
+    ${interrupteurSons()}
   `);
 
   en.oublierErreur();
+  brancherInterrupteurSons();
 
   $('copier').addEventListener('click', async () => {
     if (navigator.share) {
@@ -1205,6 +1246,8 @@ function installer(nouvelle: Table): void {
   mancheAnnoncee = 0;
   poseAffichee = '';
   annonce = '';
+  // Une nouvelle table n'a pas de passé : sa première image ne sonne pas.
+  entendu = RIEN;
   table.abonner(surChangement);
   surChangement();
 }
@@ -1262,6 +1305,11 @@ function voileTapis(retour: () => void): void {
   });
 }
 
+$('sons').addEventListener('click', () => {
+  reglerSons(!sonsActifs());
+  afficherClochette();
+});
+
 $('tapis-choix').addEventListener('click', () => voileTapis(() => {
   cacherVoile();
   boucle();
@@ -1292,6 +1340,8 @@ window.addEventListener('resize', () => {
 });
 
 appliquerTheme(themeCourant());
+afficherClochette();
+ouvrirAuPremierGeste();
 
 // On cherche le serveur de parties dès le premier instant : s'il dort ailleurs,
 // il se réveille pendant que le joueur entre son nom.
