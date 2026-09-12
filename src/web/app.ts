@@ -14,6 +14,7 @@ import {
 } from './table.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
+import { TableDidacticiel, type Morale } from './didacticiel.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -320,15 +321,26 @@ function boucle(): void {
     return;
   }
 
-  if (vue.phase === 'fin-de-partie') return voileFinDePartie(vue);
-  if (vue.phase === 'fin-de-manche') return voileFinDeManche(vue);
-  if (vue.phase === 'coupe') return voileCoupe(vue);
+  // Le didacticiel n'a ni manches ni coupe : il enchaîne des situations, et
+  // affiche sa consigne au-dessus du tapis.
+  const cours = table instanceof TableDidacticiel ? table : null;
+  $('lecon').hidden = !cours;
+  if (cours) {
+    $('lecon').innerHTML = `<span class="etape">${cours.numero()}</span>${cours.consigne()}`;
+    const morale = cours.morale();
+    if (morale) return voileMorale(cours, morale);
+    cacherVoile();
+  } else {
+    if (vue.phase === 'fin-de-partie') return voileFinDePartie(vue);
+    if (vue.phase === 'fin-de-manche') return voileFinDeManche(vue);
+    if (vue.phase === 'coupe') return voileCoupe(vue);
 
-  if (vue.round > mancheAnnoncee && vue.round > 1) {
-    return voileDebutDeManche(vue);
+    if (vue.round > mancheAnnoncee && vue.round > 1) {
+      return voileDebutDeManche(vue);
+    }
+    mancheAnnoncee = Math.max(mancheAnnoncee, vue.round);
+    cacherVoile();
   }
-  mancheAnnoncee = Math.max(mancheAnnoncee, vue.round);
-  cacherVoile();
 
   // Un joueur présent mais muet finirait par bloquer la table : elle joue pour
   // lui au bout d'une minute. Autant l'avertir, plutôt que de le faire dans
@@ -640,6 +652,34 @@ const EMBLEME = `<svg class="embleme" viewBox="0 0 64 64" aria-hidden="true">
         fill="var(--rouge-embleme)"/>
 </svg>`;
 
+/**
+ * Ce qu'il fallait retenir de la leçon. On ne félicite pas pour féliciter : le
+ * texte dit ce que le coup vient de démontrer, et pourquoi la règle est ainsi.
+ */
+function voileMorale(cours: TableDidacticiel, morale: Morale): void {
+  montrerVoile(`
+    <h2>${morale.rate ? 'Le piège s’est refermé' : 'C’est cela'}</h2>
+    <p>${morale.texte}</p>
+    ${morale.rate
+      ? '<button class="action primaire" id="refaire" type="button">Réessayer</button>'
+      : ''}
+    <button class="action ${morale.rate ? '' : 'primaire'}" id="suite" type="button">${morale.derniere
+      ? 'Terminer' : 'Leçon suivante'}</button>
+  `);
+
+  $('refaire')?.addEventListener('click', () => cours.refaire());
+  $('suite').addEventListener('click', () => {
+    if (!morale.derniere) {
+      cours.suivante();
+      return;
+    }
+    table = null;
+    $('lecon').hidden = true;
+    $('table').hidden = true;
+    voileAccueil();
+  });
+}
+
 const CLE_ACCUEILLI = 'larbin.regles-vues';
 
 /** A-t-on déjà expliqué le jeu à ce navigateur ? */
@@ -679,13 +719,23 @@ function voileBienvenue(suite: () => void, libelle = 'Revenir'): void {
        d’office</b>. Pour le détail,
        <a href="https://${ADRESSE_PUBLIQUE}/regles" target="_blank" rel="noopener">toutes les règles</a>.</p>
     <button class="action primaire" id="compris" type="button">${libelle}</button>
+    <button class="action" id="apprendre" type="button">Apprendre en jouant — quatre leçons</button>
   `);
-  $('compris').addEventListener('click', () => {
+
+  const noter = () => {
     try {
       localStorage.setItem(CLE_ACCUEILLI, 'oui');
     } catch { /* on réexpliquera, ce n'est pas grave */ }
     suspendre(false);
+  };
+  $('compris').addEventListener('click', () => {
+    noter();
     suite();
+  });
+  $('apprendre').addEventListener('click', () => {
+    noter();
+    cacherVoile();
+    installer(new TableDidacticiel());
   });
 }
 

@@ -11,7 +11,7 @@ import { apply, createGame, viewFor, type PlayerView } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
 import type { EtatSalon, VersClient, VersServeur } from '../reseau/protocole.ts';
 
-export type Mode = 'solo' | 'en-ligne';
+export type Mode = 'solo' | 'en-ligne' | 'didacticiel';
 
 export interface Table {
   readonly mode: Mode;

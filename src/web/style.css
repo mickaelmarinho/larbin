@@ -578,6 +578,29 @@ button.action:disabled {
 
 .panneau .mention.alerte { color: #e0a08a; }
 
+/* La consigne du didacticiel : présente, jamais envahissante. */
+#lecon {
+  margin: 2px 4px 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border-left: 3px solid var(--laiton);
+  background: #ffffff12;
+  color: var(--texte);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+#lecon .etape {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--laiton);
+  color: #2a1e05;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* Les quelques règles qu'il faut pour jouer : lisibles d'un trait. */
 .panneau ul.vite {
   margin: 12px 0 0;

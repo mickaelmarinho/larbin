@@ -38,6 +38,21 @@ jouer dans le dos de quelqu'un serait déloyal, même pour sauver la partie.
 Entre amis on s'appelle pour réveiller le distrait ; entre inconnus, personne
 ne peut le faire.
 
+### Apprendre en jouant
+
+Un visiteur qui ne connaît pas le Président lit cinq lignes avant sa première
+partie, et peut demander **Apprendre en jouant** : quatre situations, une idée
+chacune — monter ou passer, la série qui ne fait qu'un tour, le 2 qui coupe, et
+le piège du 2 gardé pour la fin. La dernière laisse volontairement tomber dans
+le piège si l'on choisit le mauvais ordre : on retient mieux une erreur qu'un
+avertissement, et **Réessayer** remet la situation en place.
+
+Le didacticiel est une troisième sorte de table (`src/web/didacticiel.ts`). Il
+répond aux mêmes questions que les autres — « que vois-je ? », « comment
+j'agis ? » — si bien que tout l'affichage, le moteur et les bots fonctionnent
+sans rien savoir de lui. Seule s'ajoute une bande de consigne au-dessus du
+tapis.
+
 ### Jouer avec des inconnus
 
 **Jouer avec d'autres visiteurs** assoit à une table publique, sans code ni
