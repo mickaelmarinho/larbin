@@ -148,12 +148,24 @@ const lancements = new Map<Salon, NodeJS.Timeout>();
 
 /**
  * Programme le lancement d'une table publique, une fois pour toutes : l'arrivée
- * d'un deuxième visiteur ne remet pas le compte à rebours à zéro.
+ * d'un troisième visiteur ne remet pas le compte à rebours à zéro.
+ *
+ * Tant qu'on est seul, rien ne se déclenche : le premier arrivé attend qui il
+ * veut, aussi longtemps qu'il veut, et lance la partie quand il l'a décidé. À
+ * partir de deux, la table ne doit plus dépendre d'une hésitation.
  */
 function programmerLancement(salon: Salon): void {
   if (!salon.publique || salon.commencee || lancements.has(salon)) return;
+  if (salon.places.filter((p) => !p.estBot).length < 2) return;
   salon.lancement = Date.now() + ATTENTE_PUBLIQUE;
   lancements.set(salon, setTimeout(() => lancer(salon), ATTENTE_PUBLIQUE));
+}
+
+/** Plus de compte à rebours, plus de minuteur : on rend son temps au joueur. */
+function annulerLancement(salon: Salon): void {
+  clearTimeout(lancements.get(salon));
+  lancements.delete(salon);
+  salon.lancement = null;
 }
 
 /**
@@ -161,8 +173,7 @@ function programmerLancement(salon: Salon): void {
  * Si tout le monde est reparti entre-temps, la table disparaît simplement.
  */
 function lancer(salon: Salon): void {
-  clearTimeout(lancements.get(salon));
-  lancements.delete(salon);
+  annulerLancement(salon);
   if (salon.commencee) return;
   if (!salon.places.some((p) => !p.estBot && p.connecte)) {
     salons.delete(salon.code);
@@ -379,13 +390,17 @@ wss.on('connection', (ws) => {
     if (place) place.connecte = false;
     // Avant le début, une place vide se libère ; après, on la garde au chaud.
     if (!lien.salon.commencee && place && !place.estBot) lien.salon.retirer(lien.id);
-    // Une table publique quittée par tous avant de commencer n'a plus de raison
-    // d'exister : on ne la proposera à personne.
-    if (lien.salon.publique && !lien.salon.commencee && !lien.salon.places.some((p) => !p.estBot)) {
-      clearTimeout(lancements.get(lien.salon));
-      lancements.delete(lien.salon);
-      salons.delete(lien.salon.code);
-      return;
+    if (lien.salon.publique && !lien.salon.commencee) {
+      const restants = lien.salon.places.filter((p) => !p.estBot).length;
+      // Une table que tout le monde a quittée avant de commencer n'a plus de
+      // raison d'exister : on ne la proposera à personne.
+      if (restants === 0) {
+        annulerLancement(lien.salon);
+        salons.delete(lien.salon.code);
+        return;
+      }
+      // Redevenu seul, il redevient maître de son attente.
+      if (restants < 2) annulerLancement(lien.salon);
     }
     diffuser(lien.salon);
     avancer(lien.salon);

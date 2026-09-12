@@ -849,23 +849,29 @@ function voileTablePublique(
     </li>`),
   ].join('');
 
+  // Seul à la table, aucun compte à rebours : rien ne presse celui qui est
+  // arrivé le premier, et c'est lui qui décide quand il a assez attendu.
   const secondes = en.departDans();
-  const depart = secondes === null ? 'La partie va commencer.'
-    : secondes > 0 ? `départ dans <b>${secondes} s</b>`
-    : 'c’est parti…';
-  const compte = assis >= salon.minJoueurs
-    ? `<b>${assis} joueurs</b> à table`
-    : `<b>${assis}</b> joueur${assis > 1 ? 's' : ''} sur ${salon.minJoueurs}`;
-  const compagnie = assis > 1
-    ? `Vous êtes ${assis} à attendre. La table accepte jusqu’à ${salon.maxJoueurs} joueurs.`
-    : `Personne d’autre pour l’instant : si quelqu’un arrive d’ici là, vous jouerez ensemble.
-       La table accepte jusqu’à ${salon.maxJoueurs} joueurs.`;
+  const entete = secondes === null
+    ? (assis > 1
+      ? `<b>${assis} joueurs</b> à table.`
+      : '<b>Vous êtes seul</b> à cette table pour l’instant.')
+    : secondes > 0
+      ? `<b>${assis} joueurs</b> à table — départ dans <b>${secondes} s</b>.`
+      : `<b>${assis} joueurs</b> à table — c’est parti…`;
+
+  const conseil = assis > 1
+    ? 'Les places encore libres iront à des bots.'
+    : `Attendez aussi longtemps que vous voulez : dès qu’un deuxième visiteur s’assoit,
+       la partie part vingt secondes plus tard. Ou commencez tout de suite, avec des
+       bots pour compléter.`;
 
   montrerVoile(`
     <h2>Table publique</h2>
-    <p>${compte} — ${depart}</p>
+    <p>${entete}</p>
     <ul class="classement">${places}</ul>
-    <p class="mention">${compagnie}</p>
+    <p class="mention">${conseil} Une partie se joue à ${salon.minJoueurs},
+       et la table accepte jusqu’à ${salon.maxJoueurs} joueurs.</p>
     <button class="action primaire" id="maintenant" type="button">Commencer maintenant</button>
     <button class="action" id="quitter" type="button">Quitter</button>
   `);
