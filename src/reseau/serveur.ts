@@ -93,6 +93,30 @@ const serveur = http.createServer(async (req, res) => {
   }
 
   // « /regles » plutôt que « /regles.html » : la même adresse qu'en production.
+  // La liste des tables publiques : de quoi montrer que le site vit, et laisser
+  // un arrivant choisir sa table. Des comptes seulement — les noms des joueurs
+  // ne regardent pas les passants. On ne montre que les tables où quelqu'un est
+  // effectivement assis, pour ne pas annoncer une animation qui n'existe pas.
+  if (demande === '/tables') {
+    const tables = [...salons.values()]
+      .filter((s) => s.publique && s.places.some((p) => !p.estBot && p.connecte))
+      .map((s) => ({
+        code: s.code,
+        joueurs: s.places.filter((p) => !p.estBot).length,
+        bots: s.places.filter((p) => p.estBot).length,
+        prets: s.places.filter((p) => !p.estBot && p.pret).length,
+        commencee: s.commencee,
+        manche: s.etat?.round ?? 0,
+        libre: s.accueille || (s.commencee && s.places.some((p) => p.estBot)),
+      }));
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-store',
+    }).end(JSON.stringify(tables));
+    return;
+  }
+
   const nu = demande.replace(/^\/+/, '');
   const relatif = nu === '' ? 'index.html' : path.extname(nu) ? nu : `${nu}.html`;
   const fichier = path.join(SITE, relatif);
@@ -287,6 +311,11 @@ function traiter(ws: WebSocket, message: VersServeur): void {
       // s'affiche chez les autres tout autant.
       place.nom = nomPropre(message.nom) || place.nom;
     } else {
+      // Une partie publique déjà lancée se complète avec des bots : plutôt que
+      // d'attendre la fin, un arrivant en reprend un et joue tout de suite.
+      place = salon.reprendreUnBot(message.nom, randomUUID()) ?? undefined;
+    }
+    if (!place) {
       try {
         place = salon.asseoir(message.nom, randomUUID());
       } catch (err) {

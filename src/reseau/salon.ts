@@ -174,6 +174,35 @@ export class Salon {
     return place;
   }
 
+  /**
+   * Un nouveau venu prend la place d'un bot dans une partie déjà lancée : il
+   * hérite de sa main et de ses points, et joue à la manche en cours. C'est
+   * mieux que d'attendre la fin — et les tables publiques se complètent
+   * justement avec des bots. Réservé à ces tables : dans un salon privé, on
+   * n'entre pas dans une partie commencée sans y être invité.
+   */
+  reprendreUnBot(nom: string, jeton: string): Place | null {
+    if (!this.publique || !this.etat) return null;
+    const bot = this.places.find((p) => p.estBot);
+    if (!bot) return null;
+
+    bot.estBot = false;
+    bot.jeton = jeton;
+    bot.connecte = true;
+    bot.pret = true;
+    bot.nom = nomLibre(nomPropre(nom) || 'Joueur', this.places.filter((p) => p !== bot));
+
+    // Le moteur garde la trace « c'est un bot » pour l'affichage : sans cette
+    // correction, les autres continueraient de voir une machine à sa place.
+    const joueur = this.etat.players.find((p) => p.id === bot.id);
+    if (joueur) {
+      joueur.isBot = false;
+      joueur.name = bot.nom;
+    }
+    this.derniereActivite = Date.now();
+    return bot;
+  }
+
   retirer(id: string): void {
     if (this.commencee) throw new RegleViolee('La partie a déjà commencé.');
     this.places = this.places.filter((p) => p.id !== id);

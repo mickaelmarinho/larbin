@@ -189,6 +189,30 @@ export function reveiller(): void {
   fetch(`https://${HOTE_JEU}/sante`, { cache: 'no-store' }).catch(() => {});
 }
 
+/** Une table publique vue du dehors : des comptes, jamais des noms. */
+export interface ResumeTable {
+  code: string;
+  joueurs: number;
+  bots: number;
+  prets: number;
+  commencee: boolean;
+  manche: number;
+  /** Peut-on s'y asseoir — place libre, ou siège tenu par un bot ? */
+  libre: boolean;
+}
+
+/** Les tables publiques du moment. Liste vide si le serveur dort ou se tait. */
+export async function tablesPubliques(): Promise<ResumeTable[]> {
+  try {
+    const hote = await hoteDuJeu();
+    const url = hote === location.host ? '/tables' : `https://${hote}/tables`;
+    const liste = await (await fetch(url, { cache: 'no-store' })).json();
+    return Array.isArray(liste) ? liste : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Ce que le serveur de parties dit de lui-même : y a-t-il du monde, ce soir ? */
 export interface Activite {
   /** Joueurs connectés, toutes tables confondues. */

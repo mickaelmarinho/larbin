@@ -578,6 +578,17 @@ button.action:disabled {
 
 .panneau .mention.alerte { color: #e0a08a; }
 
+/* Le même bouton, mais portant un mot plutôt qu'une croix : il prend alors la
+   largeur qu'il lui faut, sinon le texte débordait de la liste. */
+button.mini.mot {
+  width: auto;
+  height: auto;
+  padding: 5px 10px;
+  white-space: nowrap;
+  color: var(--texte);
+  font-size: 13px;
+}
+
 button.mini {
   flex: 0 0 auto;
   width: 24px;

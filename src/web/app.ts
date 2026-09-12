@@ -9,7 +9,8 @@ import type { Action, Card, Rank, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
 import {
-  ADRESSE_PUBLIQUE, TABLE_PUBLIQUE, TableEnLigne, TableSolo, activite, hoteDuJeu, type Table,
+  ADRESSE_PUBLIQUE, TABLE_PUBLIQUE, TableEnLigne, TableSolo, activite, hoteDuJeu,
+  tablesPubliques, type ResumeTable, type Table,
 } from './table.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
@@ -28,6 +29,8 @@ let minuteur: ReturnType<typeof setTimeout> | undefined;
 let annonce = '';
 /** Un panneau ouvert par le joueur ne doit pas être balayé par le coup suivant. */
 let voileManuel = false;
+/** Le rafraîchissement de la liste des tables, tant qu'elle est affichée. */
+let minuteurTables: ReturnType<typeof setTimeout> | undefined;
 /** En solo, la table patiente aussi pendant qu'on lit. */
 function suspendre(oui: boolean): void {
   voileManuel = oui;
@@ -801,7 +804,9 @@ function voileAccueil(): void {
   });
 
   if (horsLigne) return;
-  $('publique').addEventListener('click', () => installer(new TableEnLigne(nom(), TABLE_PUBLIQUE)));
+  // On passe par la liste plutôt que d'asseoir d'office : voir les tables, c'est
+  // voir que le site vit, et pouvoir choisir la sienne.
+  $('publique').addEventListener('click', () => voileTables(nom()));
   $('creer').addEventListener('click', () => installer(new TableEnLigne(nom(), '')));
 
   // S'il y a du monde en ligne, autant le dire : c'est ce qui donne envie de
@@ -823,6 +828,69 @@ function voileAccueil(): void {
     const code = ($('code') as HTMLInputElement).value.trim().toUpperCase();
     if (code.length === 4) installer(new TableEnLigne(nom(), code));
   });
+}
+
+/**
+ * Les tables publiques du moment. Les montrer, c'est dire que le site vit —
+ * et permettre à un arrivant de s'asseoir là où il y a du monde, voire de
+ * reprendre la place d'un bot dans une partie déjà commencée.
+ */
+async function voileTables(nom: string): Promise<void> {
+  clearTimeout(minuteurTables);
+
+  const rendre = (liste: ResumeTable[], cherche: boolean) => {
+    const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+    const ligne = (t: ResumeTable) => `<li>
+      <span>${t.commencee
+    ? `${pluriel(t.joueurs, 'joueur')}${t.bots ? ` et ${pluriel(t.bots, 'bot')}` : ''} — manche ${t.manche}`
+    : `${pluriel(t.joueurs, 'joueur')}, ${t.prets} prêt${t.prets > 1 ? 's' : ''}`}</span>
+      ${t.libre
+    ? `<button class="mini mot" data-table="${t.code}" type="button">${t.commencee ? 'Entrer' : 'Rejoindre'}</button>`
+    : '<span class="gain">complète</span>'}
+    </li>`;
+
+    const attente = liste.filter((t) => !t.commencee);
+    const enCours = liste.filter((t) => t.commencee);
+    const vide = cherche
+      ? '<p class="mention">On regarde qui est là…</p>'
+      : `<p>Aucune table ouverte pour l’instant. Asseyez-vous : les visiteurs
+         suivants verront la vôtre, et pourront s’y joindre.</p>`;
+
+    montrerVoile(`
+      <h2>Tables publiques</h2>
+      ${liste.length === 0 ? vide : ''}
+      ${attente.length ? `<h3>En attente</h3><ul class="classement">${attente.map(ligne).join('')}</ul>` : ''}
+      ${enCours.length ? `<h3>Parties en cours</h3>
+         <p class="mention">On y prend la place d’un bot, et l’on joue à la manche en cours.</p>
+         <ul class="classement">${enCours.map(ligne).join('')}</ul>` : ''}
+      <button class="action primaire" id="asseoir" type="button">M’asseoir à une table</button>
+      <button class="action" id="retour" type="button">Retour</button>
+    `);
+
+    const aller = (code: string) => {
+      clearTimeout(minuteurTables);
+      installer(new TableEnLigne(nom, code));
+    };
+    $('asseoir').addEventListener('click', () => aller(TABLE_PUBLIQUE));
+    $('retour').addEventListener('click', () => {
+      clearTimeout(minuteurTables);
+      voileAccueil();
+    });
+    $('voile').querySelectorAll('[data-table]').forEach((b) => {
+      b.addEventListener('click', () => aller((b as HTMLElement).dataset.table!));
+    });
+  };
+
+  // On affiche tout de suite, quitte à n'avoir rien à montrer : le serveur peut
+  // être endormi, et il ne doit pas laisser le joueur devant un écran figé.
+  rendre([], true);
+  const liste = await tablesPubliques();
+  // Le joueur a pu partir ailleurs pendant que le serveur se réveillait.
+  if (!document.getElementById('asseoir')) return;
+  rendre(liste, false);
+  minuteurTables = setTimeout(() => {
+    if (document.getElementById('asseoir')) void voileTables(nom);
+  }, 4000);
 }
 
 /**

@@ -44,6 +44,16 @@ Au terme du compte à rebours, des bots prennent les places encore libres. La
 table les montre, pour qu'on voie ce qui manque. Ces tables n'ont pas d'hôte :
 n'importe quel joueur assis peut lancer la partie ou en relancer une.
 
+Le bouton mène d'abord à la **liste des tables publiques** : celles qui
+attendent, avec le nombre de joueurs et de prêts, et celles dont la partie est
+commencée. On peut rejoindre les premières — et **entrer** dans les secondes, en
+prenant la place d'un bot : on hérite de sa main et de ses points, et l'on joue
+à la manche en cours. Mieux vaut cela qu'attendre la fin d'une partie.
+
+Seules les tables où quelqu'un est effectivement assis sont montrées, et la
+liste ne donne que des comptes : les noms des joueurs ne regardent pas les
+passants.
+
 Personne n'y attend donc jamais devant un écran vide, ce qui est la raison
 d'être de ce fonctionnement : une salle d'attente classique, à faible
 fréquentation, ne montre que son propre désert.

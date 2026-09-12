@@ -302,6 +302,43 @@ test('on ne se dit pas prêt à la place d’un autre, ni après le départ', ()
   assert.throws(() => salon.marquerPret(aurelie.id, false), RegleViolee);
 });
 
+test('un arrivant reprend la place d’un bot en cours de partie', () => {
+  const salon = new Salon('PUBL', { publique: true });
+  salon.asseoir('Aurélie', 'ja');
+  salon.completerEtDemarrer();
+  assert.equal(salon.places.filter((p) => p.estBot).length, 3);
+
+  const reprise = salon.reprendreUnBot('Bruno', 'jb')!;
+  assert.ok(reprise, 'il y avait trois bots à remplacer');
+  assert.equal(reprise.estBot, false);
+  assert.equal(reprise.nom, 'Bruno');
+  assert.equal(salon.places.filter((p) => p.estBot).length, 2);
+  assert.equal(salon.parJeton('jb')?.id, reprise.id, 'il retrouvera sa place en se reconnectant');
+  assert.ok((salon.vuePour(reprise.id)?.me.hand.length ?? 0) > 0, 'il hérite de la main du bot');
+  assert.equal(
+    salon.etat!.players.find((p) => p.id === reprise.id)?.isBot,
+    false,
+    'les autres ne doivent plus le voir comme une machine',
+  );
+});
+
+test('on ne reprend pas un bot dans un salon privé, ni quand il n’y en a plus', () => {
+  const prive = new Salon('PRIV');
+  prive.asseoir('Ami', 'j1');
+  for (let i = 0; i < 3; i++) prive.ajouterBot();
+  prive.demarrer();
+  assert.equal(prive.reprendreUnBot('Intrus', 'jx'), null, 'un salon privé reste privé');
+
+  const publique = new Salon('PUBL', { publique: true });
+  for (const n of ['A', 'B', 'C', 'D']) publique.asseoir(n, `j${n}`);
+  publique.completerEtDemarrer();
+  assert.equal(publique.reprendreUnBot('Tardif', 'jt'), null, 'aucun bot à remplacer');
+
+  const pasCommencee = new Salon('PUBL', { publique: true });
+  pasCommencee.asseoir('Seule', 'js');
+  assert.equal(pasCommencee.reprendreUnBot('Autre', 'ja'), null, 'rien à reprendre avant le départ');
+});
+
 test('une table publique pleine n’accueille plus personne', () => {
   const salon = new Salon('PLEI', { publique: true });
   for (const n of ['A', 'B', 'C', 'D', 'E', 'F']) salon.asseoir(n, `j${n}`);
