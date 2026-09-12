@@ -843,7 +843,7 @@ async function voileTables(nom: string): Promise<void> {
     const ligne = (t: ResumeTable) => `<li>
       <span>${t.commencee
     ? `${pluriel(t.joueurs, 'joueur')}${t.bots ? ` et ${pluriel(t.bots, 'bot')}` : ''} — manche ${t.manche}`
-    : `${pluriel(t.joueurs, 'joueur')}, ${t.prets} prêt${t.prets > 1 ? 's' : ''}`}</span>
+    : `${t.joueurs} sur ${t.taille} joueurs, ${t.prets} prêt${t.prets > 1 ? 's' : ''}`}</span>
       ${t.libre
     ? `<button class="mini mot" data-table="${t.code}" type="button">${t.commencee ? 'Entrer' : 'Rejoindre'}</button>`
     : '<span class="gain">complète</span>'}
@@ -907,7 +907,7 @@ function voileTablePublique(
   // Avant le départ, tous les sièges occupés le sont par des humains : les bots
   // n'arrivent qu'au dernier moment. Les places encore libres sont montrées
   // telles quelles, pour qu'on voie d'un coup d'œil ce qui manque.
-  const libres = Math.max(0, salon.minJoueurs - assis);
+  const libres = Math.max(0, salon.taille - assis);
   const places = [
     ...salon.sieges.map((s) => `<li>
       <span>${s.id === en.moi ? `${s.nom} (vous)` : s.nom}</span>
@@ -938,17 +938,24 @@ function voileTablePublique(
     ? 'Les places encore libres iront à des bots.'
     : assis > 1
       ? `Le départ se fait à l’accord de tous : il suffit qu’un joueur se dédise, ou
-         qu’un nouveau venu s’assoie, pour que le compte à rebours s’arrête.`
+         qu’un nouveau venu s’assoie, pour que le compte à rebours s’arrête. Changer
+         la taille de la table remet aussi chacun « pas prêt ».`
       : `Attendez aussi longtemps que vous voulez ; les autres visiteurs voient votre
          table. Dites-vous prêt pour lancer le compte à rebours, ou commencez tout de
          suite avec des bots.`;
+
+  // À cinq il y a un Neutre, à six il y en a deux : la table n'a pas le même
+  // goût selon sa taille, autant laisser choisir.
+  const tailles = [4, 5, 6].map((n) => `<button
+      class="mini mot ${n === salon.taille ? 'choisi' : ''}"
+      data-taille="${n}" type="button" ${n < assis ? 'disabled' : ''}>${n}</button>`).join('');
 
   montrerVoile(`
     <h2>Table publique</h2>
     <p>${entete}</p>
     <ul class="classement">${places}</ul>
-    <p class="mention">${conseil} Une partie se joue à ${salon.minJoueurs},
-       et la table accepte jusqu’à ${salon.maxJoueurs} joueurs.</p>
+    <p class="taille">Joueurs à cette table : ${tailles}</p>
+    <p class="mention">${conseil}</p>
     <button class="action ${moi?.pret ? '' : 'primaire'}" id="pret" type="button">${moi?.pret
       ? 'Je ne suis plus prêt' : 'Je suis prêt'}</button>
     <button class="action" id="maintenant" type="button">Commencer avec des bots</button>
@@ -956,6 +963,9 @@ function voileTablePublique(
   `);
 
   $('pret').addEventListener('click', () => en.pret(!moi?.pret));
+  $('voile').querySelectorAll('[data-taille]').forEach((b) => {
+    b.addEventListener('click', () => en.taille(Number((b as HTMLElement).dataset.taille)));
+  });
 
   // Sans ce bouton, il faudrait l'accord de tous même quand on sait très bien
   // que le voisin s'est absenté sans rien dire.

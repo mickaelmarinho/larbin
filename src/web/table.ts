@@ -197,6 +197,8 @@ export interface ResumeTable {
   prets: number;
   commencee: boolean;
   manche: number;
+  /** À combien se joue cette table : quatre, cinq ou six. */
+  taille: number;
   /** Peut-on s'y asseoir — place libre, ou siège tenu par un bot ? */
   libre: boolean;
 }
@@ -340,6 +342,11 @@ export class TableEnLigne implements Table {
   /** Se dire prêt, ou se dédire : à une table publique, c'est ce qui lance le départ. */
   pret(oui: boolean): void {
     this.dire({ type: 'pret', pret: oui });
+  }
+
+  /** Proposer de jouer à quatre, cinq ou six. */
+  taille(joueurs: number): void {
+    this.dire({ type: 'taille', taille: joueurs });
   }
 
   quitter(): void {

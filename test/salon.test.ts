@@ -215,6 +215,7 @@ test('au bout du compte à rebours, des bots complètent la table', () => {
 
 test('assez de monde à la table : aucun bot ne s’invite', () => {
   const salon = new Salon('PUBL', { publique: true });
+  salon.choisirTaille(5);
   for (const nom of ['A', 'B', 'C', 'D', 'E']) salon.asseoir(nom, `j-${nom}`);
   salon.completerEtDemarrer();
   assert.equal(salon.places.length, 5);
@@ -302,6 +303,54 @@ test('on ne se dit pas prêt à la place d’un autre, ni après le départ', ()
   assert.throws(() => salon.marquerPret(aurelie.id, false), RegleViolee);
 });
 
+test('une table publique se joue à quatre, cinq ou six', () => {
+  const salon = new Salon('PUBL', { publique: true });
+  assert.equal(salon.taille, 4, 'quatre par défaut, comme avant');
+  assert.equal(salon.etatPublic().taille, 4);
+
+  salon.choisirTaille(6);
+  assert.equal(salon.capacite, 6);
+
+  salon.asseoir('Aurélie', 'ja');
+  salon.completerEtDemarrer();
+  assert.equal(salon.places.length, 6, 'les bots complètent jusqu’à la taille choisie');
+  assert.equal(salon.etat!.players.length, 6);
+});
+
+test('changer la taille remet tout le monde « pas prêt »', () => {
+  const salon = new Salon('PUBL', { publique: true });
+  const aurelie = salon.asseoir('Aurélie', 'ja');
+  const bruno = salon.asseoir('Bruno', 'jb');
+  salon.marquerPret(aurelie.id, true);
+  salon.marquerPret(bruno.id, true);
+  assert.equal(salon.tousPrets, true);
+
+  salon.choisirTaille(5);
+  assert.equal(salon.tousPrets, false, 'on s’était dit prêt pour une autre table');
+
+  // Reproposer la même taille ne défait rien : ce n'est pas un changement.
+  salon.marquerPret(aurelie.id, true);
+  salon.marquerPret(bruno.id, true);
+  salon.choisirTaille(5);
+  assert.equal(salon.tousPrets, true);
+});
+
+test('la taille refuse l’absurde et le trop petit', () => {
+  const salon = new Salon('PUBL', { publique: true });
+  assert.throws(() => salon.choisirTaille(3), RegleViolee);
+  assert.throws(() => salon.choisirTaille(7), RegleViolee);
+  assert.throws(() => salon.choisirTaille(4.5), RegleViolee);
+
+  salon.choisirTaille(6);
+  for (const n of ['A', 'B', 'C', 'D', 'E']) salon.asseoir(n, `j${n}`);
+  assert.throws(() => salon.choisirTaille(4), RegleViolee, 'cinq joueurs sont déjà assis');
+  assert.equal(salon.accueille, true, 'il reste une place');
+
+  salon.asseoir('F', 'jF');
+  assert.equal(salon.accueille, false, 'six, c’est complet');
+  assert.throws(() => salon.asseoir('G', 'jG'), RegleViolee);
+});
+
 test('un arrivant reprend la place d’un bot en cours de partie', () => {
   const salon = new Salon('PUBL', { publique: true });
   salon.asseoir('Aurélie', 'ja');
@@ -341,6 +390,14 @@ test('on ne reprend pas un bot dans un salon privé, ni quand il n’y en a plus
 
 test('une table publique pleine n’accueille plus personne', () => {
   const salon = new Salon('PLEI', { publique: true });
+  salon.choisirTaille(6);
   for (const n of ['A', 'B', 'C', 'D', 'E', 'F']) salon.asseoir(n, `j${n}`);
   assert.equal(salon.accueille, false);
+
+  // Et une table de quatre reste une table de quatre : on n'y ajoute pas un
+  // cinquième joueur sans que personne l'ait décidé.
+  const quatre = new Salon('QUAT', { publique: true });
+  for (const n of ['A', 'B', 'C', 'D']) quatre.asseoir(n, `k${n}`);
+  assert.equal(quatre.accueille, false);
+  assert.throws(() => quatre.asseoir('E', 'kE'), RegleViolee);
 });

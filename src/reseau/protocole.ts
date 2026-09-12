@@ -28,6 +28,8 @@ export interface EtatSalon {
   commencee: boolean;
   minJoueurs: number;
   maxJoueurs: number;
+  /** Combien de joueurs à cette table : quatre, cinq ou six. */
+  taille: number;
   /**
    * Table publique : ouverte aux inconnus, sans hôte. Elle ne fait attendre
    * personne — au bout du compte à rebours, des bots prennent les places vides.
@@ -41,6 +43,7 @@ export type VersServeur =
   | { type: 'rejoindre'; salon: string; nom: string; jeton?: string }
   | { type: 'rejoindre-public'; nom: string }
   | { type: 'pret'; pret: boolean }
+  | { type: 'taille'; taille: number }
   | { type: 'ajouter-bot' }
   | { type: 'retirer'; id: string }
   | { type: 'demarrer' }

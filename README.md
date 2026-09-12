@@ -44,6 +44,11 @@ Au terme du compte à rebours, des bots prennent les places encore libres. La
 table les montre, pour qu'on voie ce qui manque. Ces tables n'ont pas d'hôte :
 n'importe quel joueur assis peut lancer la partie ou en relancer une.
 
+**Joueurs à cette table : 4, 5 ou 6.** N'importe qui peut changer ce nombre
+avant le départ, et la table montre alors autant de places. À cinq il y a un
+Neutre, à six il y en a deux : le jeu n'a pas le même goût. Changer la taille
+remet chacun « pas prêt » — on s'était dit prêt pour une autre table.
+
 Le bouton mène d'abord à la **liste des tables publiques** : celles qui
 attendent, avec le nombre de joueurs et de prêts, et celles dont la partie est
 commencée. On peut rejoindre les premières — et **entrer** dans les secondes, en

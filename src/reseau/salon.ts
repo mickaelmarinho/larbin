@@ -41,6 +41,8 @@ export class Salon {
   derniereActivite = Date.now();
   /** Instant où la table publique se lancera d'elle-même, si c'est prévu. */
   lancement: number | null = null;
+  /** À combien on joue ici. Le jeu en accepte quatre à six. */
+  taille = MIN_JOUEURS;
 
   constructor(code = codeDeSalon(), options: { publique?: boolean } = {}) {
     this.code = code;
@@ -58,11 +60,39 @@ export class Salon {
    * n'ait pas commencé, qu'il y reste de la place, et que quelqu'un y soit
    * encore assis : on n'envoie personne attendre à une table désertée.
    */
+  /**
+   * Combien de places en tout. À une table publique, c'est la taille choisie —
+   * on ne s'assoit pas à une table de quatre pour se retrouver six.
+   */
+  get capacite(): number {
+    return this.publique ? this.taille : MAX_JOUEURS;
+  }
+
   get accueille(): boolean {
     return this.publique
       && !this.commencee
-      && this.places.length < MAX_JOUEURS
+      && this.places.length < this.capacite
       && this.places.some((p) => !p.estBot && p.connecte);
+  }
+
+  /**
+   * Change le nombre de joueurs, et remet tout le monde « pas prêt » : on
+   * s'était dit prêt pour une table de quatre, pas pour une table de six.
+   * Sans cela, un joueur pourrait faire partir une partie que les autres
+   * n'ont pas acceptée.
+   */
+  choisirTaille(taille: number): void {
+    if (this.commencee) throw new RegleViolee('La partie a déjà commencé.');
+    if (!Number.isInteger(taille) || taille < MIN_JOUEURS || taille > MAX_JOUEURS) {
+      throw new RegleViolee(`Une table se joue de ${MIN_JOUEURS} à ${MAX_JOUEURS} joueurs.`);
+    }
+    if (taille < this.places.length) {
+      throw new RegleViolee('Il y a déjà plus de monde que cela à la table.');
+    }
+    if (taille === this.taille) return;
+    this.taille = taille;
+    for (const p of this.places) if (!p.estBot) p.pret = false;
+    this.derniereActivite = Date.now();
   }
 
   /**
@@ -107,6 +137,7 @@ export class Salon {
       commencee: this.commencee,
       minJoueurs: MIN_JOUEURS,
       maxJoueurs: MAX_JOUEURS,
+      taille: this.taille,
       publique: this.publique,
       departDans: this.lancement !== null && !this.commencee
         ? Math.max(0, this.lancement - Date.now())
@@ -133,7 +164,7 @@ export class Salon {
   /** Ajoute un joueur humain. Renvoie sa place, ou une erreur si la table est pleine. */
   asseoir(nom: string, jeton: string): Place {
     if (this.commencee) throw new RegleViolee('La partie a déjà commencé.');
-    if (this.places.length >= MAX_JOUEURS) throw new RegleViolee('La table est complète.');
+    if (this.places.length >= this.capacite) throw new RegleViolee('La table est complète.');
 
     const place: Place = {
       id: `j${this.places.length + 1}-${jeton.slice(0, 4)}`,
@@ -153,7 +184,7 @@ export class Salon {
 
   ajouterBot(): Place {
     if (this.commencee) throw new RegleViolee('La partie a déjà commencé.');
-    if (this.places.length >= MAX_JOUEURS) throw new RegleViolee('La table est complète.');
+    if (this.places.length >= this.capacite) throw new RegleViolee('La table est complète.');
 
     const nom = NOMS_DE_BOTS.find((n) => !this.places.some((p) => p.nom === n)) ?? 'Robot';
     // Un identifiant libre, et non le rang à la table : après un départ, ce rang
@@ -228,7 +259,7 @@ export class Salon {
    * partie commence. Personne n'attend plus longtemps que le compte à rebours.
    */
   completerEtDemarrer(): void {
-    while (this.places.length < MIN_JOUEURS) this.ajouterBot();
+    while (this.places.length < this.taille) this.ajouterBot();
     this.lancement = null;
     this.demarrer();
   }

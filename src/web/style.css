@@ -578,6 +578,29 @@ button.action:disabled {
 
 .panneau .mention.alerte { color: #e0a08a; }
 
+/* Le choix du nombre de joueurs, en ligne sous les places. */
+.panneau p.taille {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  color: var(--texte-pale);
+  font-size: 13px;
+}
+
+/* La taille retenue : elle doit se voir du premier coup d'œil. */
+button.mini.choisi {
+  background: var(--laiton);
+  border-color: transparent;
+  color: #2a1e05;
+  font-weight: 600;
+}
+
+button.mini:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
 /* Le même bouton, mais portant un mot plutôt qu'une croix : il prend alors la
    largeur qu'il lui faut, sinon le texte débordait de la liste. */
 button.mini.mot {

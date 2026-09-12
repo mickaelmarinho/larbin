@@ -107,6 +107,7 @@ const serveur = http.createServer(async (req, res) => {
         prets: s.places.filter((p) => !p.estBot && p.pret).length,
         commencee: s.commencee,
         manche: s.etat?.round ?? 0,
+        taille: s.taille,
         libre: s.accueille || (s.commencee && s.places.some((p) => p.estBot)),
       }));
     res.writeHead(200, {
@@ -367,6 +368,12 @@ function traiter(ws: WebSocket, message: VersServeur): void {
       }
       case 'pret':
         salon.marquerPret(id, message.pret === true);
+        ajusterLancement(salon);
+        break;
+      case 'taille':
+        // Personne ne décide pour les autres : chacun peut proposer une taille,
+        // et le changement rend la parole à tous en défaisant l'accord.
+        salon.choisirTaille(Number(message.taille));
         ajusterLancement(salon);
         break;
       case 'action':
