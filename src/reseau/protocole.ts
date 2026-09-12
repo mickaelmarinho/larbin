@@ -17,6 +17,8 @@ export interface Siege {
   connecte: boolean;
   /** Celui qui a ouvert le salon : lui seul lance la partie. */
   hote: boolean;
+  /** S'est dit prêt à jouer. Les bots le sont d'office. */
+  pret: boolean;
 }
 
 export interface EtatSalon {
@@ -38,6 +40,7 @@ export interface EtatSalon {
 export type VersServeur =
   | { type: 'rejoindre'; salon: string; nom: string; jeton?: string }
   | { type: 'rejoindre-public'; nom: string }
+  | { type: 'pret'; pret: boolean }
   | { type: 'ajouter-bot' }
   | { type: 'retirer'; id: string }
   | { type: 'demarrer' }

@@ -146,17 +146,9 @@ const minuteurs = new Map<Salon, NodeJS.Timeout>();
 /** Les tables publiques dont le lancement automatique est programmé. */
 const lancements = new Map<Salon, NodeJS.Timeout>();
 
-/**
- * Programme le lancement d'une table publique, une fois pour toutes : l'arrivée
- * d'un troisième visiteur ne remet pas le compte à rebours à zéro.
- *
- * Tant qu'on est seul, rien ne se déclenche : le premier arrivé attend qui il
- * veut, aussi longtemps qu'il veut, et lance la partie quand il l'a décidé. À
- * partir de deux, la table ne doit plus dépendre d'une hésitation.
- */
+/** Le compte à rebours part, et ne repart pas si quelqu'un d'autre s'assoit. */
 function programmerLancement(salon: Salon): void {
   if (!salon.publique || salon.commencee || lancements.has(salon)) return;
-  if (salon.places.filter((p) => !p.estBot).length < 2) return;
   salon.lancement = Date.now() + ATTENTE_PUBLIQUE;
   lancements.set(salon, setTimeout(() => lancer(salon), ATTENTE_PUBLIQUE));
 }
@@ -166,6 +158,17 @@ function annulerLancement(salon: Salon): void {
   clearTimeout(lancements.get(salon));
   lancements.delete(salon);
   salon.lancement = null;
+}
+
+/**
+ * L'unique règle du départ, recalculée après chaque changement : le compte à
+ * rebours court tant que tous les joueurs assis se sont dits prêts. Se dédire
+ * l'arrête ; l'arrivée de quelqu'un qui n'a rien promis l'arrête aussi.
+ */
+function ajusterLancement(salon: Salon): void {
+  if (!salon.publique || salon.commencee) return;
+  if (salon.tousPrets) programmerLancement(salon);
+  else annulerLancement(salon);
 }
 
 /**
@@ -236,7 +239,7 @@ function traiter(ws: WebSocket, message: VersServeur): void {
     if (salon.places.length >= MAX_JOUEURS) {
       lancer(salon);
     } else {
-      programmerLancement(salon);
+      ajusterLancement(salon);
       diffuser(salon);
     }
     return;
@@ -297,8 +300,8 @@ function traiter(ws: WebSocket, message: VersServeur): void {
 
     connexions.set(ws, { salon, id: place.id });
     envoyer(ws, { type: 'bienvenue', jeton: place.jeton, moi: place.id, salon: salon.code });
-    // Un lien vers une table publique mène au même compte à rebours.
-    programmerLancement(salon);
+    // Un lien vers une table publique mène au même accord.
+    ajusterLancement(salon);
     diffuser(salon);
     avancer(salon);
     return;
@@ -333,6 +336,10 @@ function traiter(ws: WebSocket, message: VersServeur): void {
         salon.demarrer();
         break;
       }
+      case 'pret':
+        salon.marquerPret(id, message.pret === true);
+        ajusterLancement(salon);
+        break;
       case 'action':
         salon.jouer(id, message.action);
         break;
@@ -399,8 +406,8 @@ wss.on('connection', (ws) => {
         salons.delete(lien.salon.code);
         return;
       }
-      // Redevenu seul, il redevient maître de son attente.
-      if (restants < 2) annulerLancement(lien.salon);
+      // Le départ des uns peut faire l'accord des autres, ou le défaire.
+      ajusterLancement(lien.salon);
     }
     diffuser(lien.salon);
     avancer(lien.salon);

@@ -27,6 +27,8 @@ export interface Place {
   jeton: string;
   estBot: boolean;
   connecte: boolean;
+  /** S'est dit prêt à jouer. Un bot ne fait jamais attendre personne. */
+  pret: boolean;
 }
 
 export class Salon {
@@ -63,6 +65,25 @@ export class Salon {
       && this.places.some((p) => !p.estBot && p.connecte);
   }
 
+  /**
+   * Tout le monde s'est-il dit prêt ? C'est la seule condition du départ : les
+   * bots ne comptent pas, et une table sans humain n'est jamais prête. Se
+   * dédire — ou voir arriver quelqu'un qui n'a rien promis — suffit à défaire
+   * cet accord.
+   */
+  get tousPrets(): boolean {
+    const humains = this.places.filter((p) => !p.estBot);
+    return humains.length > 0 && humains.every((p) => p.pret);
+  }
+
+  marquerPret(id: string, pret: boolean): void {
+    if (this.commencee) throw new RegleViolee('La partie a déjà commencé.');
+    const place = this.place(id);
+    if (!place || place.estBot) throw new RegleViolee('Il faut être assis à la table.');
+    place.pret = pret;
+    this.derniereActivite = Date.now();
+  }
+
   place(id: string): Place | undefined {
     return this.places.find((p) => p.id === id);
   }
@@ -78,6 +99,7 @@ export class Salon {
       estBot: p.estBot,
       connecte: p.connecte,
       hote: p.id === this.hote,
+      pret: p.pret,
     }));
     return {
       code: this.code,
@@ -120,6 +142,7 @@ export class Salon {
       jeton,
       estBot: false,
       connecte: true,
+      pret: false,
     };
     this.places.push(place);
     // À une table publique, personne ne décide pour les autres.
@@ -144,6 +167,7 @@ export class Salon {
       jeton: '',
       estBot: true,
       connecte: true,
+      pret: true,
     };
     this.places.push(place);
     this.derniereActivite = Date.now();

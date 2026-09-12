@@ -34,12 +34,11 @@ table joue pour vous plutôt que d'attendre indéfiniment.
 ### Jouer avec des inconnus
 
 **Jouer avec d'autres visiteurs** assoit à une table publique, sans code ni
-invitation. Tant qu'on y est seul, rien ne presse : on attend qui l'on veut,
-aussi longtemps qu'on veut, et **Commencer maintenant** lance la partie avec des
-bots quand on en a assez attendu. Dès qu'un deuxième visiteur s'assoit, un compte
-à rebours de vingt secondes s'enclenche — à deux, la partie ne doit plus dépendre
-d'une hésitation — et un troisième arrivant ne le remet pas à zéro. Si le second
-repart, le premier retrouve son temps.
+invitation. Chacun y dispose d'un bouton **Je suis prêt**, et le départ obéit à
+une seule règle : le compte à rebours de vingt secondes court tant que **tous
+les joueurs assis se sont dits prêts**. Se dédire l'arrête ; l'arrivée de
+quelqu'un qui n'a rien promis l'arrête aussi. **Commencer avec des bots** reste
+là pour qui sait que le voisin s'est absenté sans rien dire.
 
 Au terme du compte à rebours, des bots prennent les places encore libres. La
 table les montre, pour qu'on voie ce qui manque. Ces tables n'ont pas d'hôte :

@@ -835,6 +835,7 @@ function voileTablePublique(
   salon: NonNullable<ReturnType<TableEnLigne['salon']>>,
 ): void {
   const assis = salon.sieges.length;
+  const moi = salon.sieges.find((s) => s.id === en.moi);
   // Avant le départ, tous les sièges occupés le sont par des humains : les bots
   // n'arrivent qu'au dernier moment. Les places encore libres sont montrées
   // telles quelles, pour qu'on voie d'un coup d'œil ce qui manque.
@@ -842,29 +843,37 @@ function voileTablePublique(
   const places = [
     ...salon.sieges.map((s) => `<li>
       <span>${s.id === en.moi ? `${s.nom} (vous)` : s.nom}</span>
-      <span class="gain">${s.estBot ? 'bot' : s.connecte ? 'assis' : 'parti'}</span>
+      <span class="gain">${s.estBot ? 'bot'
+    : !s.connecte ? 'parti'
+    : s.pret ? 'prêt' : 'pas prêt'}</span>
     </li>`),
     ...Array.from({ length: libres }, () => `<li class="libre">
       <span>Place libre</span><span class="gain">un bot, si personne</span>
     </li>`),
   ].join('');
 
-  // Seul à la table, aucun compte à rebours : rien ne presse celui qui est
-  // arrivé le premier, et c'est lui qui décide quand il a assez attendu.
+  const humains = salon.sieges.filter((s) => !s.estBot);
+  const prets = humains.filter((s) => s.pret).length;
   const secondes = en.departDans();
-  const entete = secondes === null
-    ? (assis > 1
-      ? `<b>${assis} joueurs</b> à table.`
-      : '<b>Vous êtes seul</b> à cette table pour l’instant.')
-    : secondes > 0
-      ? `<b>${assis} joueurs</b> à table — départ dans <b>${secondes} s</b>.`
-      : `<b>${assis} joueurs</b> à table — c’est parti…`;
 
-  const conseil = assis > 1
+  // Le compte à rebours ne part que lorsque tout le monde s'est dit prêt. Il
+  // s'arrête si quelqu'un se dédit, ou si un nouveau venu s'assoit.
+  const entete = secondes !== null
+    ? (secondes > 0
+      ? `Tout le monde est prêt — départ dans <b>${secondes} s</b>.`
+      : 'C’est parti…')
+    : assis > 1
+      ? `<b>${prets} sur ${humains.length}</b> se sont dits prêts.`
+      : '<b>Vous êtes seul</b> à cette table pour l’instant.';
+
+  const conseil = secondes !== null
     ? 'Les places encore libres iront à des bots.'
-    : `Attendez aussi longtemps que vous voulez : dès qu’un deuxième visiteur s’assoit,
-       la partie part vingt secondes plus tard. Ou commencez tout de suite, avec des
-       bots pour compléter.`;
+    : assis > 1
+      ? `Le départ se fait à l’accord de tous : il suffit qu’un joueur se dédise, ou
+         qu’un nouveau venu s’assoie, pour que le compte à rebours s’arrête.`
+      : `Attendez aussi longtemps que vous voulez ; les autres visiteurs voient votre
+         table. Dites-vous prêt pour lancer le compte à rebours, ou commencez tout de
+         suite avec des bots.`;
 
   montrerVoile(`
     <h2>Table publique</h2>
@@ -872,12 +881,16 @@ function voileTablePublique(
     <ul class="classement">${places}</ul>
     <p class="mention">${conseil} Une partie se joue à ${salon.minJoueurs},
        et la table accepte jusqu’à ${salon.maxJoueurs} joueurs.</p>
-    <button class="action primaire" id="maintenant" type="button">Commencer maintenant</button>
+    <button class="action ${moi?.pret ? '' : 'primaire'}" id="pret" type="button">${moi?.pret
+      ? 'Je ne suis plus prêt' : 'Je suis prêt'}</button>
+    <button class="action" id="maintenant" type="button">Commencer avec des bots</button>
     <button class="action" id="quitter" type="button">Quitter</button>
   `);
 
-  // Sans ce bouton, il faudrait subir le compte à rebours même quand on sait
-  // très bien que personne ne viendra.
+  $('pret').addEventListener('click', () => en.pret(!moi?.pret));
+
+  // Sans ce bouton, il faudrait l'accord de tous même quand on sait très bien
+  // que le voisin s'est absenté sans rien dire.
   $('maintenant').addEventListener('click', () => en.demarrer());
 
   $('quitter').addEventListener('click', () => {

@@ -253,6 +253,55 @@ test('on rejoint la table publique la plus remplie qui attend encore', () => {
   assert.equal(tablePubliqueOuverte([privee, lancee, desertee]), undefined, 'sinon, on en ouvrira une');
 });
 
+test('les bots sont prêts d’office, les humains non', () => {
+  const salon = new Salon('PUBL', { publique: true });
+  const aurelie = salon.asseoir('Aurélie', 'ja');
+  const bot = salon.ajouterBot();
+
+  assert.equal(aurelie.pret, false);
+  assert.equal(bot.pret, true, 'un bot ne fait jamais attendre personne');
+  assert.equal(salon.tousPrets, false);
+
+  salon.marquerPret(aurelie.id, true);
+  assert.equal(salon.tousPrets, true);
+  assert.equal(salon.etatPublic().sieges.find((s) => s.id === aurelie.id)?.pret, true);
+});
+
+test('se dédire défait l’accord, et un nouveau venu aussi', () => {
+  const salon = new Salon('PUBL', { publique: true });
+  const aurelie = salon.asseoir('Aurélie', 'ja');
+  salon.marquerPret(aurelie.id, true);
+  assert.equal(salon.tousPrets, true);
+
+  salon.marquerPret(aurelie.id, false);
+  assert.equal(salon.tousPrets, false, 'se dédire suffit');
+
+  salon.marquerPret(aurelie.id, true);
+  const bruno = salon.asseoir('Bruno', 'jb');
+  assert.equal(salon.tousPrets, false, 'Bruno n’a encore rien promis');
+
+  salon.marquerPret(bruno.id, true);
+  assert.equal(salon.tousPrets, true);
+});
+
+test('une table où il n’y a que des bots n’est jamais prête', () => {
+  const salon = new Salon('PUBL', { publique: true });
+  salon.ajouterBot();
+  salon.ajouterBot();
+  assert.equal(salon.tousPrets, false, 'sinon une table désertée se lancerait toute seule');
+});
+
+test('on ne se dit pas prêt à la place d’un autre, ni après le départ', () => {
+  const salon = new Salon('PUBL', { publique: true });
+  const aurelie = salon.asseoir('Aurélie', 'ja');
+  const bot = salon.ajouterBot();
+  assert.throws(() => salon.marquerPret(bot.id, false), RegleViolee);
+  assert.throws(() => salon.marquerPret('inconnu', true), RegleViolee);
+
+  salon.completerEtDemarrer();
+  assert.throws(() => salon.marquerPret(aurelie.id, false), RegleViolee);
+});
+
 test('une table publique pleine n’accueille plus personne', () => {
   const salon = new Salon('PLEI', { publique: true });
   for (const n of ['A', 'B', 'C', 'D', 'E', 'F']) salon.asseoir(n, `j${n}`);

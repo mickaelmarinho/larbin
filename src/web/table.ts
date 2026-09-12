@@ -313,6 +313,11 @@ export class TableEnLigne implements Table {
     this.dire({ type: 'demarrer' });
   }
 
+  /** Se dire prêt, ou se dédire : à une table publique, c'est ce qui lance le départ. */
+  pret(oui: boolean): void {
+    this.dire({ type: 'pret', pret: oui });
+  }
+
   quitter(): void {
     this.ferme = true;
     clearInterval(this.battement);
