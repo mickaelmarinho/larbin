@@ -142,6 +142,27 @@ npm run jouer   # le banc d'essai en terminal
 Seule l'interface passe par un assemblage : esbuild réunit le moteur et
 l'affichage, et le tout est inséré dans `Larbin.html`. D'où le fichier unique.
 
+### Éprouver le jeu en ligne
+
+`npm test` couvre les règles et la logique de salon, mais pas le serveur ni les
+WebSockets. Trois suites s'en chargent, contre un serveur réellement lancé —
+celui de la machine, ou celui en production :
+
+```
+npm run serveur                                    # dans une autre fenêtre
+node scripts/reseau/e2e-publique.mjs localhost:5177  # prêt, compte à rebours, départ
+node scripts/reseau/e2e-tables.mjs localhost:5177    # liste, reprise d'un bot, salon privé
+node scripts/reseau/e2e-inactif.mjs localhost:5177   # le joueur muet (une minute d'attente)
+node scripts/reseau/un-visiteur.mjs localhost:5177   # s'assoit et reste, pour regarder l'écran
+```
+
+Elles fonctionnent aussi sur `larbin.onrender.com`. Deux avertissements dans ce
+cas : l'hébergeur met une trentaine de secondes à se réveiller, et une dizaine
+de secondes à apprendre qu'une socket s'est fermée — les essais observent donc
+au lieu de parier sur un délai. Et pendant un redéploiement, le serveur est
+remplacé en cours de route : une suite lancée à ce moment-là échoue sur les
+minuteurs, sans que rien ne soit cassé. Relancez-la.
+
 ### Toucher au bot
 
 L'intuition se trompe beaucoup sur ce jeu, et une mesure isolée ment volontiers.
