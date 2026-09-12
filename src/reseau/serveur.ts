@@ -79,7 +79,16 @@ const serveur = http.createServer(async (req, res) => {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Cache-Control': 'no-store',
-    }).end(JSON.stringify({ ok: true, salons: salons.size, connexions: connexions.size }));
+    }).end(JSON.stringify({
+      ok: true,
+      salons: salons.size,
+      connexions: connexions.size,
+      // De quoi dire à l'accueil s'il y a du monde, sans rien révéler de personne.
+      publiques: [...salons.values()].filter((s) => s.accueille).length,
+      enAttente: [...salons.values()]
+        .filter((s) => s.accueille)
+        .reduce((n, s) => n + s.places.filter((p) => !p.estBot).length, 0),
+    }));
     return;
   }
 
@@ -300,10 +309,19 @@ function traiter(ws: WebSocket, message: VersServeur): void {
         exigerHote(salon, id);
         salon.retirer(message.id);
         break;
-      case 'demarrer':
+      case 'demarrer': {
+        // Une table publique n'a pas d'hôte : n'importe qui peut décider de ne
+        // pas attendre la fin du compte à rebours.
+        if (salon.publique) {
+          const assis = salon.place(id);
+          if (!assis || assis.estBot) throw new RegleViolee('Il faut être assis à la table.');
+          lancer(salon);
+          break;
+        }
         exigerHote(salon, id);
         salon.demarrer();
         break;
+      }
       case 'action':
         salon.jouer(id, message.action);
         break;

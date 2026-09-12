@@ -9,7 +9,7 @@ import type { Action, Card, Rank, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
 import {
-  ADRESSE_PUBLIQUE, TABLE_PUBLIQUE, TableEnLigne, TableSolo, hoteDuJeu, type Table,
+  ADRESSE_PUBLIQUE, TABLE_PUBLIQUE, TableEnLigne, TableSolo, activite, hoteDuJeu, type Table,
 } from './table.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
@@ -803,6 +803,22 @@ function voileAccueil(): void {
   if (horsLigne) return;
   $('publique').addEventListener('click', () => installer(new TableEnLigne(nom(), TABLE_PUBLIQUE)));
   $('creer').addEventListener('click', () => installer(new TableEnLigne(nom(), '')));
+
+  // S'il y a du monde en ligne, autant le dire : c'est ce qui donne envie de
+  // pousser la porte. Quand le site est désert, le bouton ne change pas — on
+  // n'annonce jamais « 0 joueur », et le serveur endormi ne fait attendre
+  // personne : la réponse arrive quand elle arrive.
+  void activite().then((a) => {
+    const bouton = document.getElementById('publique');
+    if (!a || !bouton) return;
+    if (a.enAttente > 0) {
+      bouton.textContent = a.enAttente > 1
+        ? `Rejoindre ${a.enAttente} visiteurs qui attendent`
+        : 'Rejoindre un visiteur qui attend';
+    } else if (a.joueurs > 0) {
+      bouton.textContent = `Jouer avec d'autres visiteurs — ${a.joueurs} en ligne`;
+    }
+  });
   $('rejoindre').addEventListener('click', () => {
     const code = ($('code') as HTMLInputElement).value.trim().toUpperCase();
     if (code.length === 4) installer(new TableEnLigne(nom(), code));
@@ -818,27 +834,45 @@ function voileTablePublique(
   en: TableEnLigne,
   salon: NonNullable<ReturnType<TableEnLigne['salon']>>,
 ): void {
-  const humains = salon.sieges.filter((s) => !s.estBot);
-  const sieges = salon.sieges.map((s) => `<li>
+  const assis = salon.sieges.length;
+  // Avant le départ, tous les sièges occupés le sont par des humains : les bots
+  // n'arrivent qu'au dernier moment. Les places encore libres sont montrées
+  // telles quelles, pour qu'on voie d'un coup d'œil ce qui manque.
+  const libres = Math.max(0, salon.minJoueurs - assis);
+  const places = [
+    ...salon.sieges.map((s) => `<li>
       <span>${s.id === en.moi ? `${s.nom} (vous)` : s.nom}</span>
       <span class="gain">${s.estBot ? 'bot' : s.connecte ? 'assis' : 'parti'}</span>
-    </li>`).join('');
+    </li>`),
+    ...Array.from({ length: libres }, () => `<li class="libre">
+      <span>Place libre</span><span class="gain">un bot, si personne</span>
+    </li>`),
+  ].join('');
 
   const secondes = en.departDans();
   const depart = secondes === null ? 'La partie va commencer.'
-    : secondes > 0 ? `La partie commence dans <b>${secondes} s</b>.`
-    : 'C’est parti…';
-  const compagnie = humains.length > 1
-    ? `${humains.length - 1} autre${humains.length > 2 ? 's' : ''} visiteur${humains.length > 2 ? 's' : ''} à la table.`
-    : 'Personne d’autre pour l’instant : si quelqu’un arrive d’ici là, vous jouerez ensemble.';
+    : secondes > 0 ? `départ dans <b>${secondes} s</b>`
+    : 'c’est parti…';
+  const compte = assis >= salon.minJoueurs
+    ? `<b>${assis} joueurs</b> à table`
+    : `<b>${assis}</b> joueur${assis > 1 ? 's' : ''} sur ${salon.minJoueurs}`;
+  const compagnie = assis > 1
+    ? `Vous êtes ${assis} à attendre. La table accepte jusqu’à ${salon.maxJoueurs} joueurs.`
+    : `Personne d’autre pour l’instant : si quelqu’un arrive d’ici là, vous jouerez ensemble.
+       La table accepte jusqu’à ${salon.maxJoueurs} joueurs.`;
 
   montrerVoile(`
     <h2>Table publique</h2>
-    <p>${depart}</p>
-    <p class="mention">${compagnie} Les places libres iront à des bots.</p>
-    <ul class="classement">${sieges}</ul>
+    <p>${compte} — ${depart}</p>
+    <ul class="classement">${places}</ul>
+    <p class="mention">${compagnie}</p>
+    <button class="action primaire" id="maintenant" type="button">Commencer maintenant</button>
     <button class="action" id="quitter" type="button">Quitter</button>
   `);
+
+  // Sans ce bouton, il faudrait subir le compte à rebours même quand on sait
+  // très bien que personne ne viendra.
+  $('maintenant').addEventListener('click', () => en.demarrer());
 
   $('quitter').addEventListener('click', () => {
     en.quitter();

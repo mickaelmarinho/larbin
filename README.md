@@ -31,6 +31,19 @@ Une déconnexion n'est pas grave : le navigateur retient votre place et vous la
 rend en rouvrant le lien. Si vous ne revenez pas au bout de 25 secondes, la
 table joue pour vous plutôt que d'attendre indéfiniment.
 
+### Jouer avec des inconnus
+
+**Jouer avec d'autres visiteurs** assoit à une table publique, sans code ni
+invitation. Un compte à rebours de vingt secondes démarre ; qui arrive entre
+temps s'assoit à la même table, et au terme, des bots prennent les places
+libres. On voit l'occupation — « 2 joueurs sur 4 » — et on peut commencer sans
+attendre. Ces tables n'ont pas d'hôte : n'importe quel joueur assis peut lancer
+la partie ou en relancer une.
+
+Personne n'y attend donc jamais devant un écran vide, ce qui est la raison
+d'être de ce fonctionnement : une salle d'attente classique, à faible
+fréquentation, ne montre que son propre désert.
+
 ## Jouer à distance
 
 Le jeu se joue sur **https://larbin.vercel.app**. Envoyez ce lien à vos proches,

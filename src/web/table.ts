@@ -189,6 +189,37 @@ export function reveiller(): void {
   fetch(`https://${HOTE_JEU}/sante`, { cache: 'no-store' }).catch(() => {});
 }
 
+/** Ce que le serveur de parties dit de lui-même : y a-t-il du monde, ce soir ? */
+export interface Activite {
+  /** Joueurs connectés, toutes tables confondues. */
+  joueurs: number;
+  /** Tables publiques qui attendent encore quelqu'un. */
+  publiques: number;
+  /** Visiteurs assis à ces tables, en attente d'une partie. */
+  enAttente: number;
+}
+
+/**
+ * Demande au serveur s'il se passe quelque chose. Renvoie null s'il dort, s'il
+ * ne répond pas, ou si l'on joue depuis le fichier seul : l'accueil s'affiche
+ * alors comme avant, sans rien promettre.
+ */
+export async function activite(): Promise<Activite | null> {
+  try {
+    const hote = await hoteDuJeu();
+    const url = hote === location.host ? '/sante' : `https://${hote}/sante`;
+    const info = await (await fetch(url, { cache: 'no-store' })).json();
+    if (info?.ok !== true) return null;
+    return {
+      joueurs: Number(info.connexions) || 0,
+      publiques: Number(info.publiques) || 0,
+      enAttente: Number(info.enAttente) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Code à passer à TableEnLigne pour s'asseoir à une table publique plutôt qu'à
  * un salon précis : le serveur choisit la table, ou en ouvre une.

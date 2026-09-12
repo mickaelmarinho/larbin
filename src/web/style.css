@@ -786,3 +786,9 @@ button.lien:hover { color: var(--texte); }
 /* La liste des parties passees : c'est la place qui compte, pas la date. */
 .classement.parties li { font-size: 13px; color: var(--texte-pale); }
 .classement.parties .place { color: var(--texte); font-size: 13px; }
+
+/* Les places encore libres à une table publique : présentes, mais en retrait. */
+.classement li.libre span {
+  color: var(--texte-pale);
+  font-style: italic;
+}
