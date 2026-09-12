@@ -578,6 +578,21 @@ button.action:disabled {
 
 .panneau .mention.alerte { color: #e0a08a; }
 
+/* Les quelques règles qu'il faut pour jouer : lisibles d'un trait. */
+.panneau ul.vite {
+  margin: 12px 0 0;
+  padding-left: 18px;
+}
+
+.panneau ul.vite li {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--texte);
+}
+
+.panneau ul.vite li::marker { color: var(--laiton); }
+
 /* Le choix du nombre de joueurs, en ligne sous les places. */
 .panneau p.taille {
   display: flex;

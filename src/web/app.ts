@@ -640,6 +640,55 @@ const EMBLEME = `<svg class="embleme" viewBox="0 0 64 64" aria-hidden="true">
         fill="var(--rouge-embleme)"/>
 </svg>`;
 
+const CLE_ACCUEILLI = 'larbin.regles-vues';
+
+/** A-t-on déjà expliqué le jeu à ce navigateur ? */
+function dejaExplique(): boolean {
+  try {
+    return localStorage.getItem(CLE_ACCUEILLI) === 'oui';
+  } catch {
+    return false;   // stockage indisponible : mieux vaut expliquer deux fois que jamais
+  }
+}
+
+/**
+ * Ce qu'il faut savoir pour jouer, et rien de plus.
+ *
+ * Un visiteur qui ne connaît pas le Président n'avait aucune explication : il
+ * tombait sur un tapis, treize cartes et deux boutons, et le jeu lui disait
+ * « vous passez » avant qu'il ait rien compris. Cinq lignes suffisent à jouer ;
+ * la page des règles est là pour le reste.
+ */
+function voileBienvenue(suite: () => void, libelle = 'Revenir'): void {
+  suspendre(true);
+  montrerVoile(`
+    <h2>Comment on joue</h2>
+    <p>Se débarrasser de toutes ses cartes avant les autres.</p>
+    <ul class="vite">
+      <li><b>Le 2 est la carte la plus forte</b>, devant l’as — et il coupe net :
+          dès qu’il tombe, la série s’arrête.</li>
+      <li><b>Une série ne fait qu’un tour de table.</b> Chacun ne parle qu’une
+          fois ; c’est ce qui sépare le Larbin du Président.</li>
+      <li>À votre tour, posez <b>autant de cartes que le joueur précédent</b>,
+          d’une hauteur strictement supérieure. Sinon, vous passez.</li>
+      <li>Les couleurs ne comptent pas : un 6 de cœur vaut un 6 de trèfle.</li>
+      <li>En fin de manche, le premier sorti devient <b>Boss</b> et le dernier
+          <b>Larbin</b> — qui lui donnera ses deux meilleures cartes.</li>
+    </ul>
+    <p class="mention">Un piège à connaître : <b>finir sur un 2 rend Larbin
+       d’office</b>. Pour le détail,
+       <a href="https://${ADRESSE_PUBLIQUE}/regles" target="_blank" rel="noopener">toutes les règles</a>.</p>
+    <button class="action primaire" id="compris" type="button">${libelle}</button>
+  `);
+  $('compris').addEventListener('click', () => {
+    try {
+      localStorage.setItem(CLE_ACCUEILLI, 'oui');
+    } catch { /* on réexpliquera, ce n'est pas grave */ }
+    suspendre(false);
+    suite();
+  });
+}
+
 /**
  * D'où vient le jeu. Rangé derrière un lien : qui veut lire lit, les autres
  * jouent sans avoir eu à contourner un pavé de texte.
@@ -785,7 +834,7 @@ function voileAccueil(): void {
     <h2>Le Larbin</h2>
     <p>Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone.</p>
     <label class="champ">Votre nom
-      <input id="nom" type="text" maxlength="14" placeholder="Mickaël" value="${attribut(nomConnu)}">
+      <input id="nom" type="text" maxlength="14" placeholder="Votre prénom" value="${attribut(nomConnu)}">
     </label>
     <button class="action primaire" id="solo" type="button">Jouer contre les bots</button>
     ${horsLigne ? `<p class="mention">Ce fichier joue en solo, hors ligne.
@@ -803,6 +852,7 @@ function voileAccueil(): void {
       ? `<button class="lien" id="parcours" type="button">Votre parcours —
          ${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} partie${b.parties > 1 ? 's' : ''}</button>`
       : ''}
+    <button class="lien" id="regles" type="button">Comment on joue ?</button>
     <button class="lien" id="histoire" type="button">D'où vient ce jeu ?</button>
   `);
 
@@ -816,17 +866,28 @@ function voileAccueil(): void {
 
   $('tapis-accueil').addEventListener('click', () => voileTapis(voileAccueil));
   $('parcours')?.addEventListener('click', () => voileParcours(voileAccueil));
+  $('regles').addEventListener('click', () => voileBienvenue(voileAccueil));
   $('histoire').addEventListener('click', () => voileHistoire(voileAccueil));
 
-  $('solo').addEventListener('click', () => {
+  // La première fois, on explique avant de lancer : cinq lignes, puis on joue.
+  const enPassantParLesRegles = (jouer: () => void) => {
+    if (dejaExplique()) jouer();
+    else voileBienvenue(jouer, 'Jouer');
+  };
+
+  $('solo').addEventListener('click', () => enPassantParLesRegles(() => {
     cacherVoile();
     installer(new TableSolo());
-  });
+  }));
 
   if (horsLigne) return;
   // On passe par la liste plutôt que d'asseoir d'office : voir les tables, c'est
   // voir que le site vit, et pouvoir choisir la sienne.
-  $('publique').addEventListener('click', () => voileTables(nom()));
+  $('publique').addEventListener('click', () => {
+    // Le nom se lit avant de remplacer l'écran : le champ n'existera plus après.
+    const choisi = nom();
+    enPassantParLesRegles(() => voileTables(choisi));
+  });
   $('creer').addEventListener('click', () => installer(new TableEnLigne(nom(), '')));
 
   // S'il y a du monde en ligne, autant le dire : c'est ce qui donne envie de
@@ -1201,7 +1262,7 @@ function voileAccueilPourRejoindre(code: string): void {
     <h2>Salon ${code.toUpperCase()}</h2>
     <p>On vous attend à cette table. Sous quel nom ?</p>
     <label class="champ">Votre nom
-      <input id="nom" type="text" maxlength="14" placeholder="Mickaël">
+      <input id="nom" type="text" maxlength="14" placeholder="Votre prénom">
     </label>
     <button class="action primaire" id="entrer" type="button">Rejoindre</button>
   `);
