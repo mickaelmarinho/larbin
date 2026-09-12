@@ -9,12 +9,15 @@ import type { Action, Card, Rank, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
 import {
-  ADRESSE_PUBLIQUE, TableEnLigne, TableSolo, hoteDuJeu, type Table,
+  ADRESSE_PUBLIQUE, TABLE_PUBLIQUE, TableEnLigne, TableSolo, hoteDuJeu, type Table,
 } from './table.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
+
+/** Pour placer un texte dans un attribut sans qu'un guillemet ne casse la page. */
+const attribut = (texte: string) => texte.replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 let table: Table | null = null;
 let selection: string[] = [];
@@ -563,7 +566,9 @@ function voileFinDePartie(vue: PlayerView): void {
   const trace = b.serie >= 2 ? `${b.serie} victoires d'affilée.`
     : b.parties === 1 ? 'Première partie enregistrée.'
     : `${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} parties.`;
+  // Une table publique n'a pas d'hôte : tout joueur assis peut relancer.
   const jeRelance = !enLigne
+    || (enLigne.salon()?.publique ?? false)
     || (enLigne.salon()?.sieges.find((s) => s.id === enLigne.moi)?.hote ?? false);
 
   montrerVoile(`
@@ -755,15 +760,16 @@ function voileAccueil(): void {
   montrerVoile(`
     ${EMBLEME}
     <h2>Le Larbin</h2>
-    <p>Contre trois bots, ou avec vos proches — chacun sur son téléphone.</p>
+    <p>Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone.</p>
     <label class="champ">Votre nom
-      <input id="nom" type="text" maxlength="14" placeholder="Mickaël" value="${nomConnu}">
+      <input id="nom" type="text" maxlength="14" placeholder="Mickaël" value="${attribut(nomConnu)}">
     </label>
     <button class="action primaire" id="solo" type="button">Jouer contre les bots</button>
     ${horsLigne ? `<p class="mention">Ce fichier joue en solo, hors ligne.
        Pour une partie à plusieurs, ouvrez
        <a href="https://${ADRESSE_PUBLIQUE}" target="_blank" rel="noopener">${ADRESSE_PUBLIQUE}</a>
        — ou lancez <b>Serveur.cmd</b> pour jouer sur votre wifi.</p>` : `
+      <button class="action" id="publique" type="button">Jouer avec d'autres visiteurs</button>
       <button class="action" id="creer" type="button">Créer un salon</button>
       <div class="rejoindre">
         <input id="code" type="text" maxlength="4" placeholder="CODE" autocapitalize="characters">
@@ -795,6 +801,7 @@ function voileAccueil(): void {
   });
 
   if (horsLigne) return;
+  $('publique').addEventListener('click', () => installer(new TableEnLigne(nom(), TABLE_PUBLIQUE)));
   $('creer').addEventListener('click', () => installer(new TableEnLigne(nom(), '')));
   $('rejoindre').addEventListener('click', () => {
     const code = ($('code') as HTMLInputElement).value.trim().toUpperCase();
@@ -802,9 +809,64 @@ function voileAccueil(): void {
   });
 }
 
+/**
+ * Une table publique avant son lancement : qui est assis, et dans combien de
+ * temps on commence. Rien à régler, rien à décider — quelques secondes, puis
+ * les bots comblent les places vides.
+ */
+function voileTablePublique(
+  en: TableEnLigne,
+  salon: NonNullable<ReturnType<TableEnLigne['salon']>>,
+): void {
+  const humains = salon.sieges.filter((s) => !s.estBot);
+  const sieges = salon.sieges.map((s) => `<li>
+      <span>${s.id === en.moi ? `${s.nom} (vous)` : s.nom}</span>
+      <span class="gain">${s.estBot ? 'bot' : s.connecte ? 'assis' : 'parti'}</span>
+    </li>`).join('');
+
+  const secondes = en.departDans();
+  const depart = secondes === null ? 'La partie va commencer.'
+    : secondes > 0 ? `La partie commence dans <b>${secondes} s</b>.`
+    : 'C’est parti…';
+  const compagnie = humains.length > 1
+    ? `${humains.length - 1} autre${humains.length > 2 ? 's' : ''} visiteur${humains.length > 2 ? 's' : ''} à la table.`
+    : 'Personne d’autre pour l’instant : si quelqu’un arrive d’ici là, vous jouerez ensemble.';
+
+  montrerVoile(`
+    <h2>Table publique</h2>
+    <p>${depart}</p>
+    <p class="mention">${compagnie} Les places libres iront à des bots.</p>
+    <ul class="classement">${sieges}</ul>
+    <button class="action" id="quitter" type="button">Quitter</button>
+  `);
+
+  $('quitter').addEventListener('click', () => {
+    en.quitter();
+    table = null;
+    location.href = location.pathname;
+  });
+
+  // Le compte à rebours se redessine chaque seconde ; boucle() annule ce rappel
+  // dès que quelque chose d'autre change.
+  if (secondes !== null) minuteur = setTimeout(boucle, 1000);
+}
+
 function voileSalon(en: TableEnLigne): void {
   const salon = en.salon();
   if (!salon) {
+    // Refus du serveur avant même d'être assis : le dire, et proposer de revenir,
+    // plutôt que de laisser le joueur devant « Connexion… » pour toujours.
+    const refus = en.erreur();
+    if (refus) {
+      montrerVoile(`<h2>Impossible d'entrer</h2><p>${refus}</p>
+        <button class="action primaire" id="retour" type="button">Revenir à l'accueil</button>`);
+      $('retour').addEventListener('click', () => {
+        en.quitter();
+        table = null;
+        location.href = location.pathname;
+      });
+      return;
+    }
     // Le serveur s'endort après un moment sans visite. Mieux vaut le dire que
     // de laisser le joueur devant un écran qui ne bouge pas.
     const secondes = en.attente();
@@ -815,6 +877,8 @@ function voileSalon(en: TableEnLigne): void {
     montrerVoile(`<h2>Connexion…</h2><p>${explication}</p>`);
     return;
   }
+
+  if (salon.publique) return voileTablePublique(en, salon);
 
   const jeSuisHote = salon.sieges.find((s) => s.id === en.moi)?.hote ?? false;
   const lien = `${location.origin}/?salon=${salon.code}`;

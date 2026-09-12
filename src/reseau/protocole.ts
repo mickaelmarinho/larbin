@@ -26,10 +26,18 @@ export interface EtatSalon {
   commencee: boolean;
   minJoueurs: number;
   maxJoueurs: number;
+  /**
+   * Table publique : ouverte aux inconnus, sans hôte. Elle ne fait attendre
+   * personne — au bout du compte à rebours, des bots prennent les places vides.
+   */
+  publique: boolean;
+  /** Millisecondes avant le lancement automatique, ou null s'il n'y en a pas. */
+  departDans: number | null;
 }
 
 export type VersServeur =
   | { type: 'rejoindre'; salon: string; nom: string; jeton?: string }
+  | { type: 'rejoindre-public'; nom: string }
   | { type: 'ajouter-bot' }
   | { type: 'retirer'; id: string }
   | { type: 'demarrer' }
@@ -52,4 +60,27 @@ export function codeDeSalon(hasard: () => number = Math.random): string {
 
 export function codeValide(code: string): boolean {
   return /^[A-Z]{4}$/.test(code) && [...code].every((c) => ALPHABET.includes(c));
+}
+
+/** Longueur maximale d'un nom : la même que celle du champ de saisie. */
+export const NOM_MAX = 14;
+
+/**
+ * Un nom qu'on peut montrer aux autres sans risque.
+ *
+ * Les noms s'affichent dans la page des autres joueurs. Entre amis la question
+ * ne se posait guère ; entre inconnus, un « nom » fait de balises pourrait
+ * s'exécuter chez tout le monde. On ne garde donc que des lettres, des chiffres,
+ * l'espace, le trait d'union, l'apostrophe et le point — de quoi écrire
+ * « Jean-Mi », « D'Artagnan » ou « Zoé 2 », et rien qui ressemble à du code.
+ * C'est le serveur qui l'applique : lui fait autorité, pas le navigateur.
+ */
+export function nomPropre(brut: string): string {
+  return brut
+    .normalize('NFC')
+    .replace(/[^\p{L}\p{N} '’.-]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, NOM_MAX)
+    .trim();
 }

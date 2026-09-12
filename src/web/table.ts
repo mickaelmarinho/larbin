@@ -189,6 +189,12 @@ export function reveiller(): void {
   fetch(`https://${HOTE_JEU}/sante`, { cache: 'no-store' }).catch(() => {});
 }
 
+/**
+ * Code à passer à TableEnLigne pour s'asseoir à une table publique plutôt qu'à
+ * un salon précis : le serveur choisit la table, ou en ouvre une.
+ */
+export const TABLE_PUBLIQUE = '*';
+
 export class TableEnLigne implements Table {
   readonly mode = 'en-ligne';
   moi = '';
@@ -196,15 +202,20 @@ export class TableEnLigne implements Table {
   private ws: WebSocket | null = null;
   private derniereVue: PlayerView | null = null;
   private etatSalon: EtatSalon | null = null;
+  /** Quand l'état du salon est arrivé : le compte à rebours se mesure depuis là. */
+  private etatRecuA = 0;
   private message: string | null = null;
   private ecouteurs: Array<() => void> = [];
   private ferme = false;
   private code: string;
+  /** On cherche une table publique tant que le serveur ne nous en a pas donné une. */
+  private readonly chercheTablePublique: boolean;
   private depuis = Date.now();
   private battement: ReturnType<typeof setInterval> | undefined;
 
   constructor(private nom: string, code: string) {
-    this.code = code.toUpperCase();
+    this.chercheTablePublique = code === TABLE_PUBLIQUE;
+    this.code = this.chercheTablePublique ? '' : code.toUpperCase();
     this.brancher();
     // Tant qu'on n'est pas entré, on redonne la main à l'affichage chaque
     // seconde : c'est ce qui permet de dire au joueur que le serveur se réveille
@@ -222,6 +233,16 @@ export class TableEnLigne implements Table {
   /** Depuis combien de secondes on attend d'entrer dans le salon. */
   attente(): number {
     return this.etatSalon ? 0 : Math.round((Date.now() - this.depuis) / 1000);
+  }
+
+  /**
+   * Secondes avant que la table publique ne se lance d'elle-même, ou null. On
+   * compte depuis la réception de l'état, sans se fier à l'horloge du serveur.
+   */
+  departDans(): number | null {
+    const reste = this.etatSalon?.departDans;
+    if (reste == null) return null;
+    return Math.max(0, Math.ceil((reste - (Date.now() - this.etatRecuA)) / 1000));
   }
 
   vue(): PlayerView | null {
@@ -283,6 +304,11 @@ export class TableEnLigne implements Table {
     this.ws = new WebSocket(`${chiffre ? 'wss' : 'ws'}://${hote}`);
 
     this.ws.addEventListener('open', () => {
+      // Une fois assis, on revient toujours à la même table, publique ou non.
+      if (this.chercheTablePublique && !this.moi) {
+        this.dire({ type: 'rejoindre-public', nom: this.nom });
+        return;
+      }
       this.dire({
         type: 'rejoindre',
         salon: this.code,
@@ -308,6 +334,7 @@ export class TableEnLigne implements Table {
           break;
         case 'salon':
           this.etatSalon = recu.etat;
+          this.etatRecuA = Date.now();
           break;
         case 'vue':
           this.derniereVue = recu.vue;

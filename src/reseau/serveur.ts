@@ -15,9 +15,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, type WebSocket } from 'ws';
 
-import { RegleViolee } from '../engine/game.ts';
-import { codeDeSalon, codeValide, type VersClient, type VersServeur } from './protocole.ts';
-import { Salon } from './salon.ts';
+import { MAX_JOUEURS, RegleViolee } from '../engine/game.ts';
+import { codeDeSalon, codeValide, nomPropre, type VersClient, type VersServeur } from './protocole.ts';
+import { Salon, tablePubliqueOuverte } from './salon.ts';
 
 const racine = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 /**
@@ -34,6 +34,12 @@ const REFLEXION = 800;
 const PATIENCE_DECONNEXION = 25_000;
 /** Un salon vide finit par être oublié. */
 const OUBLI = 2 * 60 * 60 * 1000;
+/**
+ * Le compte à rebours d'une table publique. Assez long pour qu'un deuxième
+ * visiteur ait une chance de s'asseoir, assez court pour que le premier ne
+ * reparte pas avant d'avoir joué.
+ */
+const ATTENTE_PUBLIQUE = 20_000;
 
 /* Garde-fous, pour le jour où l'adresse sera publique. */
 const MAX_SALONS = 300;
@@ -128,6 +134,36 @@ function diffuser(salon: Salon): void {
 
 const minuteurs = new Map<Salon, NodeJS.Timeout>();
 
+/** Les tables publiques dont le lancement automatique est programmé. */
+const lancements = new Map<Salon, NodeJS.Timeout>();
+
+/**
+ * Programme le lancement d'une table publique, une fois pour toutes : l'arrivée
+ * d'un deuxième visiteur ne remet pas le compte à rebours à zéro.
+ */
+function programmerLancement(salon: Salon): void {
+  if (!salon.publique || salon.commencee || lancements.has(salon)) return;
+  salon.lancement = Date.now() + ATTENTE_PUBLIQUE;
+  lancements.set(salon, setTimeout(() => lancer(salon), ATTENTE_PUBLIQUE));
+}
+
+/**
+ * L'heure est venue : les bots prennent les places vides et la partie commence.
+ * Si tout le monde est reparti entre-temps, la table disparaît simplement.
+ */
+function lancer(salon: Salon): void {
+  clearTimeout(lancements.get(salon));
+  lancements.delete(salon);
+  if (salon.commencee) return;
+  if (!salon.places.some((p) => !p.estBot && p.connecte)) {
+    salons.delete(salon.code);
+    return;
+  }
+  salon.completerEtDemarrer();
+  diffuser(salon);
+  avancer(salon);
+}
+
 /**
  * Fait avancer la table : les bots jouent après un temps de réflexion, et on
  * finit par jouer à la place d'un joueur parti sans prévenir.
@@ -160,6 +196,31 @@ function avancer(salon: Salon): void {
 
 function traiter(ws: WebSocket, message: VersServeur): void {
   const lien = connexions.get(ws);
+
+  // Table publique : le serveur choisit où asseoir le visiteur, ou lui en ouvre
+  // une. Ensuite, reconnexions et coups passent par le même chemin qu'un salon.
+  if (message.type === 'rejoindre-public') {
+    if (lien) return;
+    let salon = tablePubliqueOuverte(salons.values());
+    if (!salon) {
+      if (salons.size >= MAX_SALONS) {
+        envoyer(ws, { type: 'erreur', message: 'Trop de tables ouvertes. Réessayez dans un moment.' });
+        return;
+      }
+      salon = new Salon(codeLibre(), { publique: true });
+      salons.set(salon.code, salon);
+    }
+    const place = salon.asseoir(message.nom, randomUUID());
+    connexions.set(ws, { salon, id: place.id });
+    envoyer(ws, { type: 'bienvenue', jeton: place.jeton, moi: place.id, salon: salon.code });
+    if (salon.places.length >= MAX_JOUEURS) {
+      lancer(salon);
+    } else {
+      programmerLancement(salon);
+      diffuser(salon);
+    }
+    return;
+  }
 
   if (message.type === 'rejoindre') {
     if (lien) return;
@@ -199,7 +260,9 @@ function traiter(ws: WebSocket, message: VersServeur): void {
         }
       }
       place.connecte = true;
-      place.nom = message.nom.trim() || place.nom;
+      // Même nettoyage qu'à l'arrivée : un nom repris à la reconnexion
+      // s'affiche chez les autres tout autant.
+      place.nom = nomPropre(message.nom) || place.nom;
     } else {
       try {
         place = salon.asseoir(message.nom, randomUUID());
@@ -214,6 +277,8 @@ function traiter(ws: WebSocket, message: VersServeur): void {
 
     connexions.set(ws, { salon, id: place.id });
     envoyer(ws, { type: 'bienvenue', jeton: place.jeton, moi: place.id, salon: salon.code });
+    // Un lien vers une table publique mène au même compte à rebours.
+    programmerLancement(salon);
     diffuser(salon);
     avancer(salon);
     return;
@@ -296,6 +361,14 @@ wss.on('connection', (ws) => {
     if (place) place.connecte = false;
     // Avant le début, une place vide se libère ; après, on la garde au chaud.
     if (!lien.salon.commencee && place && !place.estBot) lien.salon.retirer(lien.id);
+    // Une table publique quittée par tous avant de commencer n'a plus de raison
+    // d'exister : on ne la proposera à personne.
+    if (lien.salon.publique && !lien.salon.commencee && !lien.salon.places.some((p) => !p.estBot)) {
+      clearTimeout(lancements.get(lien.salon));
+      lancements.delete(lien.salon);
+      salons.delete(lien.salon.code);
+      return;
+    }
     diffuser(lien.salon);
     avancer(lien.salon);
   });
@@ -309,6 +382,8 @@ setInterval(() => {
     if (vide && Date.now() - salon.derniereActivite > OUBLI) {
       clearTimeout(minuteurs.get(salon));
       minuteurs.delete(salon);
+      clearTimeout(lancements.get(salon));
+      lancements.delete(salon);
       salons.delete(code);
     }
   }

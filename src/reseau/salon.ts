@@ -4,6 +4,11 @@
  * Toute la logique de salon vit ici, sans rien connaître des WebSockets — elle
  * est donc testable comme le reste du moteur. Le serveur ne fait que brancher
  * des tuyaux dessus.
+ *
+ * Deux sortes de tables. Le salon privé, ouvert par un hôte qui invite ses
+ * proches et décide quand commencer. La table publique, ouverte aux inconnus :
+ * pas d'hôte, et un compte à rebours au bout duquel des bots prennent les
+ * places vides — personne n'y attend seul devant un écran.
  */
 import type { Action, GameState } from '../engine/types.ts';
 import {
@@ -11,7 +16,7 @@ import {
   type PlayerView,
 } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
-import { codeDeSalon, type EtatSalon, type Siege } from './protocole.ts';
+import { codeDeSalon, nomPropre, type EtatSalon, type Siege } from './protocole.ts';
 
 const NOMS_DE_BOTS = ['Gina', 'Hugo', 'Lila', 'Naïm', 'Zoé'];
 
@@ -26,19 +31,36 @@ export interface Place {
 
 export class Salon {
   readonly code: string;
+  /** Ouverte aux inconnus : pas d'hôte, et un lancement automatique. */
+  readonly publique: boolean;
   places: Place[] = [];
   hote: string | null = null;
   etat: GameState | null = null;
   derniereActivite = Date.now();
+  /** Instant où la table publique se lancera d'elle-même, si c'est prévu. */
+  lancement: number | null = null;
 
-  constructor(code = codeDeSalon()) {
+  constructor(code = codeDeSalon(), options: { publique?: boolean } = {}) {
     this.code = code;
+    this.publique = options.publique ?? false;
   }
 
   /* ------------------------------------------------------------ lecture */
 
   get commencee(): boolean {
     return this.etat !== null;
+  }
+
+  /**
+   * Cette table publique peut-elle accueillir un nouveau venu ? Il faut qu'elle
+   * n'ait pas commencé, qu'il y reste de la place, et que quelqu'un y soit
+   * encore assis : on n'envoie personne attendre à une table désertée.
+   */
+  get accueille(): boolean {
+    return this.publique
+      && !this.commencee
+      && this.places.length < MAX_JOUEURS
+      && this.places.some((p) => !p.estBot && p.connecte);
   }
 
   place(id: string): Place | undefined {
@@ -63,6 +85,10 @@ export class Salon {
       commencee: this.commencee,
       minJoueurs: MIN_JOUEURS,
       maxJoueurs: MAX_JOUEURS,
+      publique: this.publique,
+      departDans: this.lancement !== null && !this.commencee
+        ? Math.max(0, this.lancement - Date.now())
+        : null,
     };
   }
 
@@ -89,13 +115,15 @@ export class Salon {
 
     const place: Place = {
       id: `j${this.places.length + 1}-${jeton.slice(0, 4)}`,
-      nom: nomLibre(nom.trim() || 'Joueur', this.places),
+      // Le nom s'affichera chez les autres : on le nettoie ici, côté serveur.
+      nom: nomLibre(nomPropre(nom) || 'Joueur', this.places),
       jeton,
       estBot: false,
       connecte: true,
     };
     this.places.push(place);
-    if (!this.hote) this.hote = place.id;
+    // À une table publique, personne ne décide pour les autres.
+    if (!this.hote && !this.publique) this.hote = place.id;
     this.derniereActivite = Date.now();
     return place;
   }
@@ -105,8 +133,13 @@ export class Salon {
     if (this.places.length >= MAX_JOUEURS) throw new RegleViolee('La table est complète.');
 
     const nom = NOMS_DE_BOTS.find((n) => !this.places.some((p) => p.nom === n)) ?? 'Robot';
+    // Un identifiant libre, et non le rang à la table : après un départ, ce rang
+    // peut être celui d'un bot encore assis, et le moteur refuse deux joueurs
+    // du même identifiant — la partie ne démarrait plus.
+    let n = 1;
+    while (this.places.some((p) => p.id === `bot${n}`)) n += 1;
     const place: Place = {
-      id: `bot${this.places.length + 1}`,
+      id: `bot${n}`,
       nom,
       jeton: '',
       estBot: true,
@@ -137,14 +170,25 @@ export class Salon {
     this.derniereActivite = Date.now();
   }
 
+  /**
+   * Lance une table publique : les places manquantes vont à des bots, et la
+   * partie commence. Personne n'attend plus longtemps que le compte à rebours.
+   */
+  completerEtDemarrer(): void {
+    while (this.places.length < MIN_JOUEURS) this.ajouterBot();
+    this.lancement = null;
+    this.demarrer();
+  }
+
   /** Applique une action au nom d'un joueur, après avoir vérifié que c'est bien lui. */
   jouer(id: string, action: Action): void {
     if (!this.etat) throw new RegleViolee("La partie n'a pas commencé.");
     if ('player' in action && action.player !== id) {
       throw new RegleViolee("On ne joue pas à la place d'un autre.");
     }
-    // Remettre les scores à zéro engage toute la table : c'est à l'hôte.
-    if (action.type === 'nouvelle-partie' && this.hote !== id) {
+    // Remettre les scores à zéro engage toute la table : c'est à l'hôte. Une
+    // table publique n'en a pas ; n'importe quel joueur assis peut relancer.
+    if (action.type === 'nouvelle-partie' && !this.publique && this.hote !== id) {
       throw new RegleViolee("Seul l'hôte relance une partie.");
     }
     this.etat = apply(this.etat, action);
@@ -167,6 +211,19 @@ export class Salon {
   coupAutomatique(id: string): Action | null {
     return this.etat ? botAction(viewFor(this.etat, id)) : null;
   }
+}
+
+/**
+ * La table publique où asseoir un nouveau venu, s'il y en a une qui l'attend.
+ * La plus remplie d'abord : autant réunir les visiteurs que les disperser.
+ */
+export function tablePubliqueOuverte(salons: Iterable<Salon>): Salon | undefined {
+  let choisie: Salon | undefined;
+  for (const salon of salons) {
+    if (!salon.accueille) continue;
+    if (!choisie || salon.places.length > choisie.places.length) choisie = salon;
+  }
+  return choisie;
 }
 
 /** Deux « Marc » à la même table prêtent à confusion : on numérote. */
