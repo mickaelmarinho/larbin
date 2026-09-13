@@ -109,13 +109,14 @@ la page n'y gagne pas un octet. Ce qui déclenche chaque son se décide à part
 (`src/web/bruitages.ts`), en comparant deux instants de la table — c'est ce qui
 permet de l'éprouver sans haut-parleur.
 
-La **musique d'ambiance** se met depuis le panneau du tapis (« Tapis et musique »
-sur l'accueil). Elle est coupée par défaut — sur un téléphone, une musique
-imposée fait fuir — et se tait quand l'onglet est caché. Chaque tapis a la
-sienne : un ii–V–I de jazz sur le Feutre, du mineur un peu nostalgique sur le
-Bordeaux, des accords suspendus sur l'Ardoise. Elle aussi est composée à la
-volée (`src/web/musique.ts`) : des accords tenus, une basse, et quelques notes
-égrenées au hasard, si bien qu'elle ne boucle jamais tout à fait pareil.
+La **musique d'ambiance** se choisit avec le 🎵 de la barre du haut (ou « Tapis
+et musique » sur l'accueil). Elle est coupée par défaut — sur un téléphone, une
+musique imposée fait fuir — et se tait quand l'onglet est caché. Quatre
+morceaux : **Casino**, un swing nerveux en do mineur (contrebasse qui marche,
+cymbale et balais, piano qui ponctue), et trois nappes plus calmes — **Salon
+jazz**, **Cabaret**, **Calme**. Tout est composé à la volée
+(`src/web/musique.ts`), avec une part de hasard : la musique ne boucle jamais
+tout à fait pareil.
 
 ### Réagir
 

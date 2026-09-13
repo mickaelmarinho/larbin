@@ -496,6 +496,7 @@ button.action:disabled {
 
 #voir-restantes,
 #sons,
+#musique-choix,
 #accueil {
   flex: 0 0 auto;
   width: 28px;
@@ -508,7 +509,42 @@ button.action:disabled {
   cursor: pointer;
 }
 
-#sons.coupes { opacity: .5; }
+#sons.coupes,
+#musique-choix.coupes { opacity: .5; }
+
+/* Le choix de la musique : un morceau par ligne, avec deux mots pour le décrire. */
+.musiques {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.musiques button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #ffffff26;
+  background: #ffffff10;
+  color: var(--texte);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.musiques button b { font-size: 15px; }
+
+.musiques button small {
+  font-size: 12px;
+  color: var(--texte-pale);
+}
+
+.musiques button.actif {
+  border-color: var(--laiton);
+  background: #d9a44122;
+}
 
 #accueil {
   color: var(--texte-pale);

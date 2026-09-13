@@ -18,7 +18,9 @@ import { TableDidacticiel, type Morale } from './didacticiel.ts';
 import { RIEN, quoiEntendre, type Instant } from './bruitages.ts';
 import { REACTIONS } from '../reseau/protocole.ts';
 import { jouerSons, ouvrirAuPremierGeste, reglerSons, sonsActifs } from './sons.ts';
-import { musiqueActive, musiqueAuPremierGeste, reglerMusique } from './musique.ts';
+import {
+  MUSIQUES, ORDRE_MUSIQUES, choisirMusique, musiqueAuPremierGeste, musiqueChoisie,
+} from './musique.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -373,6 +375,46 @@ function afficherClochette(): void {
   $('sons').textContent = actifs ? '🔔' : '🔕';
   $('sons').title = actifs ? 'Couper les sons' : 'Remettre les sons';
   $('sons').classList.toggle('coupes', !actifs);
+  // La note de musique, pâlie tant qu'aucun morceau ne joue.
+  const musique = musiqueChoisie();
+  $('musique-choix').classList.toggle('coupes', !musique);
+  $('musique-choix').title = musique ? `Musique : ${MUSIQUES[musique].nom}` : 'Mettre de la musique';
+}
+
+/**
+ * Le choix de la musique. Un morceau démarre dès qu'on le touche : on choisit
+ * à l'oreille, pas sur la description.
+ */
+function voileMusique(retour: () => void): void {
+  suspendre(true);
+  const actuelle = musiqueChoisie();
+  const choix = ORDRE_MUSIQUES.map((cle) => `
+    <button data-musique="${cle}" class="${cle === actuelle ? 'actif' : ''}" type="button">
+      <b>${MUSIQUES[cle].nom}</b><small>${MUSIQUES[cle].resume}</small>
+    </button>`).join('');
+
+  montrerVoile(`
+    <h2>La musique</h2>
+    <p>Touchez un morceau pour l’écouter : il continue pendant la partie.</p>
+    <div class="musiques">
+      ${choix}
+      <button data-musique="" class="${actuelle ? '' : 'actif'}" type="button"><b>🔇 Pas de musique</b></button>
+    </div>
+    <button class="action primaire" id="fermer-musique" type="button">Revenir</button>
+  `);
+
+  $('voile').querySelectorAll('[data-musique]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const cle = ORDRE_MUSIQUES.find((m) => m === (b as HTMLElement).dataset.musique) ?? null;
+      choisirMusique(cle);
+      afficherClochette();
+      voileMusique(retour);
+    });
+  });
+  $('fermer-musique').addEventListener('click', () => {
+    suspendre(false);
+    retour();
+  });
 }
 
 /**
@@ -1385,17 +1427,14 @@ function voileTapis(retour: () => void): void {
     <h2>Le tapis</h2>
     <p>Choisissez votre table. Ça ne change que l'ambiance.</p>
     <div class="tapis-liste">${choix}</div>
-    <button class="action" id="musique" type="button">${musiqueActive()
-      ? '🎵 Musique d’ambiance : activée — couper'
-      : '🎵 Mettre la musique d’ambiance'}</button>
-    <p class="mention">Chaque tapis a sa musique, douce et sans fin.</p>
+    <button class="action" id="musique" type="button">🎵 Musique : ${(() => {
+      const m = musiqueChoisie();
+      return m ? MUSIQUES[m].nom : 'aucune';
+    })()} — changer</button>
     <button class="action primaire" id="fermer-tapis" type="button">Revenir au jeu</button>
   `);
 
-  $('musique').addEventListener('click', () => {
-    reglerMusique(!musiqueActive());
-    voileTapis(retour);
-  });
+  $('musique').addEventListener('click', () => voileMusique(() => voileTapis(retour)));
 
   $('voile').querySelectorAll('[data-theme]').forEach((b) => {
     b.addEventListener('click', () => {
@@ -1462,6 +1501,11 @@ $('sons').addEventListener('click', () => {
   reglerSons(!sonsActifs());
   afficherClochette();
 });
+
+$('musique-choix').addEventListener('click', () => voileMusique(() => {
+  cacherVoile();
+  boucle();
+}));
 
 $('tapis-choix').addEventListener('click', () => voileTapis(() => {
   cacherVoile();
