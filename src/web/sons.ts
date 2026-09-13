@@ -43,6 +43,11 @@ function preparer(): AudioContext | null {
   return contexte;
 }
 
+/** Le canal audio, partagé avec la musique d'ambiance. */
+export function contexteAudio(): AudioContext | null {
+  return preparer();
+}
+
 export function ouvrirAuPremierGeste(): void {
   const ouvrir = () => {
     if (sonsActifs()) preparer();

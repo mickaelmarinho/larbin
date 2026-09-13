@@ -18,6 +18,7 @@ import { TableDidacticiel, type Morale } from './didacticiel.ts';
 import { RIEN, quoiEntendre, type Instant } from './bruitages.ts';
 import { REACTIONS } from '../reseau/protocole.ts';
 import { jouerSons, ouvrirAuPremierGeste, reglerSons, sonsActifs } from './sons.ts';
+import { musiqueActive, musiqueAuPremierGeste, reglerMusique } from './musique.ts';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -696,9 +697,25 @@ function voileFinDePartie(vue: PlayerView): void {
     ${jeRelance
       ? '<button class="action primaire" id="rejouer" type="button">Nouvelle partie</button>'
       : '<p class="mention">L’hôte relancera une partie quand vous voudrez.</p>'}
+    <button class="action" id="accueil-fin" type="button">Revenir à l’accueil</button>
   `);
 
   $('parcours-fin').addEventListener('click', () => voileParcours(() => boucle()));
+
+  // Sans lui, la seule issue d'une partie finie était d'en recommencer une.
+  $('accueil-fin').addEventListener('click', () => {
+    if (table instanceof TableEnLigne) {
+      table.quitter();
+      table = null;
+      location.href = location.pathname;
+      return;
+    }
+    if (table instanceof TableSolo) table.quitter();
+    table = null;
+    clearTimeout(minuteur);
+    $('table').hidden = true;
+    voileAccueil();
+  });
 
   // Le message se raconte tout seul : la place, les points, les manches. Perdre
   // se partage aussi bien que gagner — mieux, même, quand c'est pour lancer un défi.
@@ -995,7 +1012,7 @@ function voileAccueil(): void {
         <input id="code" type="text" maxlength="4" placeholder="CODE" autocapitalize="characters">
         <button class="action" id="rejoindre" type="button">Rejoindre</button>
       </div>`}
-    <button class="action" id="tapis-accueil" type="button">Choisir le tapis</button>
+    <button class="action" id="tapis-accueil" type="button">Tapis et musique</button>
     ${b.parties > 0
       ? `<button class="lien" id="parcours" type="button">Votre parcours —
          ${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} partie${b.parties > 1 ? 's' : ''}</button>`
@@ -1378,10 +1395,19 @@ function voileTapis(retour: () => void): void {
 
   montrerVoile(`
     <h2>Le tapis</h2>
-    <p>Choisissez votre table. Ça ne change que l'allure.</p>
+    <p>Choisissez votre table. Ça ne change que l'ambiance.</p>
     <div class="tapis-liste">${choix}</div>
+    <button class="action" id="musique" type="button">${musiqueActive()
+      ? '🎵 Musique d’ambiance : activée — couper'
+      : '🎵 Mettre la musique d’ambiance'}</button>
+    <p class="mention">Chaque tapis a sa musique, douce et sans fin.</p>
     <button class="action primaire" id="fermer-tapis" type="button">Revenir au jeu</button>
   `);
+
+  $('musique').addEventListener('click', () => {
+    reglerMusique(!musiqueActive());
+    voileTapis(retour);
+  });
 
   $('voile').querySelectorAll('[data-theme]').forEach((b) => {
     b.addEventListener('click', () => {
@@ -1434,6 +1460,7 @@ window.addEventListener('resize', () => {
 appliquerTheme(themeCourant());
 afficherClochette();
 ouvrirAuPremierGeste();
+musiqueAuPremierGeste();
 
 // On cherche le serveur de parties dès le premier instant : s'il dort ailleurs,
 // il se réveille pendant que le joueur entre son nom.

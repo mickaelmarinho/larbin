@@ -118,6 +118,19 @@ export class TableSolo implements Table {
     }, 350);
   }
 
+  /**
+   * On quitte la table pour l'accueil : les bots s'arrêtent. Une partie finie
+   * n'est pas reprise au retour ; une partie en cours, si.
+   */
+  quitter(): void {
+    clearTimeout(this.minuteur);
+    this.ecouteurs = [];
+    if (this.etat.phase !== 'fin-de-partie') return;
+    try {
+      localStorage.removeItem(CLE_SAUVEGARDE);
+    } catch { /* elle sera simplement reprise, avec son panneau de fin */ }
+  }
+
   /** Y a-t-il une partie entamée qu'on effacerait en recommençant ? */
   get entamee(): boolean {
     return this.etat.round > 1 || this.etat.players.some((p) => p.points > 0);
