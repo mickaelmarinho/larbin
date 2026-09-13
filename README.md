@@ -121,6 +121,12 @@ lise mal venant d'un inconnu. Le serveur refuse tout ce qui n'est pas dans la
 liste, ne relaie qu'à la table concernée, et ignore sans bruit les réactions
 lancées à moins d'une seconde et demie d'intervalle.
 
+En solo, ce sont **les bots qui réagissent**, de temps en temps et seulement
+aux moments qui se voient : un 👑 quand l'un d'eux sort premier, un 🔥 quand il
+coupe au 2, un 😱 ou un 😤 quand c'est vous qui coupez, des 👏 si vous sortez
+premier — et un 😂 si vous finissez sur un 2. Chaque moment n'a qu'une chance
+d'être relevé, pour qu'ils ne commentent pas tout (`src/web/humeurs.ts`).
+
 ## Jouer à distance
 
 Le jeu se joue sur **https://larbin.vercel.app**. Envoyez ce lien à vos proches,

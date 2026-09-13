@@ -12,6 +12,10 @@ import { botAction } from '../engine/bot.ts';
 import {
   estReaction, type EtatSalon, type Reaction, type VersClient, type VersServeur,
 } from '../reseau/protocole.ts';
+import { reactionDesBots } from './humeurs.ts';
+
+/** Les réactions encore à l'écran, par joueur, avec l'instant où elles sont arrivées. */
+export type Bulles = Map<string, { reaction: Reaction; recueA: number }>;
 
 export type Mode = 'solo' | 'en-ligne' | 'didacticiel';
 
@@ -23,6 +27,8 @@ export interface Table {
   vue(): PlayerView | null;
   envoyer(action: Action): void;
   abonner(surChangement: () => void): void;
+  /** Les réactions à afficher en bulle, pour les tables qui en ont. */
+  reactions?(): Bulles;
 }
 
 /* ------------------------------------------------------------------ solo */
@@ -45,6 +51,8 @@ export class TableSolo implements Table {
   private ecouteurs: Array<() => void> = [];
   /** Un panneau est ouvert : les bots attendent qu'on ait fini de lire. */
   private suspendu = false;
+  /** Ce que les bots ont exprimé, le temps que ça reste à l'écran. */
+  private bulles: Bulles = new Map();
 
   constructor() {
     this.etat = this.relire() ?? this.neuve();
@@ -60,8 +68,10 @@ export class TableSolo implements Table {
   }
 
   envoyer(action: Action): void {
+    const avant = this.vue();
     this.etat = apply(this.etat, action);
     this.sauver();
+    this.humeur(avant);
     this.prevenir();
     this.avancer();
   }
@@ -69,6 +79,7 @@ export class TableSolo implements Table {
   recommencer(): void {
     clearTimeout(this.minuteur);
     this.etat = this.neuve();
+    this.bulles.clear();
     this.sauver();
     this.prevenir();
     this.avancer();
@@ -82,6 +93,29 @@ export class TableSolo implements Table {
     this.suspendu = oui;
     if (oui) clearTimeout(this.minuteur);
     else this.avancer();
+  }
+
+  reactions(): Bulles {
+    const maintenant = Date.now();
+    for (const [id, r] of this.bulles) {
+      if (maintenant - r.recueA >= DUREE_REACTION) this.bulles.delete(id);
+    }
+    return this.bulles;
+  }
+
+  /**
+   * Un bot réagit parfois à ce qui vient de se passer. Un instant après, comme
+   * on le ferait — et jamais une fois la manche close, quand le panneau cache
+   * la table.
+   */
+  private humeur(avant: PlayerView): void {
+    const r = reactionDesBots(avant, this.vue());
+    if (!r) return;
+    setTimeout(() => {
+      if (this.etat.phase !== 'jeu' || this.suspendu) return;
+      this.bulles.set(r.de, { reaction: r.reaction, recueA: Date.now() });
+      this.prevenir();
+    }, 350);
   }
 
   /** Y a-t-il une partie entamée qu'on effacerait en recommençant ? */

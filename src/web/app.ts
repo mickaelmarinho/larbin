@@ -127,8 +127,7 @@ function rendreScores(vue: PlayerView): void {
  * reprend son animation là où elle en était, avec un délai négatif.
  */
 function bulle(id: string): string {
-  if (!(table instanceof TableEnLigne)) return '';
-  const r = table.reactions().get(id);
+  const r = table?.reactions?.().get(id);
   if (!r) return '';
   return `<span class="bulle" style="animation-delay:-${Date.now() - r.recueA}ms">${r.reaction}</span>`;
 }
@@ -136,8 +135,9 @@ function bulle(id: string): string {
 /** Redessine au moment où la plus proche des bulles doit s'effacer. */
 function programmerBulles(): void {
   clearTimeout(minuteurBulles);
-  if (!(table instanceof TableEnLigne)) return;
-  const restes = [...table.reactions().values()].map((r) => DUREE_REACTION - (Date.now() - r.recueA));
+  const bulles = table?.reactions?.();
+  if (!bulles) return;
+  const restes = [...bulles.values()].map((r) => DUREE_REACTION - (Date.now() - r.recueA));
   if (restes.length > 0) minuteurBulles = setTimeout(rendre, Math.max(50, Math.min(...restes) + 20));
 }
 
@@ -356,8 +356,9 @@ function ecouter(vue: PlayerView | null): void {
   entendu = maintenant;
 
   // La réaction d'un autre fait un petit « pop » ; la sienne, on la connaît.
-  if (table instanceof TableEnLigne) {
-    for (const [de, r] of table.reactions()) {
+  const bulles = table.reactions?.();
+  if (bulles) {
+    for (const [de, r] of bulles) {
       if (r.recueA <= derniereBulleEntendue) continue;
       derniereBulleEntendue = r.recueA;
       if (de !== table.moi) jouerSons(['reaction']);
