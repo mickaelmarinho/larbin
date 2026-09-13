@@ -11,7 +11,7 @@
  * Coupée par défaut : sur un téléphone, une musique imposée fait fuir. On la
  * met depuis le panneau du tapis, et le choix est retenu.
  */
-import { contexteAudio } from './sons.ts';
+import { GESTES, contexteAudio } from './sons.ts';
 import { themeCourant } from './themes.ts';
 
 const CLE = 'larbin.musique';
@@ -95,11 +95,18 @@ export function reglerMusique(active: boolean): void {
  * caché : personne ne veut d'un jeu qui chante dans sa poche.
  */
 export function musiqueAuPremierGeste(): void {
+  // Comme pour les bruitages : on réessaie à chaque geste jusqu'à ce que le
+  // navigateur ait réellement démarré le son, puis on cesse d'écouter.
   const reprendre = () => {
-    if (musiqueActive()) demarrer();
+    if (!musiqueActive()) return;
+    demarrer();
+    const c = contexteAudio();
+    void c?.resume().then(() => {
+      if (c.state !== 'running') return;
+      for (const geste of GESTES) document.removeEventListener(geste, reprendre);
+    });
   };
-  document.addEventListener('pointerdown', reprendre, { once: true });
-  document.addEventListener('keydown', reprendre, { once: true });
+  for (const geste of GESTES) document.addEventListener(geste, reprendre);
   document.addEventListener('visibilitychange', () => {
     if (!musiqueActive()) return;
     if (document.hidden) arreter();

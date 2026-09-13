@@ -48,12 +48,28 @@ export function contexteAudio(): AudioContext | null {
   return preparer();
 }
 
+/**
+ * Les gestes qui valent, pour le navigateur, permission de jouer du son. Sur
+ * un écran tactile, poser le doigt (pointerdown) ne compte pas : c'est en le
+ * relevant qu'on autorise. N'écouter que le premier ouvrait le canal sans
+ * permission, et il restait muet pour toute la visite sur téléphone.
+ */
+export const GESTES = ['pointerup', 'touchend', 'click', 'keydown'] as const;
+
+/**
+ * Ouvre le canal audio dès qu'un geste le permet, et réessaie à chaque geste
+ * tant que le navigateur ne l'a pas vraiment démarré.
+ */
 export function ouvrirAuPremierGeste(): void {
   const ouvrir = () => {
-    if (sonsActifs()) preparer();
+    if (!sonsActifs()) return;
+    const c = preparer();
+    void c?.resume().then(() => {
+      if (c.state !== 'running') return;
+      for (const geste of GESTES) document.removeEventListener(geste, ouvrir);
+    });
   };
-  document.addEventListener('pointerdown', ouvrir, { once: true });
-  document.addEventListener('keydown', ouvrir, { once: true });
+  for (const geste of GESTES) document.addEventListener(geste, ouvrir);
 }
 
 export function reglerSons(actifs: boolean): void {
