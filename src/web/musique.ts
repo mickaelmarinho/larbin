@@ -5,12 +5,13 @@
  * télécharger, aucun droit à payer, et une musique qui ne boucle jamais tout à
  * fait pareil, parce qu'une part de ce qu'elle joue est tirée au hasard.
  *
- * Deux façons de jouer. La nappe : des accords tenus, une basse, quelques notes
- * égrenées — pour les ambiances calmes. Le swing : une contrebasse qui marche,
- * une batterie aux balais, un piano qui ponctue — pour le casino, plus nerveux.
+ * Chaque morceau a ses instruments et son rythme à lui — c'est ce qui les rend
+ * reconnaissables, bien plus que leurs accords :
+ *   - le swing : contrebasse, batterie, piano (le casino, le salon de jazz) ;
+ *   - la valse : un accordéon qui fait « poum-tchak-tchak » (le cabaret) ;
+ *   - la nappe : des accords tenus et des clochettes, sans rythme (le calme).
  *
- * On choisit son morceau ; coupée par défaut, parce que sur un téléphone une
- * musique imposée fait fuir.
+ * Coupée par défaut, parce que sur un téléphone une musique imposée fait fuir.
  */
 import { GESTES, contexteAudio } from './sons.ts';
 
@@ -18,12 +19,12 @@ const CLE = 'larbin.musique';
 // Réglé pour un haut-parleur de téléphone : plus bas, on n'entend rien.
 const VOLUME = 0.4;
 
-/** Des accords tenus, une basse, quelques notes égrenées. */
+/** Des accords tenus, une basse tenue, des clochettes — et aucun rythme. */
 export interface Nappe {
   genre: 'nappe';
-  /** Noires par minute. */
+  /** Noires par minute : ici, seulement la lenteur des changements. */
   tempo: number;
-  /** La probabilité qu'une croche porte une note égrenée. */
+  /** La probabilité qu'une croche porte une clochette. */
   egrene: number;
   /** Jusqu'où montent les aigus, en hertz : plus bas, plus feutré. */
   clarte: number;
@@ -31,15 +32,34 @@ export interface Nappe {
   accords: Array<{ basse: number; notes: number[] }>;
 }
 
-/** Une contrebasse qui marche, une batterie aux balais, un piano qui ponctue. */
+/** Contrebasse, batterie et piano, en croches swinguées. */
 export interface Swing {
   genre: 'swing';
   tempo: number;
   clarte: number;
-  /** Les notes où puisent les petites phrases. */
+  /** Cymbale franche, ou balais qui frottent. */
+  batterie: 'cymbale' | 'balais';
+  /** Piano sec qui ponctue, ou piano électrique qui tinte et laisse sonner. */
+  piano: 'sec' | 'electrique';
+  /** Une note par temps, ou une tous les deux temps. */
+  basse: 'marche' | 'deux-temps';
+  /** La chance, sur la fin de chaque mesure, qu'une note de phrase passe. */
+  phrases: number;
+  /** Les notes où puisent les phrases. */
   gamme: number[];
   /** Une mesure par accord : ses notes, et les quatre pas de la contrebasse. */
   mesures: Array<{ notes: number[]; marche: number[] }>;
+}
+
+/** Une valse à l'accordéon : la basse sur le 1, l'accord sur le 2 et le 3. */
+export interface Valse {
+  genre: 'valse';
+  tempo: number;
+  clarte: number;
+  /** Les notes où se promène la mélodie, de proche en proche. */
+  gamme: number[];
+  /** Une mesure par accord : ses notes, et la basse qui alterne d'une mesure à l'autre. */
+  mesures: Array<{ notes: number[]; basses: number[] }>;
 }
 
 export type NomMusique = 'casino' | 'salon' | 'cabaret' | 'calme';
@@ -47,7 +67,7 @@ export type NomMusique = 'casino' | 'salon' | 'cabaret' | 'calme';
 export interface Musique {
   nom: string;
   resume: string;
-  style: Nappe | Swing;
+  style: Nappe | Swing | Valse;
 }
 
 export const MUSIQUES: Record<NomMusique, Musique> = {
@@ -58,6 +78,10 @@ export const MUSIQUES: Record<NomMusique, Musique> = {
       genre: 'swing',
       tempo: 132,
       clarte: 3200,
+      batterie: 'cymbale',
+      piano: 'sec',
+      basse: 'marche',
+      phrases: 0.22,
       gamme: [60, 62, 63, 65, 66, 67, 70, 71, 72],
       // Do mineur, façon film d'espionnage : la basse glisse d'un accord à
       // l'autre par demi-tons.
@@ -75,44 +99,54 @@ export const MUSIQUES: Record<NomMusique, Musique> = {
   },
   salon: {
     nom: '🥃 Salon jazz',
-    resume: 'Des accords feutrés, un tempo lent.',
+    resume: 'Une ballade aux balais : piano électrique, contrebasse souple.',
     style: {
-      genre: 'nappe',
-      tempo: 76,
-      egrene: 0.35,
-      clarte: 1800,
-      accords: [
-        { basse: 38, notes: [53, 57, 60, 64] },
-        { basse: 43, notes: [53, 59, 64, 69] },
-        { basse: 36, notes: [52, 55, 59, 62] },
-        { basse: 45, notes: [55, 61, 65, 69] },
+      genre: 'swing',
+      tempo: 84,
+      clarte: 2400,
+      batterie: 'balais',
+      piano: 'electrique',
+      basse: 'deux-temps',
+      phrases: 0.14,
+      gamme: [60, 62, 64, 65, 67, 69, 72],
+      // Fa majeur, un ii–V–I qui tourne : sol mineur, do, fa, ré.
+      mesures: [
+        { notes: [53, 57, 58, 62], marche: [55, 53, 50, 49] },
+        { notes: [52, 57, 58, 62], marche: [48, 50, 52, 47] },
+        { notes: [52, 55, 57, 60], marche: [53, 52, 48, 50] },
+        { notes: [54, 57, 60, 63], marche: [50, 54, 57, 56] },
       ],
     },
   },
   cabaret: {
     nom: '🎭 Cabaret',
-    resume: 'Du mineur, un brin nostalgique.',
+    resume: 'Une valse musette à l’accordéon, un brin nostalgique.',
     style: {
-      genre: 'nappe',
-      tempo: 64,
-      egrene: 0.45,
-      clarte: 1800,
-      accords: [
-        { basse: 45, notes: [57, 60, 64] },
-        { basse: 41, notes: [57, 62, 65] },
-        { basse: 40, notes: [56, 62, 64] },
-        { basse: 45, notes: [57, 60, 64, 69] },
+      genre: 'valse',
+      tempo: 156,
+      clarte: 2600,
+      // La mineur harmonique : le sol dièse fait tout le parfum.
+      gamme: [69, 71, 72, 74, 76, 77, 80, 81],
+      mesures: [
+        { notes: [57, 60, 64], basses: [45, 52] },
+        { notes: [56, 59, 62], basses: [40, 47] },
+        { notes: [56, 59, 62], basses: [40, 47] },
+        { notes: [57, 60, 64], basses: [45, 52] },
+        { notes: [57, 62, 65], basses: [50, 45] },
+        { notes: [57, 60, 64], basses: [45, 52] },
+        { notes: [56, 59, 62, 64], basses: [40, 47] },
+        { notes: [57, 60, 64], basses: [45, 40] },
       ],
     },
   },
   calme: {
     nom: '🌙 Calme',
-    resume: 'Des accords suspendus, presque immobiles.',
+    resume: 'Des nappes lentes, et quelques clochettes.',
     style: {
       genre: 'nappe',
-      tempo: 58,
-      egrene: 0.2,
-      clarte: 1600,
+      tempo: 50,
+      egrene: 0.25,
+      clarte: 1400,
       accords: [
         { basse: 36, notes: [55, 59, 64] },
         { basse: 41, notes: [57, 60, 64, 71] },
@@ -186,17 +220,20 @@ export function musiqueAuPremierGeste(): void {
 /* ------------------------------------------------------------ le branchement */
 
 let maitre: GainNode | null = null;
-/** Accords, basse et notes : adoucis par un filtre, avec un peu d'écho. */
+/** Les instruments à notes : adoucis par un filtre, avec un peu d'écho. */
 let douce: GainNode | null = null;
-/** La batterie : ni filtre ni écho, sinon les cymbales seraient étouffées. */
+/** La batterie : ni filtre ni écho, sinon elle serait étouffée. */
 let franche: GainNode | null = null;
 let filtre: BiquadFilterNode | null = null;
 let bruit: AudioBuffer | null = null;
 let minuteur: ReturnType<typeof setInterval> | undefined;
 let prochaineCroche = 0;
 let croche = 0;
+/** Où en est la mélodie de la valse, dans sa gamme. */
+let degre = 3;
 
 const frequence = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
+const auHasard = <T>(liste: T[]): T => liste[Math.floor(Math.random() * liste.length)];
 
 function brancher(c: AudioContext): void {
   if (maitre) return;
@@ -262,15 +299,99 @@ function planifier(c: AudioContext): void {
   const style = MUSIQUES[nom].style;
   const noire = 60 / style.tempo;
   while (prochaineCroche < c.currentTime + 0.5) {
+    const t = prochaineCroche;
     if (style.genre === 'swing') {
-      jouerSwing(c, style, prochaineCroche, noire);
+      jouerSwing(c, style, t, noire);
       // Des croches swinguées : la première dure deux tiers du temps.
       prochaineCroche += croche % 2 === 0 ? (noire * 2) / 3 : noire / 3;
+    } else if (style.genre === 'valse') {
+      // La valse avance d'un temps à la fois.
+      jouerValse(c, style, t, noire);
+      prochaineCroche += noire;
     } else {
-      jouerNappe(c, style, prochaineCroche, noire);
+      jouerNappe(c, style, t, noire);
       prochaineCroche += noire / 2;
     }
     croche += 1;
+  }
+}
+
+/* ----------------------------------------------------------------- le swing */
+
+function jouerSwing(c: AudioContext, s: Swing, t: number, noire: number): void {
+  const mesure = s.mesures[Math.floor(croche / 8) % s.mesures.length];
+  const position = croche % 8;
+  const temps = Math.floor(position / 2);
+  const contretemps = position % 2 === 1;
+  if (position === 0) filtre!.frequency.setTargetAtTime(s.clarte, t, 0.3);
+
+  // La contrebasse : une note par temps quand elle marche, une tous les deux
+  // temps dans une ballade.
+  if (!contretemps && (s.basse === 'marche' || temps % 2 === 0)) {
+    const duree = s.basse === 'marche' ? noire * 0.9 : noire * 1.8;
+    pincer(c, frequence(mesure.marche[temps]), t, duree, 0.16, 'triangle');
+  }
+
+  if (s.batterie === 'cymbale') {
+    if (!contretemps) {
+      frapper(c, t, 0.2, 0.05, 'highpass', 7000);
+      // Le charleston au pied et la caisse claire, sur le 2 et le 4.
+      if (temps === 1 || temps === 3) {
+        frapper(c, t, 0.05, 0.05, 'highpass', 9000);
+        frapper(c, t, 0.14, 0.04, 'bandpass', 1800);
+      }
+    } else if (temps === 1 || temps === 3) {
+      // Le « ding-ding-a-ding » : la cymbale sur le contretemps du 2 et du 4.
+      frapper(c, t, 0.12, 0.03, 'highpass', 7000);
+    }
+  } else if (!contretemps) {
+    // Les balais : un frottement à chaque temps, appuyé sur le 2 et le 4.
+    const appui = temps === 1 || temps === 3;
+    balayer(c, t, appui ? noire * 0.7 : noire * 0.9, appui ? 0.05 : 0.022);
+  }
+
+  if (s.piano === 'sec') {
+    // Le piano ponctue sur le 1 et sur le « et » du 2 — le rythme charleston.
+    const chance = position === 0 ? 0.7 : position === 3 ? 0.8 : position === 5 ? 0.25 : 0;
+    if (Math.random() < chance) {
+      for (const n of mesure.notes) pincer(c, frequence(n), t, noire * 0.5, 0.035, 'sine');
+    }
+  } else if (position === 0 || (position === 5 && Math.random() < 0.3)) {
+    // Le piano électrique pose l'accord et le laisse sonner.
+    const duree = position === 0 ? noire * 3 : noire;
+    for (const n of mesure.notes) tinter(c, frequence(n), t, duree, 0.03, 1);
+  }
+
+  if (temps >= 2 && Math.random() < s.phrases) {
+    const n = auHasard(s.gamme) + 12;
+    if (s.piano === 'sec') pincer(c, frequence(n), t, noire * 0.45, 0.05, 'triangle');
+    else tinter(c, frequence(n), t, noire * 1.2, 0.05, 1);
+  }
+}
+
+/* ----------------------------------------------------------------- la valse */
+
+function jouerValse(c: AudioContext, s: Valse, t: number, noire: number): void {
+  const numero = Math.floor(croche / 3);
+  const mesure = s.mesures[numero % s.mesures.length];
+  const temps = croche % 3;
+  if (temps === 0) filtre!.frequency.setTargetAtTime(s.clarte, t, 0.3);
+
+  if (temps === 0) {
+    // « Poum » : la basse, qui alterne d'une mesure à l'autre.
+    souffler(c, frequence(mesure.basses[numero % mesure.basses.length]), t, noire * 0.8, 0.07);
+  } else {
+    // « Tchak-tchak » : l'accord, bref.
+    for (const n of mesure.notes) souffler(c, frequence(n), t, noire * 0.35, 0.022);
+  }
+
+  // La mélodie se promène dans la gamme, de proche en proche : sur le 1 le
+  // plus souvent, et parfois une note de passage sur le 3.
+  const chance = temps === 0 ? 0.75 : temps === 2 ? 0.4 : 0;
+  if (Math.random() < chance) {
+    degre = Math.max(0, Math.min(s.gamme.length - 1, degre + auHasard([-2, -1, -1, 1, 1, 2])));
+    const duree = temps === 0 ? noire * 1.8 : noire * 0.9;
+    souffler(c, frequence(s.gamme[degre]), t, duree, 0.05, true);
   }
 }
 
@@ -292,53 +413,13 @@ function jouerNappe(c: AudioContext, s: Nappe, t: number, noire: number): void {
       tenir(c, frequence(n) * 0.9977, t, duree, 0.03);
       tenir(c, frequence(n) * 1.0023, t, duree, 0.03);
     }
-  }
-  if (position === 0 || position === CROCHES_PAR_ACCORD / 2) {
-    // Une octave au-dessus de la basse écrite : un téléphone ne restitue pas
-    // grand-chose sous 100 Hz.
-    pincer(c, frequence(accord.basse + 12), t, noire * 3, 0.1, 'triangle');
+    // Une basse tenue elle aussi, une octave au-dessus de l'écrit : un
+    // téléphone ne restitue pas grand-chose sous 100 Hz.
+    tenir(c, frequence(accord.basse + 12), t, duree, 0.06);
   }
   if (position !== 0 && Math.random() < s.egrene) {
-    const n = accord.notes[Math.floor(Math.random() * accord.notes.length)] + 12;
-    pincer(c, frequence(n), t, noire * 1.6, 0.06, 'triangle');
-  }
-}
-
-/* ----------------------------------------------------------------- le swing */
-
-function jouerSwing(c: AudioContext, s: Swing, t: number, noire: number): void {
-  const mesure = s.mesures[Math.floor(croche / 8) % s.mesures.length];
-  const position = croche % 8;
-  const temps = Math.floor(position / 2);
-  const contretemps = position % 2 === 1;
-  if (position === 0) filtre!.frequency.setTargetAtTime(s.clarte, t, 0.3);
-
-  if (!contretemps) {
-    // La contrebasse marche : une note par temps.
-    pincer(c, frequence(mesure.marche[temps]), t, noire * 0.9, 0.16, 'triangle');
-    // La cymbale, sur chaque temps.
-    frapper(c, t, 0.2, 0.05, 'highpass', 7000);
-    // Le charleston au pied et les balais, sur le 2 et le 4.
-    if (temps === 1 || temps === 3) {
-      frapper(c, t, 0.05, 0.05, 'highpass', 9000);
-      frapper(c, t, 0.14, 0.04, 'bandpass', 1800);
-    }
-  } else if (temps === 1 || temps === 3) {
-    // Le « ding-ding-a-ding » : la cymbale sur le contretemps du 2 et du 4.
-    frapper(c, t, 0.12, 0.03, 'highpass', 7000);
-  }
-
-  // Le piano ponctue sur le 1 et sur le « et » du 2 — le rythme charleston —,
-  // avec assez de hasard pour ne pas tourner en rond.
-  const chance = position === 0 ? 0.7 : position === 3 ? 0.8 : position === 5 ? 0.25 : 0;
-  if (Math.random() < chance) {
-    for (const n of mesure.notes) pincer(c, frequence(n), t, noire * 0.5, 0.035, 'sine');
-  }
-
-  // Une note de phrase, de temps en temps, sur la seconde moitié de la mesure.
-  if (temps >= 2 && Math.random() < 0.22) {
-    const n = s.gamme[Math.floor(Math.random() * s.gamme.length)] + 12;
-    pincer(c, frequence(n), t, noire * 0.45, 0.05, 'triangle');
+    // Une clochette, qui résonne longtemps.
+    tinter(c, frequence(auHasard(accord.notes) + 12), t, noire * 6, 0.045, 3.5);
   }
 }
 
@@ -374,6 +455,66 @@ function pincer(c: AudioContext, f: number, debut: number, duree: number, volume
   osc.stop(debut + duree + 0.05);
 }
 
+/**
+ * Une note qui tinte : une onde modulée par une autre dont l'effet s'éteint
+ * vite. Rapport 1 : le piano électrique ; rapport 3,5 : une clochette.
+ */
+function tinter(c: AudioContext, f: number, debut: number, duree: number, volume: number,
+  rapport: number): void {
+  const porteuse = c.createOscillator();
+  const modulante = c.createOscillator();
+  const profondeur = c.createGain();
+  const gain = c.createGain();
+  porteuse.frequency.value = f;
+  modulante.frequency.value = f * rapport;
+  profondeur.gain.setValueAtTime(f * 1.4, debut);
+  profondeur.gain.exponentialRampToValueAtTime(f * 0.05, debut + 0.35);
+  modulante.connect(profondeur).connect(porteuse.frequency);
+  gain.gain.setValueAtTime(0.0001, debut);
+  gain.gain.exponentialRampToValueAtTime(volume, debut + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, debut + duree);
+  porteuse.connect(gain).connect(douce!);
+  for (const osc of [porteuse, modulante]) {
+    osc.start(debut);
+    osc.stop(debut + duree + 0.05);
+  }
+}
+
+/**
+ * Une note d'accordéon : deux anches légèrement désaccordées — ce battement,
+ * c'est le son « musette » — et, pour la mélodie, un léger vibrato.
+ */
+function souffler(c: AudioContext, f: number, debut: number, duree: number, volume: number,
+  vibrato = false): void {
+  const gain = c.createGain();
+  gain.gain.setValueAtTime(0.0001, debut);
+  gain.gain.exponentialRampToValueAtTime(volume, debut + 0.03);
+  gain.gain.setValueAtTime(volume, debut + duree * 0.8);
+  gain.gain.exponentialRampToValueAtTime(0.0001, debut + duree + 0.08);
+  gain.connect(douce!);
+  const oscs = [0.9965, 1.0035].map((ecart) => {
+    const osc = c.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = f * ecart;
+    osc.connect(gain);
+    return osc;
+  });
+  let lfo: OscillatorNode | null = null;
+  if (vibrato) {
+    lfo = c.createOscillator();
+    lfo.frequency.value = 5.5;
+    const ampleur = c.createGain();
+    ampleur.gain.value = f * 0.006;
+    lfo.connect(ampleur);
+    for (const osc of oscs) ampleur.connect(osc.frequency);
+    oscs.push(lfo);
+  }
+  for (const osc of oscs) {
+    osc.start(debut);
+    osc.stop(debut + duree + 0.12);
+  }
+}
+
 /** Un frottement de batterie : un souffle bref, filtré. */
 function frapper(c: AudioContext, debut: number, duree: number, volume: number,
   type: BiquadFilterType, frequenceFiltre: number): void {
@@ -387,4 +528,20 @@ function frapper(c: AudioContext, debut: number, duree: number, volume: number,
   gain.gain.exponentialRampToValueAtTime(0.0001, debut + duree);
   source.connect(passe).connect(gain).connect(franche!);
   source.start(debut, Math.random() * 0.7, duree + 0.02);
+}
+
+/** Un coup de balai : le souffle monte doucement puis retombe, au lieu de claquer. */
+function balayer(c: AudioContext, debut: number, duree: number, volume: number): void {
+  const source = c.createBufferSource();
+  source.buffer = bruit;
+  const passe = c.createBiquadFilter();
+  passe.type = 'bandpass';
+  passe.frequency.value = 3200;
+  passe.Q.value = 0.6;
+  const gain = c.createGain();
+  gain.gain.setValueAtTime(0.0001, debut);
+  gain.gain.exponentialRampToValueAtTime(volume, debut + duree * 0.3);
+  gain.gain.exponentialRampToValueAtTime(0.0001, debut + duree);
+  source.connect(passe).connect(gain).connect(franche!);
+  source.start(debut, Math.random() * 0.5, duree + 0.02);
 }

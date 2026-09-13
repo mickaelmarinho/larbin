@@ -112,11 +112,20 @@ permet de l'éprouver sans haut-parleur.
 La **musique d'ambiance** se choisit avec le 🎵 de la barre du haut (ou « Tapis
 et musique » sur l'accueil). Elle est coupée par défaut — sur un téléphone, une
 musique imposée fait fuir — et se tait quand l'onglet est caché. Quatre
-morceaux : **Casino**, un swing nerveux en do mineur (contrebasse qui marche,
-cymbale et balais, piano qui ponctue), et trois nappes plus calmes — **Salon
-jazz**, **Cabaret**, **Calme**. Tout est composé à la volée
-(`src/web/musique.ts`), avec une part de hasard : la musique ne boucle jamais
-tout à fait pareil.
+morceaux, chacun avec ses instruments et son rythme :
+
+- **Casino** — un swing nerveux en do mineur : contrebasse qui marche, cymbale,
+  piano qui ponctue ;
+- **Salon jazz** — une ballade aux balais : piano électrique qui tinte,
+  contrebasse sur deux temps ;
+- **Cabaret** — une valse musette à l'accordéon, la basse sur le 1 et l'accord
+  sur le 2 et le 3 ;
+- **Calme** — des nappes lentes et des clochettes, sans rythme.
+
+Tout est composé à la volée (`src/web/musique.ts`), avec une part de hasard : la
+musique ne boucle jamais tout à fait pareil. Une première version ne variait que
+les accords d'une même nappe, et les trois morceaux calmes sonnaient pareil —
+c'est le timbre et le rythme qui font qu'on reconnaît un morceau.
 
 ### Réagir
 
