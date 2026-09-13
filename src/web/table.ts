@@ -29,6 +29,8 @@ export interface Table {
   abonner(surChangement: () => void): void;
   /** Les réactions à afficher en bulle, pour les tables qui en ont. */
   reactions?(): Bulles;
+  /** On part vers l'accueil : la table cesse de s'agiter pour rien. */
+  quitter?(): void;
 }
 
 /* ------------------------------------------------------------------ solo */

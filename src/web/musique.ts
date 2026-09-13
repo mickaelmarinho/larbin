@@ -15,7 +15,9 @@ import { contexteAudio } from './sons.ts';
 import { themeCourant } from './themes.ts';
 
 const CLE = 'larbin.musique';
-const VOLUME = 0.09;
+// Réglé pour un haut-parleur de téléphone : plus bas, on n'entendait rien du
+// tout, les accords tenus se perdant sous le niveau des bruitages.
+const VOLUME = 0.4;
 /** Croches par accord : deux mesures, pour que l'harmonie respire. */
 const CROCHES_PAR_ACCORD = 16;
 
@@ -171,16 +173,18 @@ function jouerCroche(c: AudioContext, t: number): void {
     // Deux oscillateurs à peine désaccordés par note : c'est ce qui rend un
     // accord tenu chaleureux plutôt que froid.
     for (const n of accord.notes) {
-      tenir(c, frequence(n) * 0.9977, t, duree, 0.016);
-      tenir(c, frequence(n) * 1.0023, t, duree, 0.016);
+      tenir(c, frequence(n) * 0.9977, t, duree, 0.03);
+      tenir(c, frequence(n) * 1.0023, t, duree, 0.03);
     }
   }
   if (position === 0 || position === CROCHES_PAR_ACCORD / 2) {
-    pincer(c, frequence(accord.basse), t, noire * 3, 0.07, 'triangle');
+    // Une octave au-dessus de la basse écrite : un téléphone ne restitue pas
+    // grand-chose sous 100 Hz, et la basse disparaissait.
+    pincer(c, frequence(accord.basse + 12), t, noire * 3, 0.1, 'triangle');
   }
   if (position !== 0 && Math.random() < ambiance.egrene) {
     const n = accord.notes[Math.floor(Math.random() * accord.notes.length)] + 12;
-    pincer(c, frequence(n), t, noire * 1.6, 0.025, 'triangle');
+    pincer(c, frequence(n), t, noire * 1.6, 0.06, 'triangle');
   }
 }
 

@@ -495,7 +495,8 @@ button.action:disabled {
 /* ------------------------------------------- ce qui peut encore sortir */
 
 #voir-restantes,
-#sons {
+#sons,
+#accueil {
   flex: 0 0 auto;
   width: 28px;
   height: 28px;
@@ -508,6 +509,11 @@ button.action:disabled {
 }
 
 #sons.coupes { opacity: .5; }
+
+#accueil {
+  color: var(--texte-pale);
+  font-size: 16px;
+}
 
 #voir-restantes.actif {
   border-color: var(--laiton);

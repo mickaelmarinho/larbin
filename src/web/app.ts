@@ -703,19 +703,7 @@ function voileFinDePartie(vue: PlayerView): void {
   $('parcours-fin').addEventListener('click', () => voileParcours(() => boucle()));
 
   // Sans lui, la seule issue d'une partie finie était d'en recommencer une.
-  $('accueil-fin').addEventListener('click', () => {
-    if (table instanceof TableEnLigne) {
-      table.quitter();
-      table = null;
-      location.href = location.pathname;
-      return;
-    }
-    if (table instanceof TableSolo) table.quitter();
-    table = null;
-    clearTimeout(minuteur);
-    $('table').hidden = true;
-    voileAccueil();
-  });
+  $('accueil-fin').addEventListener('click', revenirAccueil);
 
   // Le message se raconte tout seul : la place, les points, les manches. Perdre
   // se partage aussi bien que gagner — mieux, même, quand c'est pour lancer un défi.
@@ -1422,6 +1410,53 @@ function voileTapis(retour: () => void): void {
     retour();
   });
 }
+
+/**
+ * Quitte la table pour l'accueil. En solo, la partie en cours est gardée et
+ * reprendra au prochain « Jouer contre les bots » ; une partie finie, non.
+ */
+function revenirAccueil(): void {
+  if (table instanceof TableEnLigne) {
+    table.quitter();
+    table = null;
+    location.href = location.pathname;
+    return;
+  }
+  table?.quitter?.();
+  table = null;
+  clearTimeout(minuteur);
+  paletteOuverte = false;
+  suspendre(false);
+  $('lecon').hidden = true;
+  $('table').hidden = true;
+  voileAccueil();
+}
+
+/**
+ * En ligne, partir engage les autres : la table continue sans vous. On le dit
+ * avant, plutôt que de faire disparaître quelqu'un sur un geste malheureux.
+ */
+function voileQuitterLaTable(): void {
+  suspendre(true);
+  montrerVoile(`
+    <h2>Quitter la partie ?</h2>
+    <p>La table continue sans vous : elle jouera à votre place.</p>
+    <button class="action primaire" id="rester" type="button">Rester</button>
+    <button class="action" id="partir" type="button">Revenir à l’accueil</button>
+  `);
+  $('rester').addEventListener('click', () => {
+    suspendre(false);
+    cacherVoile();
+    boucle();
+  });
+  $('partir').addEventListener('click', revenirAccueil);
+}
+
+$('accueil').addEventListener('click', () => {
+  const vue = table?.vue();
+  if (table instanceof TableEnLigne && vue && vue.phase !== 'fin-de-partie') voileQuitterLaTable();
+  else revenirAccueil();
+});
 
 $('sons').addEventListener('click', () => {
   reglerSons(!sonsActifs());

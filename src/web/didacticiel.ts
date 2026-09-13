@@ -236,6 +236,12 @@ export class TableDidacticiel implements Table {
     }, REFLEXION);
   }
 
+  /** On quitte les leçons pour l'accueil : les adversaires s'arrêtent. */
+  quitter(): void {
+    clearTimeout(this.minuteur);
+    this.ecouteurs = [];
+  }
+
   private prevenir(): void {
     for (const cb of this.ecouteurs) cb();
   }
