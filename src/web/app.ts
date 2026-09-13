@@ -753,6 +753,9 @@ function voileMorale(cours: TableDidacticiel, morale: Morale): void {
       cours.suivante();
       return;
     }
+    try {
+      localStorage.setItem(CLE_DIDACTICIEL, 'fini');
+    } catch { /* on le reproposera, ce n'est pas grave */ }
     table = null;
     $('lecon').hidden = true;
     $('table').hidden = true;
@@ -761,6 +764,16 @@ function voileMorale(cours: TableDidacticiel, morale: Morale): void {
 }
 
 const CLE_ACCUEILLI = 'larbin.regles-vues';
+const CLE_DIDACTICIEL = 'larbin.didacticiel';
+
+/** Le didacticiel a-t-il été suivi jusqu'au bout sur ce navigateur ? */
+function didacticielFini(): boolean {
+  try {
+    return localStorage.getItem(CLE_DIDACTICIEL) === 'fini';
+  } catch {
+    return false;
+  }
+}
 
 /** A-t-on déjà expliqué le jeu à ce navigateur ? */
 function dejaExplique(): boolean {
@@ -967,6 +980,10 @@ function voileAccueil(): void {
       <input id="nom" type="text" maxlength="14" placeholder="Votre prénom" value="${attribut(nomConnu)}">
     </label>
     <button class="action primaire" id="solo" type="button">Jouer contre les bots</button>
+    ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
+      <span>♥ Apprendre en jouant</span>
+      <small>4 petites leçons · 2 minutes</small>
+    </button>`}
     ${horsLigne ? `<p class="mention">Ce fichier joue en solo, hors ligne.
        Pour une partie à plusieurs, ouvrez
        <a href="https://${ADRESSE_PUBLIQUE}" target="_blank" rel="noopener">${ADRESSE_PUBLIQUE}</a>
@@ -1009,6 +1026,17 @@ function voileAccueil(): void {
     cacherVoile();
     installer(new TableSolo());
   }));
+
+  // Tant que les leçons n'ont pas été suivies, elles passent juste après le
+  // bouton de jeu : c'est ce qui manque le plus à qui découvre le jeu. Une fois
+  // finies, elles restent à portée derrière « Comment on joue ? ».
+  $('lecon-accueil')?.addEventListener('click', () => {
+    try {
+      localStorage.setItem(CLE_ACCUEILLI, 'oui');
+    } catch { /* on réexpliquera, ce n'est pas grave */ }
+    cacherVoile();
+    installer(new TableDidacticiel());
+  });
 
   if (horsLigne) return;
   // On passe par la liste plutôt que d'asseoir d'office : voir les tables, c'est

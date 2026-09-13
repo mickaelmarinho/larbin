@@ -47,6 +47,11 @@ le piège du 2 gardé pour la fin. La dernière laisse volontairement tomber dan
 le piège si l'on choisit le mauvais ordre : on retient mieux une erreur qu'un
 avertissement, et **Réessayer** remet la situation en place.
 
+Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
+sur l'accueil, juste sous « Jouer contre les bots » : une carte crème frappée
+d'un cœur, qui se remarque sans prendre la première place. Une fois les quatre
+leçons terminées, il se retire derrière « Comment on joue ? ».
+
 Le didacticiel est une troisième sorte de table (`src/web/didacticiel.ts`). Il
 répond aux mêmes questions que les autres — « que vois-je ? », « comment
 j'agis ? » — si bien que tout l'affichage, le moteur et les bots fonctionnent

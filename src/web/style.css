@@ -231,6 +231,26 @@ button.action.primaire {
   color: #2a1c04;
 }
 
+/* La leçon : une carte crème frappée d'un cœur. Elle se voit sur les trois
+   tapis sans disputer la première place au bouton de jeu. */
+button.action.lecon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--creme);
+  border-color: var(--rouge-embleme);
+  color: var(--rouge);
+  box-shadow: 0 6px 16px #0005;
+}
+
+button.action.lecon small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--encre);
+  opacity: .7;
+}
+
 button.action:disabled {
   opacity: .38;
   cursor: default;
