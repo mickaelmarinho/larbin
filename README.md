@@ -53,6 +53,12 @@ code) et **Solo**. Le nom, l'avatar et le 🔑 du compte tiennent sur une ligne 
 succès, classement, parcours, règles et histoire sur une rangée d'icônes en bas,
 et le 🎨 du tapis et de la musique en haut à droite.
 
+L'encadré En ligne montre que le site vit : un point vert qui bat et « 3 en
+ligne · 1 table ouverte » quand du monde est là — jamais « 0 joueur », mais
+« Lancez la première table » — et les trois premiers du classement, qu'on
+touche pour le voir en entier. L'accueil redemande tout cela toutes les vingt
+secondes tant qu'il reste affiché (`src/web/vitrine.ts` décide de ce qu'on dit).
+
 Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
 dans l'encadré Solo, juste sous « Jouer contre les bots » : une carte crème
 frappée d'un cœur, qui se remarque sans prendre la première place. Une fois les

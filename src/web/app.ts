@@ -29,6 +29,9 @@ import {
   supprimerMonCompte, synchroniserBientot,
 } from './compte.ts';
 import { sessionOuverte } from './session.ts';
+import { podium, signeDeVie, texteDuBoutonPublic, type SigneDeVie } from './vitrine.ts';
+import type { Activite } from './table.ts';
+import type { LigneClassement } from './compte.ts';
 import { adopterSucces } from './succes.ts';
 import { jouerSons, ouvrirAuPremierGeste, reglerSons, sonsActifs } from './sons.ts';
 import {
@@ -1077,6 +1080,49 @@ function voileParcours(retour: () => void): void {
   });
 }
 
+/*
+ * Le signe de vie et le podium de l'accueil. On garde la dernière réponse :
+ * revenir d'un panneau réaffiche tout de suite ce qu'on savait, sans que la
+ * page saute le temps que le serveur réponde.
+ */
+let derniereActivite: Activite | null = null;
+let dernierPodium: LigneClassement[] = [];
+let minuteurVie: ReturnType<typeof setTimeout> | undefined;
+let tourDeVie = 0;
+const RAFRAICHIR_VIE = 20_000;
+const MEDAILLES = ['🥇', '🥈', '🥉'];
+
+const htmlDeVie = (s: SigneDeVie | null) =>
+  s ? `<span class="vie${s.vivant ? ' vivant' : ''}">${s.texte}${
+    s.detail ? `<span class="detail"> · ${s.detail}</span>` : ''}</span>` : '';
+
+const htmlDuPodium = (lignes: LigneClassement[]) => lignes.length === 0 ? '' : `
+  <button class="podium" type="button" title="Voir le classement">${lignes.map((l, i) => `
+    <span title="${attribut(`${l.pseudo} — ${l.victoires} victoire${l.victoires > 1 ? 's' : ''}`)}">
+      ${MEDAILLES[i]}<b>${attribut(l.pseudo)}</b>
+    </span>`).join('')}
+  </button>`;
+
+/**
+ * Tant que l'accueil reste affiché, on redemande qui est là toutes les vingt
+ * secondes : c'est ce qui fait voir que le site vit. Dès qu'on l'a quitté, la
+ * boucle s'arrête d'elle-même ; et revenir à l'accueil n'en lance jamais une
+ * seconde, puisque seul le dernier tour a le droit de continuer.
+ */
+function suivreLaVie(): void {
+  clearTimeout(minuteurVie);
+  const tour = ++tourDeVie;
+  void Promise.all([activite(), classementPublic()]).then(([a, lignes]) => {
+    if (tour !== tourDeVie || !document.getElementById('vie')) return;
+    derniereActivite = a;
+    if (lignes) dernierPodium = podium(lignes);
+    $('vie').innerHTML = htmlDeVie(signeDeVie(a));
+    $('publique').textContent = texteDuBoutonPublic(a);
+    $('podium').innerHTML = htmlDuPodium(dernierPodium);
+    minuteurVie = setTimeout(suivreLaVie, RAFRAICHIR_VIE);
+  });
+}
+
 function voileAccueil(): void {
   const horsLigne = location.protocol === 'file:';
   const nomConnu = localStorage.getItem('larbin.nom') ?? '';
@@ -1116,8 +1162,9 @@ function voileAccueil(): void {
        <a href="https://${ADRESSE_PUBLIQUE}" target="_blank" rel="noopener">${ADRESSE_PUBLIQUE}</a>
        — ou lancez <b>Serveur.cmd</b> pour jouer sur votre wifi.</p>` : `
       <section class="bloc">
-        <h3>🌍 En ligne</h3>
-        <button class="action primaire" id="publique" type="button">Jouer avec d'autres visiteurs</button>
+        <h3>🌍 En ligne <span id="vie">${htmlDeVie(signeDeVie(derniereActivite))}</span></h3>
+        <button class="action primaire" id="publique" type="button">${texteDuBoutonPublic(derniereActivite)}</button>
+        <div id="podium">${htmlDuPodium(dernierPodium)}</div>
       </section>
       <section class="bloc">
         <h3>👥 Entre amis</h3>
@@ -1199,20 +1246,10 @@ function voileAccueil(): void {
   $('creer').addEventListener('click', () => installer(new TableEnLigne(nom(), '')));
 
   // S'il y a du monde en ligne, autant le dire : c'est ce qui donne envie de
-  // pousser la porte. Quand le site est désert, le bouton ne change pas — on
-  // n'annonce jamais « 0 joueur », et le serveur endormi ne fait attendre
-  // personne : la réponse arrive quand elle arrive.
-  void activite().then((a) => {
-    const bouton = document.getElementById('publique');
-    if (!a || !bouton) return;
-    if (a.enAttente > 0) {
-      bouton.textContent = a.enAttente > 1
-        ? `Rejoindre ${a.enAttente} visiteurs qui attendent`
-        : 'Rejoindre un visiteur qui attend';
-    } else if (a.joueurs > 0) {
-      bouton.textContent = `Jouer avec d'autres visiteurs — ${a.joueurs} en ligne`;
-    }
-  });
+  // pousser la porte. Le serveur endormi ne fait attendre personne : la
+  // réponse arrive quand elle arrive.
+  $('podium').addEventListener('click', () => void voileClassement(voileAccueil));
+  suivreLaVie();
   $('rejoindre').addEventListener('click', () => {
     const code = ($('code') as HTMLInputElement).value.trim().toUpperCase();
     if (code.length === 4) installer(new TableEnLigne(nom(), code));
