@@ -926,14 +926,119 @@ button.action.alerte {
 
 .identite {
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .identite .champ {
   flex: 1;
   min-width: 0;
+  margin-bottom: 0;
 }
+
+.identite input[type="text"] {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  margin-top: 0;
+}
+
+/* ------------------------------------------------------------- l'accueil */
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.panneau .entete .embleme { margin: 0; }
+
+.panneau .entete h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 24px;
+}
+
+.reglage {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid #ffffff26;
+  background: #ffffff10;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.compte-choix {
+  flex: 0 0 auto;
+  height: 46px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid #ffffff26;
+  background: #ffffff12;
+  color: var(--texte);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Les trois façons de jouer : chacune son encadré, qu'on repère d'un coup d'œil. */
+.bloc {
+  margin-top: 10px;
+  padding: 9px 12px 12px;
+  border: 1px solid #ffffff14;
+  border-radius: 14px;
+  background: #00000024;
+}
+
+.panneau .bloc h3 {
+  margin: 0 0 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--laiton);
+}
+
+.raccourcis {
+  display: flex;
+  justify-content: space-around;
+  gap: 2px;
+  margin-top: 10px;
+}
+
+.raccourci {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--texte-pale);
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* Sur les plus petits téléphones, la clé seule laisse la place au prénom. */
+@media (max-width: 359px) {
+  .compte-choix span { display: none; }
+}
+
+.raccourci span { font-size: 21px; line-height: 1.1; }
+.raccourci:hover { color: var(--texte); background: #ffffff0d; }
 
 .avatar-choix {
   flex: 0 0 auto;

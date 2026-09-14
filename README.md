@@ -47,10 +47,16 @@ le piège du 2 gardé pour la fin. La dernière laisse volontairement tomber dan
 le piège si l'on choisit le mauvais ordre : on retient mieux une erreur qu'un
 avertissement, et **Réessayer** remet la situation en place.
 
+L'accueil range les trois façons de jouer dans trois encadrés — **En ligne**
+(en tête, avec le bouton doré), **Entre amis** (créer un salon ou entrer son
+code) et **Solo**. Le nom, l'avatar et le 🔑 du compte tiennent sur une ligne ;
+succès, classement, parcours, règles et histoire sur une rangée d'icônes en bas,
+et le 🎨 du tapis et de la musique en haut à droite.
+
 Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
-sur l'accueil, juste sous « Jouer contre les bots » : une carte crème frappée
-d'un cœur, qui se remarque sans prendre la première place. Une fois les quatre
-leçons terminées, il se retire derrière « Comment on joue ? ».
+dans l'encadré Solo, juste sous « Jouer contre les bots » : une carte crème
+frappée d'un cœur, qui se remarque sans prendre la première place. Une fois les
+quatre leçons terminées, il se retire derrière l'icône « Règles ».
 
 Le didacticiel est une troisième sorte de table (`src/web/didacticiel.ts`). Il
 répond aux mêmes questions que les autres — « que vois-je ? », « comment
@@ -109,8 +115,8 @@ la page n'y gagne pas un octet. Ce qui déclenche chaque son se décide à part
 (`src/web/bruitages.ts`), en comparant deux instants de la table — c'est ce qui
 permet de l'éprouver sans haut-parleur.
 
-La **musique d'ambiance** se choisit avec le 🎵 de la barre du haut (ou « Tapis
-et musique » sur l'accueil). Elle est coupée par défaut — sur un téléphone, une
+La **musique d'ambiance** se choisit avec le 🎵 de la barre du haut (ou le 🎨
+de l'accueil). Elle est coupée par défaut — sur un téléphone, une
 musique imposée fait fuir — et se tait quand l'onglet est caché. Quatre
 morceaux, chacun avec ses instruments et son rythme :
 

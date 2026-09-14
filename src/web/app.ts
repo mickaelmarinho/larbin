@@ -1084,9 +1084,20 @@ function voileAccueil(): void {
   const b = bilan(parcours());
   const moi = sessionOuverte();
 
+  // Ce qui se consulte sans jouer tient sur une rangée d'icônes, en bas : les
+  // trois façons de jouer gardent toute la place.
+  const raccourci = (id: string, icone: string, texte: string, titre = texte) =>
+    `<button class="raccourci" id="${id}" type="button" title="${attribut(titre)}">
+      <span aria-hidden="true">${icone}</span>${texte}
+    </button>`;
+
   montrerVoile(`
-    ${EMBLEME}
-    <h2>Le Larbin</h2>
+    <div class="entete">
+      ${EMBLEME}
+      <h2>Le Larbin</h2>
+      <button class="reglage" id="tapis-accueil" type="button" title="Tapis et musique"
+              aria-label="Tapis et musique">🎨</button>
+    </div>
     <p>Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone ou son PC.</p>
     <div class="identite">
       <button class="avatar-choix" id="avatar-accueil" type="button" title="Changer d’avatar">${avatarChoisi()}</button>
@@ -1095,36 +1106,44 @@ function voileAccueil(): void {
         <b>✓ ${attribut(moi.pseudo)}</b>
         <input id="nom" type="hidden" value="${attribut(moi.pseudo)}">
       </div>`
-    : `<label class="champ">Votre nom
-        <input id="nom" type="text" maxlength="14" placeholder="Votre prénom" value="${attribut(nomConnu)}">
-      </label>`}
+    : `<input id="nom" type="text" maxlength="14" placeholder="Votre prénom" aria-label="Votre nom"
+              value="${attribut(nomConnu)}">`}
+      ${horsLigne ? '' : `<button class="compte-choix" id="compte" type="button"
+              title="${moi ? 'Mon compte' : 'Créer un compte ou se connecter'}">🔑<span> Compte</span></button>`}
     </div>
-    ${horsLigne ? '' : `<button class="lien" id="compte" type="button">${moi
-      ? '🔑 Mon compte' : '🔑 Créer un compte ou se connecter'}</button>`}
-    <button class="action primaire" id="solo" type="button">Jouer contre les bots</button>
-    ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
-      <span>♥ Apprendre en jouant</span>
-      <small>4 petites leçons · 2 minutes</small>
-    </button>`}
     ${horsLigne ? `<p class="mention">Ce fichier joue en solo, hors ligne.
        Pour une partie à plusieurs, ouvrez
        <a href="https://${ADRESSE_PUBLIQUE}" target="_blank" rel="noopener">${ADRESSE_PUBLIQUE}</a>
        — ou lancez <b>Serveur.cmd</b> pour jouer sur votre wifi.</p>` : `
-      <button class="action" id="publique" type="button">Jouer avec d'autres visiteurs</button>
-      <button class="action" id="creer" type="button">Créer un salon</button>
-      <div class="rejoindre">
-        <input id="code" type="text" maxlength="4" placeholder="CODE" autocapitalize="characters">
-        <button class="action" id="rejoindre" type="button">Rejoindre</button>
-      </div>`}
-    <button class="action" id="tapis-accueil" type="button">Tapis et musique</button>
-    ${b.parties > 0
-      ? `<button class="lien" id="parcours" type="button">Votre parcours —
-         ${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} partie${b.parties > 1 ? 's' : ''}</button>`
-      : ''}
-    <button class="lien" id="succes" type="button">🏆 Vos succès — ${nombreDeSucces()} sur ${SUCCES.length}</button>
-    ${horsLigne ? '' : '<button class="lien" id="classement" type="button">🏅 Classement</button>'}
-    <button class="lien" id="regles" type="button">Comment on joue ?</button>
-    <button class="lien" id="histoire" type="button">D'où vient ce jeu ?</button>
+      <section class="bloc">
+        <h3>🌍 En ligne</h3>
+        <button class="action primaire" id="publique" type="button">Jouer avec d'autres visiteurs</button>
+      </section>
+      <section class="bloc">
+        <h3>👥 Entre amis</h3>
+        <button class="action" id="creer" type="button">Créer un salon</button>
+        <div class="rejoindre">
+          <input id="code" type="text" maxlength="4" placeholder="CODE" aria-label="Code du salon"
+                 autocapitalize="characters">
+          <button class="action" id="rejoindre" type="button">Rejoindre</button>
+        </div>
+      </section>`}
+    <section class="bloc">
+      <h3>🤖 Solo</h3>
+      <button class="action${horsLigne ? ' primaire' : ''}" id="solo" type="button">Jouer contre les bots</button>
+      ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
+        <span>♥ Apprendre en jouant</span>
+        <small>4 petites leçons · 2 minutes</small>
+      </button>`}
+    </section>
+    <nav class="raccourcis">
+      ${raccourci('succes', '🏆', 'Succès', `Vos succès — ${nombreDeSucces()} sur ${SUCCES.length}`)}
+      ${horsLigne ? '' : raccourci('classement', '🏅', 'Classement')}
+      ${b.parties > 0 ? raccourci('parcours', '📊', 'Parcours',
+        `Votre parcours — ${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} partie${b.parties > 1 ? 's' : ''}`) : ''}
+      ${raccourci('regles', '📖', 'Règles', 'Comment on joue ?')}
+      ${raccourci('histoire', '📜', 'Histoire', 'D’où vient ce jeu ?')}
+    </nav>
   `);
 
   const nom = () => {
