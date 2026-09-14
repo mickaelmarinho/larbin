@@ -59,6 +59,12 @@ ligne · 1 table ouverte » quand du monde est là — jamais « 0 joueur », ma
 touche pour le voir en entier. L'accueil redemande tout cela toutes les vingt
 secondes tant qu'il reste affiché (`src/web/vitrine.ts` décide de ce qu'on dit).
 
+En tête, une affiche : « Le Président, en plus nerveux », et un éventail de
+quatre cartes qui monte jusqu'au 2 — les mêmes cartes qu'à la table, qui suivent
+donc le tapis choisi. Sur PC (à partir de 900 px de large), l'accueil passe sur
+deux colonnes : l'affiche et les raccourcis à gauche, les façons de jouer à
+droite.
+
 Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
 dans l'encadré Solo, juste sous « Jouer contre les bots » : une carte crème
 frappée d'un cœur, qui se remarque sans prendre la première place. Une fois les

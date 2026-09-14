@@ -1022,6 +1022,7 @@ button.action.alerte {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
   margin: 0 0 7px;
   font-size: 12px;
   font-weight: 700;
@@ -1075,6 +1076,7 @@ button.action.alerte {
 /* Les trois premiers du classement, sous le bouton du jeu en ligne. */
 @media (max-width: 359px) {
   .vie .detail { display: none; }
+  .panneau .eventail { --carte-l: 30px; }
 }
 
 /* En grille, les pseudos courts gardent toute leur largeur : seul un long
@@ -1148,6 +1150,120 @@ button.action.alerte {
 
 .raccourci span { font-size: 21px; line-height: 1.1; }
 .raccourci:hover { color: var(--texte); background: #ffffff0d; }
+
+/* L'affiche : l'accroche, et un éventail de vraies cartes pour dire « jeu de
+   cartes » avant même qu'on ait lu. */
+.affiche {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
+.panneau p.accroche {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--texte-pale);
+}
+
+.accroche b {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--creme);
+}
+
+/* Les trois façons de jouer ont leurs encadrés : sur téléphone, la phrase qui
+   les annonce ferait doublon. Sur PC, il y a la place de la dire. */
+.panneau p.modes { display: none; }
+
+.eventail {
+  /* --carte-h et --rayon se calculent à la racine : il faut les recalculer ici. */
+  --carte-l: 38px;
+  --carte-h: calc(var(--carte-l) * 1.42);
+  --rayon: calc(var(--carte-l) * 0.11);
+  flex: 0 0 auto;
+  position: relative;
+  width: calc(var(--carte-l) * 2.9);
+  height: calc(var(--carte-h) * 1.18);
+}
+
+.eventail .carte {
+  position: absolute;
+  left: calc(50% - var(--carte-l) / 2);
+  bottom: 0;
+  transform-origin: 50% 150%;
+  box-shadow: -3px 0 6px #00000047, 0 2px 5px #0007, inset 0 0 0 1px #ffffff80;
+}
+
+.eventail .carte:nth-child(1) { transform: rotate(-24deg); }
+.eventail .carte:nth-child(2) { transform: rotate(-8deg); }
+.eventail .carte:nth-child(3) { transform: rotate(8deg); }
+.eventail .carte:nth-child(4) { transform: rotate(24deg); }
+
+/* Sur PC : la vitrine à gauche, le jeu à droite, et plus de défilement. */
+@media (min-width: 900px) {
+  .panneau.accueil {
+    width: min(900px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 390px);
+    grid-template-rows: 1fr auto;
+    grid-template-areas: "vitrine jeu" "raccourcis jeu";
+    column-gap: 40px;
+    padding: 30px 36px;
+  }
+
+  .accueil .vitrine {
+    grid-area: vitrine;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .accueil .jeu { grid-area: jeu; }
+
+  .accueil .entete h2 { font-size: 34px; }
+  .accueil .entete .embleme { width: 52px; height: 52px; }
+
+  .accueil .affiche {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 34px;
+    margin: 22px 0 0;
+  }
+
+  .accueil p.accroche { font-size: 16px; }
+  .accueil .accroche b { font-size: 30px; margin-bottom: 8px; }
+
+  .accueil .eventail {
+    --carte-l: 96px;
+    align-self: center;
+  }
+
+  .accueil p.modes {
+    display: block;
+    margin: 34px 0 0;
+    font-size: 15px;
+  }
+
+  .accueil .raccourcis {
+    grid-area: raccourcis;
+    align-self: end;
+    justify-content: flex-start;
+    gap: 4px;
+    margin-top: 20px;
+  }
+
+  .accueil .raccourci {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .accueil .jeu .bloc:first-of-type { margin-top: 14px; }
+}
 
 .avatar-choix {
   flex: 0 0 auto;
@@ -1560,7 +1676,7 @@ button.lien:hover { color: var(--texte); }
       <button data-musique="" class="${t?"":"actif"}" type="button"><b>\u{1F507} Pas de musique</b></button>
     </div>
     <button class="action primaire" id="fermer-musique" type="button">Revenir</button>
-  `),c("voile").querySelectorAll("[data-musique]").forEach(r=>{r.addEventListener("click",()=>{let o=qt.find(s=>s===r.dataset.musique)??null;er(o),He(),zt(e)})}),c("fermer-musique").addEventListener("click",()=>{g(!1),e()})}var Gt=()=>`<button class="lien" id="sons-salon" type="button">${Z()?"\u{1F514} Sons activ\xE9s \u2014 couper":"\u{1F515} Sons coup\xE9s \u2014 remettre"}</button>`;function Nt(){c("sons-salon").addEventListener("click",()=>{St(!Z()),He(),c("sons-salon").outerHTML=Gt(),Nt()})}function J(){if(clearTimeout(Ee),!m||cr)return;let e=m instanceof y?m:null,t=m.vue();if(!t){e&&Xo(e);return}let n=m instanceof ue?m:null;if(c("lecon").hidden=!n,n){c("lecon").innerHTML=`<span class="etape">${n.numero()}</span>${n.consigne()}`;let r=n.morale();if(r)return Go(n,r);A()}else{if(t.phase==="fin-de-partie")return Bo(t);if(t.phase==="fin-de-manche")return Do(t);if(t.phase==="coupe")return Vo(t);if(t.round>ne&&t.round>1)return Io(t);ne=Math.max(ne,t.round),A()}if(e&&t.turnPlayer===t.me.id&&t.legal.length>0){let r=e.delaiPourJouer();if(r!==null){r<=15&&(c("annonce").textContent=r>0?`\xC0 vous \u2014 la table jouera pour vous dans ${r} s.`:"La table joue pour vous\u2026"),Ee=setTimeout(J,1e3);return}}t.turnPlayer===t.me.id&&t.legal.length===0&&t.canPass&&(pe="Vous ne pouvez pas monter.",c("annonce").textContent=pe,Ee=setTimeout(()=>de({type:"passer",player:t.me.id}),1100))}function h(e){c("voile").innerHTML=`<div class="panneau">${e}</div>`,c("voile").hidden=!1}function A(){c("voile").hidden=!0,c("voile").innerHTML=""}function Vo(e){let t=[e.me,...e.others].find(s=>s.role==="boss");if(!e.coupe){h(`
+  `),c("voile").querySelectorAll("[data-musique]").forEach(r=>{r.addEventListener("click",()=>{let o=qt.find(s=>s===r.dataset.musique)??null;er(o),He(),zt(e)})}),c("fermer-musique").addEventListener("click",()=>{g(!1),e()})}var Gt=()=>`<button class="lien" id="sons-salon" type="button">${Z()?"\u{1F514} Sons activ\xE9s \u2014 couper":"\u{1F515} Sons coup\xE9s \u2014 remettre"}</button>`;function Nt(){c("sons-salon").addEventListener("click",()=>{St(!Z()),He(),c("sons-salon").outerHTML=Gt(),Nt()})}function J(){if(clearTimeout(Ee),!m||cr)return;let e=m instanceof y?m:null,t=m.vue();if(!t){e&&Qo(e);return}let n=m instanceof ue?m:null;if(c("lecon").hidden=!n,n){c("lecon").innerHTML=`<span class="etape">${n.numero()}</span>${n.consigne()}`;let r=n.morale();if(r)return Go(n,r);A()}else{if(t.phase==="fin-de-partie")return Bo(t);if(t.phase==="fin-de-manche")return Do(t);if(t.phase==="coupe")return Vo(t);if(t.round>ne&&t.round>1)return Io(t);ne=Math.max(ne,t.round),A()}if(e&&t.turnPlayer===t.me.id&&t.legal.length>0){let r=e.delaiPourJouer();if(r!==null){r<=15&&(c("annonce").textContent=r>0?`\xC0 vous \u2014 la table jouera pour vous dans ${r} s.`:"La table joue pour vous\u2026"),Ee=setTimeout(J,1e3);return}}t.turnPlayer===t.me.id&&t.legal.length===0&&t.canPass&&(pe="Vous ne pouvez pas monter.",c("annonce").textContent=pe,Ee=setTimeout(()=>de({type:"passer",player:t.me.id}),1100))}function h(e,t=""){c("voile").innerHTML=`<div class="panneau${t?` ${t}`:""}">${e}</div>`,c("voile").hidden=!1}function A(){c("voile").hidden=!0,c("voile").innerHTML=""}function Vo(e){let t=[e.me,...e.others].find(s=>s.role==="boss");if(!e.coupe){h(`
       <h2>Manche ${e.round}</h2>
       <p>${t?t.name:"Le Boss"} coupe le paquet \u2014 on ne m\xE9lange pas
          entre deux manches.</p>
@@ -1680,16 +1796,24 @@ button.lien:hover { color: var(--texte); }
     <span title="${S(`${t.pseudo} \u2014 ${t.victoires} victoire${t.victoires>1?"s":""}`)}">
       ${Jo[n]}<b>${S(t.pseudo)}</b>
     </span>`).join("")}
-  </button>`;function xr(){clearTimeout(sr);let e=++ir;Promise.all([Tn(),vt()]).then(([t,n])=>{e!==ir||!document.getElementById("vie")||(It=t,n&&(Ot=Xn(n)),c("vie").innerHTML=yr(yt(t)),c("publique").textContent=$t(t),c("podium").innerHTML=$r(Ot),sr=setTimeout(xr,_o))})}function E(){let e=location.protocol==="file:",t=localStorage.getItem("larbin.nom")??"",n=he(B()),r=k(),o=(a,u,l,f=l)=>`<button class="raccourci" id="${a}" type="button" title="${S(f)}">
+  </button>`;function xr(){clearTimeout(sr);let e=++ir;Promise.all([Tn(),vt()]).then(([t,n])=>{e!==ir||!document.getElementById("vie")||(It=t,n&&(Ot=Xn(n)),c("vie").innerHTML=yr(yt(t)),c("publique").textContent=$t(t),c("podium").innerHTML=$r(Ot),sr=setTimeout(xr,_o))})}var Fo=`<div class="eventail" aria-hidden="true">${[["9","\u2663"],["V","\u2666"],["D","\u2665"],["2","\u2660"]].map(([e,t])=>`<span class="carte${t==="\u2665"||t==="\u2666"?" rouge":""}"><span class="coin">${e}<i>${t}</i></span><span class="centre">${t}</span></span>`).join("")}</div>`;function E(){let e=location.protocol==="file:",t=localStorage.getItem("larbin.nom")??"",n=he(B()),r=k(),o=(a,u,l,f=l)=>`<button class="raccourci" id="${a}" type="button" title="${S(f)}">
       <span aria-hidden="true">${u}</span>${l}
     </button>`;h(`
+    <div class="vitrine">
     <div class="entete">
       ${zo}
       <h2>Le Larbin</h2>
       <button class="reglage" id="tapis-accueil" type="button" title="Tapis et musique"
               aria-label="Tapis et musique">\u{1F3A8}</button>
     </div>
-    <p>Contre des bots, avec vos proches ou avec d'autres visiteurs \u2014 chacun sur son t\xE9l\xE9phone ou son PC.</p>
+    <div class="affiche">
+      <p class="accroche"><b>Le Pr\xE9sident, en plus nerveux.</b>
+        Une s\xE9rie ne fait qu\u2019un tour de table. Sur t\xE9l\xE9phone ou PC.</p>
+      ${Fo}
+    </div>
+    <p class="modes">Contre des bots, avec vos proches ou avec d'autres visiteurs \u2014 chacun sur son t\xE9l\xE9phone ou son PC.</p>
+    </div>
+    <div class="jeu">
     <div class="identite">
       <button class="avatar-choix" id="avatar-accueil" type="button" title="Changer d\u2019avatar">${j()}</button>
       ${r?`<div class="champ connecte">Connect\xE9
@@ -1726,6 +1850,7 @@ button.lien:hover { color: var(--texte); }
         <small>4 petites le\xE7ons \xB7 2 minutes</small>
       </button>`}
     </section>
+    </div>
     <nav class="raccourcis">
       ${o("succes","\u{1F3C6}","Succ\xE8s",`Vos succ\xE8s \u2014 ${Ue()} sur ${D.length}`)}
       ${e?"":o("classement","\u{1F3C5}","Classement")}
@@ -1733,7 +1858,7 @@ button.lien:hover { color: var(--texte); }
       ${o("regles","\u{1F4D6}","R\xE8gles","Comment on joue ?")}
       ${o("histoire","\u{1F4DC}","Histoire","D\u2019o\xF9 vient ce jeu ?")}
     </nav>
-  `);let s=()=>{let a=c("nom").value.trim();try{localStorage.setItem("larbin.nom",a)}catch{}return a||"Joueur"};c("tapis-accueil").addEventListener("click",()=>Ge(E)),c("parcours")?.addEventListener("click",()=>_t(E)),c("succes").addEventListener("click",()=>Lr(E)),c("compte")?.addEventListener("click",()=>Ft(E)),c("classement")?.addEventListener("click",()=>{ar(E)}),c("avatar-accueil").addEventListener("click",()=>{s(),Tr(E)}),c("regles").addEventListener("click",()=>or(E)),c("histoire").addEventListener("click",()=>Uo(E));let i=a=>{Ho()?a():or(a,"Jouer")};c("solo").addEventListener("click",()=>i(()=>{A(),_(new Q)})),c("lecon-accueil")?.addEventListener("click",()=>{try{localStorage.setItem(Ht,"oui")}catch{}A(),_(new ue)}),!e&&(c("publique").addEventListener("click",()=>{let a=s();i(()=>Sr(a))}),c("creer").addEventListener("click",()=>_(new y(s(),""))),c("podium").addEventListener("click",()=>{ar(E)}),xr(),c("rejoindre").addEventListener("click",()=>{let a=c("code").value.trim().toUpperCase();a.length===4&&_(new y(s(),a))}))}async function Sr(e){clearTimeout(ze);let t=(r,o)=>{let s=(p,d)=>`${p} ${d}${p>1?"s":""}`,i=p=>`<li>
+  `,"accueil");let s=()=>{let a=c("nom").value.trim();try{localStorage.setItem("larbin.nom",a)}catch{}return a||"Joueur"};c("tapis-accueil").addEventListener("click",()=>Ge(E)),c("parcours")?.addEventListener("click",()=>_t(E)),c("succes").addEventListener("click",()=>Lr(E)),c("compte")?.addEventListener("click",()=>Ft(E)),c("classement")?.addEventListener("click",()=>{ar(E)}),c("avatar-accueil").addEventListener("click",()=>{s(),Tr(E)}),c("regles").addEventListener("click",()=>or(E)),c("histoire").addEventListener("click",()=>Uo(E));let i=a=>{Ho()?a():or(a,"Jouer")};c("solo").addEventListener("click",()=>i(()=>{A(),_(new Q)})),c("lecon-accueil")?.addEventListener("click",()=>{try{localStorage.setItem(Ht,"oui")}catch{}A(),_(new ue)}),!e&&(c("publique").addEventListener("click",()=>{let a=s();i(()=>Sr(a))}),c("creer").addEventListener("click",()=>_(new y(s(),""))),c("podium").addEventListener("click",()=>{ar(E)}),xr(),c("rejoindre").addEventListener("click",()=>{let a=c("code").value.trim().toUpperCase();a.length===4&&_(new y(s(),a))}))}async function Sr(e){clearTimeout(ze);let t=(r,o)=>{let s=(p,d)=>`${p} ${d}${p>1?"s":""}`,i=p=>`<li>
       <span>${p.commencee?`${s(p.joueurs,"joueur")}${p.bots?` et ${s(p.bots,"bot")}`:""} \u2014 manche ${p.manche}`:`${p.joueurs} sur ${p.taille} joueurs, ${p.prets} pr\xEAt${p.prets>1?"s":""}`}</span>
       ${p.libre?`<button class="mini mot" data-table="${p.code}" type="button">${p.commencee?"Entrer":"Rejoindre"}</button>`:'<span class="gain">compl\xE8te</span>'}
     </li>`,a=r.filter(p=>!p.commencee),u=r.filter(p=>p.commencee),l=o?'<p class="mention">On regarde qui est l\xE0\u2026</p>':`<p>Aucune table ouverte pour l\u2019instant. Asseyez-vous : les visiteurs
@@ -1746,7 +1871,7 @@ button.lien:hover { color: var(--texte); }
          <ul class="classement">${u.map(i).join("")}</ul>`:""}
       <button class="action primaire" id="asseoir" type="button">M\u2019asseoir \xE0 une table</button>
       <button class="action" id="retour" type="button">Retour</button>
-    `);let f=p=>{clearTimeout(ze),_(new y(e,p))};c("asseoir").addEventListener("click",()=>f(at)),c("retour").addEventListener("click",()=>{clearTimeout(ze),E()}),c("voile").querySelectorAll("[data-table]").forEach(p=>{p.addEventListener("click",()=>f(p.dataset.table))})};t([],!0);let n=await Ln();document.getElementById("asseoir")&&(t(n,!1),ze=setTimeout(()=>{document.getElementById("asseoir")&&Sr(e)},4e3))}function Fo(e,t){let n=t.sieges.length,r=t.sieges.find(d=>d.id===e.moi),o=Math.max(0,t.taille-n),s=[...t.sieges.map(d=>`<li>
+    `);let f=p=>{clearTimeout(ze),_(new y(e,p))};c("asseoir").addEventListener("click",()=>f(at)),c("retour").addEventListener("click",()=>{clearTimeout(ze),E()}),c("voile").querySelectorAll("[data-table]").forEach(p=>{p.addEventListener("click",()=>f(p.dataset.table))})};t([],!0);let n=await Ln();document.getElementById("asseoir")&&(t(n,!1),ze=setTimeout(()=>{document.getElementById("asseoir")&&Sr(e)},4e3))}function Xo(e,t){let n=t.sieges.length,r=t.sieges.find(d=>d.id===e.moi),o=Math.max(0,t.taille-n),s=[...t.sieges.map(d=>`<li>
       <span>${dr(d)}${d.id===e.moi?`${d.nom} (vous)`:d.nom}${mr(d)}</span>
       <span class="gain">${d.estBot?"bot":d.connecte?d.pret?"pr\xEAt":"pas pr\xEAt":"parti"}</span>
     </li>`),...Array.from({length:o},()=>`<li class="libre">
@@ -1767,9 +1892,9 @@ button.lien:hover { color: var(--texte); }
     <button class="action" id="maintenant" type="button">Commencer avec des bots</button>
     <button class="action" id="quitter" type="button">Quitter</button>
     ${Gt()}
-  `),Nt(),c("pret").addEventListener("click",()=>e.pret(!r?.pret)),c("voile").querySelectorAll("[data-taille]").forEach(d=>{d.addEventListener("click",()=>e.taille(Number(d.dataset.taille)))}),c("maintenant").addEventListener("click",()=>e.demarrer()),c("quitter").addEventListener("click",()=>{e.quitter(),m=null,location.href=location.pathname}),u!==null&&(Ee=setTimeout(J,1e3))}function Xo(e){let t=e.salon();if(!t){let a=e.erreur();if(a){h(`<h2>Impossible d'entrer</h2><p>${a}</p>
+  `),Nt(),c("pret").addEventListener("click",()=>e.pret(!r?.pret)),c("voile").querySelectorAll("[data-taille]").forEach(d=>{d.addEventListener("click",()=>e.taille(Number(d.dataset.taille)))}),c("maintenant").addEventListener("click",()=>e.demarrer()),c("quitter").addEventListener("click",()=>{e.quitter(),m=null,location.href=location.pathname}),u!==null&&(Ee=setTimeout(J,1e3))}function Qo(e){let t=e.salon();if(!t){let a=e.erreur();if(a){h(`<h2>Impossible d'entrer</h2><p>${a}</p>
         <button class="action primaire" id="retour" type="button">Revenir \xE0 l'accueil</button>`),c("retour").addEventListener("click",()=>{e.quitter(),m=null,location.href=location.pathname});return}let u=e.attente(),l=u<4?"On frappe \xE0 la porte du salon.":`Le serveur se r\xE9veille \u2014 il fait la sieste quand personne ne joue.
-         Comptez une trentaine de secondes. (${u} s)`;h(`<h2>Connexion\u2026</h2><p>${l}</p>`);return}if(t.publique)return Fo(e,t);let n=t.sieges.find(a=>a.id===e.moi)?.hote??!1,r=`${location.origin}/?salon=${t.code}`,o=t.minJoueurs-t.sieges.length,s=t.sieges.map(a=>`<li>
+         Comptez une trentaine de secondes. (${u} s)`;h(`<h2>Connexion\u2026</h2><p>${l}</p>`);return}if(t.publique)return Xo(e,t);let n=t.sieges.find(a=>a.id===e.moi)?.hote??!1,r=`${location.origin}/?salon=${t.code}`,o=t.minJoueurs-t.sieges.length,s=t.sieges.map(a=>`<li>
       <span>${dr(a)}${a.nom}${mr(a)}${a.hote?' <span class="gain">h\xF4te</span>':""}</span>
       <span class="gain">${a.estBot?"bot":a.connecte?"en ligne":"d\xE9connect\xE9"}</span>
       ${n&&a.id!==e.moi?`<button class="mini" data-retirer="${a.id}" type="button">\u2715</button>`:""}
@@ -1802,12 +1927,12 @@ button.lien:hover { color: var(--texte); }
     <div class="tapis-liste">${n}</div>
     <button class="action" id="musique" type="button">\u{1F3B5} Musique : ${(()=>{let r=U();return r?te[r].nom:"aucune"})()} \u2014 changer</button>
     <button class="action primaire" id="fermer-tapis" type="button">Revenir au jeu</button>
-  `),c("musique").addEventListener("click",()=>zt(()=>Ge(e))),c("voile").querySelectorAll("[data-theme]").forEach(r=>{r.addEventListener("click",()=>{let o=fe.find(s=>s.cle===r.dataset.theme);o&&(ut(o),Ge(e))})}),c("fermer-tapis").addEventListener("click",()=>{g(!1),e()})}function Jt(){if(m instanceof y){m.quitter(),m=null,location.href=location.pathname;return}m?.quitter?.(),m=null,clearTimeout(Ee),re=!1,g(!1),c("lecon").hidden=!0,c("table").hidden=!0,E()}function Qo(){g(!0),h(`
+  `),c("musique").addEventListener("click",()=>zt(()=>Ge(e))),c("voile").querySelectorAll("[data-theme]").forEach(r=>{r.addEventListener("click",()=>{let o=fe.find(s=>s.cle===r.dataset.theme);o&&(ut(o),Ge(e))})}),c("fermer-tapis").addEventListener("click",()=>{g(!1),e()})}function Jt(){if(m instanceof y){m.quitter(),m=null,location.href=location.pathname;return}m?.quitter?.(),m=null,clearTimeout(Ee),re=!1,g(!1),c("lecon").hidden=!0,c("table").hidden=!0,E()}function Wo(){g(!0),h(`
     <h2>Quitter la partie ?</h2>
     <p>La table continue sans vous : elle jouera \xE0 votre place.</p>
     <button class="action primaire" id="rester" type="button">Rester</button>
     <button class="action" id="partir" type="button">Revenir \xE0 l\u2019accueil</button>
-  `),c("rester").addEventListener("click",()=>{g(!1),A(),J()}),c("partir").addEventListener("click",Jt)}c("accueil").addEventListener("click",()=>{let e=m?.vue();m instanceof y&&e&&e.phase!=="fin-de-partie"?Qo():Jt()});var Ue=()=>Object.keys(F()).length,Er=[],Dt;function Le(e){e.length>0&&be(),Er.push(...e),Dt||Ar()}function Ar(){let e=c("toast-succes"),t=Er.shift();if(e.hidden=!0,!t){Dt=void 0;return}let n=we(t.id);e.innerHTML=`<span class="icone">${t.icone}</span><span><small>Succ\xE8s d\xE9bloqu\xE9</small>${t.nom}${n?` <span class="offert">\xB7 avatar ${n} offert</span>`:""}</span>`,e.offsetWidth,e.hidden=!1,$e(["succes"]),Dt=setTimeout(Ar,3800)}function Lr(e){g(!0);let t=F(),n=D.map(r=>{let o=t[r.id];return`<li class="${o?"obtenu":"verrouille"}">
+  `),c("rester").addEventListener("click",()=>{g(!1),A(),J()}),c("partir").addEventListener("click",Jt)}c("accueil").addEventListener("click",()=>{let e=m?.vue();m instanceof y&&e&&e.phase!=="fin-de-partie"?Wo():Jt()});var Ue=()=>Object.keys(F()).length,Er=[],Dt;function Le(e){e.length>0&&be(),Er.push(...e),Dt||Ar()}function Ar(){let e=c("toast-succes"),t=Er.shift();if(e.hidden=!0,!t){Dt=void 0;return}let n=we(t.id);e.innerHTML=`<span class="icone">${t.icone}</span><span><small>Succ\xE8s d\xE9bloqu\xE9</small>${t.nom}${n?` <span class="offert">\xB7 avatar ${n} offert</span>`:""}</span>`,e.offsetWidth,e.hidden=!1,$e(["succes"]),Dt=setTimeout(Ar,3800)}function Lr(e){g(!0);let t=F(),n=D.map(r=>{let o=t[r.id];return`<li class="${o?"obtenu":"verrouille"}">
       <span class="icone">${r.icone}</span>
       <span class="texte"><b>${r.nom}</b><small>${r.comment}${o?` \xB7 ${Ut(o)}`:""}${we(r.id)?` \xB7 avatar ${we(r.id)}`:""}</small></span>
     </li>`}).join("");h(`
@@ -1827,7 +1952,7 @@ button.lien:hover { color: var(--texte); }
     <h3>\xC0 gagner avec les succ\xE8s</h3>
     <ul class="avatars-a-gagner">${s}</ul>
     <button class="action primaire" id="fermer-avatar" type="button">Revenir</button>
-  `),c("voile").querySelectorAll("[data-avatar]").forEach(i=>{i.addEventListener("click",()=>{Ve(i.dataset.avatar)&&(be(),Tr(e))})}),c("fermer-avatar").addEventListener("click",()=>{g(!1),e()})}var Cr=()=>location.protocol==="file:"?`https://${W}/confidentialite`:"/confidentialite",Te=e=>document.getElementById(e);function Ft(e){g(!0);let t=()=>{g(!1),e()},n=k();if(n){Wo(n.pseudo,e,t);return}h(`
+  `),c("voile").querySelectorAll("[data-avatar]").forEach(i=>{i.addEventListener("click",()=>{Ve(i.dataset.avatar)&&(be(),Tr(e))})}),c("fermer-avatar").addEventListener("click",()=>{g(!1),e()})}var Cr=()=>location.protocol==="file:"?`https://${W}/confidentialite`:"/confidentialite",Te=e=>document.getElementById(e);function Ft(e){g(!0);let t=()=>{g(!1),e()},n=k();if(n){Ko(n.pseudo,e,t);return}h(`
     <h2>Un compte ?</h2>
     <p>C\u2019est facultatif : sans compte, vous jouez en invit\xE9, comme avant. Avec, vos succ\xE8s,
        votre parcours et votre avatar vous suivent sur tous vos appareils, votre pseudo vous
@@ -1860,7 +1985,7 @@ button.lien:hover { color: var(--texte); }
     ${n?`<p class="mention">${n}</p>`:""}
     <button class="action" id="copier-code" type="button">Copier le code</button>
     <button class="action primaire" id="code-note" type="button">J\u2019ai not\xE9 mon code</button>
-  `),c("copier-code").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(e),c("copier-code").textContent="Copi\xE9"}catch{c("copier-code").textContent="Recopiez-le \xE0 la main"}}),c("code-note").addEventListener("click",r)}async function Wo(e,t,n){h(`<h2>${S(e)}</h2><p class="mention">On regarde votre compte\u2026</p>`);let r=await gt();if(r===null){Ft(t);return}if(r==="indisponible"){h(`
+  `),c("copier-code").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(e),c("copier-code").textContent="Copi\xE9"}catch{c("copier-code").textContent="Recopiez-le \xE0 la main"}}),c("code-note").addEventListener("click",r)}async function Ko(e,t,n){h(`<h2>${S(e)}</h2><p class="mention">On regarde votre compte\u2026</p>`);let r=await gt();if(r===null){Ft(t);return}if(r==="indisponible"){h(`
       <h2>${S(e)}</h2>
       <p>Le serveur ne r\xE9pond pas pour l\u2019instant. Vos succ\xE8s et votre parcours restent dans ce
          navigateur ; ils rejoindront votre compte \xE0 la prochaine occasion.</p>
@@ -1879,7 +2004,7 @@ button.lien:hover { color: var(--texte); }
     <button class="action alerte" id="supprimer-compte" type="button">Supprimer mon compte</button>
     <p class="mention"><a href="${Cr()}" target="_blank" rel="noopener">Ce que nous gardons</a></p>
     <button class="action primaire" id="fermer-compte" type="button">Revenir</button>
-  `),c("nouveau-code").addEventListener("click",async()=>{c("nouveau-code").setAttribute("disabled","");let s=await _n();if(Te("nouveau-code")){if(!s){c("nouveau-code").textContent="Le serveur ne r\xE9pond pas \u2014 r\xE9essayez",c("nouveau-code").removeAttribute("disabled");return}Rr(s,"Nouveau code secret","L\u2019ancien code ne marche plus, et vos autres appareils devront se reconnecter.",n)}}),c("deconnexion").addEventListener("click",async()=>{await Jn(),n()}),c("supprimer-compte").addEventListener("click",()=>Ko(r.compte.pseudo,t,n)),c("fermer-compte").addEventListener("click",n)}function Ko(e,t,n){h(`
+  `),c("nouveau-code").addEventListener("click",async()=>{c("nouveau-code").setAttribute("disabled","");let s=await _n();if(Te("nouveau-code")){if(!s){c("nouveau-code").textContent="Le serveur ne r\xE9pond pas \u2014 r\xE9essayez",c("nouveau-code").removeAttribute("disabled");return}Rr(s,"Nouveau code secret","L\u2019ancien code ne marche plus, et vos autres appareils devront se reconnecter.",n)}}),c("deconnexion").addEventListener("click",async()=>{await Jn(),n()}),c("supprimer-compte").addEventListener("click",()=>Yo(r.compte.pseudo,t,n)),c("fermer-compte").addEventListener("click",n)}function Yo(e,t,n){h(`
     <h2>Supprimer \xAB ${S(e)} \xBB ?</h2>
     <p>Le compte, ses succ\xE8s, son parcours et ses r\xE9sultats seront effac\xE9s du serveur, et le pseudo
        redeviendra libre. Ce qui est d\xE9j\xE0 dans ce navigateur y reste.</p>
@@ -1901,7 +2026,7 @@ button.lien:hover { color: var(--texte); }
        chaque partie.</p>
     ${o}
     <button class="action primaire" id="fermer-classement" type="button">Revenir</button>
-  `),c("fermer-classement").addEventListener("click",t)}c("sons").addEventListener("click",()=>{St(!Z()),He()});c("musique-choix").addEventListener("click",()=>zt(()=>{A(),J()}));c("tapis-choix").addEventListener("click",()=>Ge(()=>{A(),J()}));c("voir-restantes").addEventListener("click",()=>{Se=!Se,c("voir-restantes").classList.toggle("actif",Se),oe()});c("recommencer").addEventListener("click",()=>{if(m instanceof Q){(!m.entamee||confirm("Abandonner la partie en cours et tout remettre \xE0 z\xE9ro ?"))&&(A(),ne=0,Ae="",m.recommencer());return}confirm("Quitter la table ?")&&(location.href=location.pathname)});window.addEventListener("resize",()=>{let e=m?.vue();e&&fr(e.me.hand.length)});ut(ct());He();Kn();tr();k()&&gt();K();var Mt=new URLSearchParams(location.search).get("salon");if(Mt&&location.protocol!=="file:"){let e=localStorage.getItem("larbin.nom")??"";e?_(new y(e,Mt)):Yo(Mt)}else E();function Yo(e){h(`
+  `),c("fermer-classement").addEventListener("click",t)}c("sons").addEventListener("click",()=>{St(!Z()),He()});c("musique-choix").addEventListener("click",()=>zt(()=>{A(),J()}));c("tapis-choix").addEventListener("click",()=>Ge(()=>{A(),J()}));c("voir-restantes").addEventListener("click",()=>{Se=!Se,c("voir-restantes").classList.toggle("actif",Se),oe()});c("recommencer").addEventListener("click",()=>{if(m instanceof Q){(!m.entamee||confirm("Abandonner la partie en cours et tout remettre \xE0 z\xE9ro ?"))&&(A(),ne=0,Ae="",m.recommencer());return}confirm("Quitter la table ?")&&(location.href=location.pathname)});window.addEventListener("resize",()=>{let e=m?.vue();e&&fr(e.me.hand.length)});ut(ct());He();Kn();tr();k()&&gt();K();var Mt=new URLSearchParams(location.search).get("salon");if(Mt&&location.protocol!=="file:"){let e=localStorage.getItem("larbin.nom")??"";e?_(new y(e,Mt)):Zo(Mt)}else E();function Zo(e){h(`
     <h2>Salon ${e.toUpperCase()}</h2>
     <p>On vous attend \xE0 cette table. Sous quel nom ?</p>
     <label class="champ">Votre nom

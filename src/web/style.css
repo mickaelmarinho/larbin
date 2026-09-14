@@ -1000,6 +1000,7 @@ button.action.alerte {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
   margin: 0 0 7px;
   font-size: 12px;
   font-weight: 700;
@@ -1053,6 +1054,7 @@ button.action.alerte {
 /* Les trois premiers du classement, sous le bouton du jeu en ligne. */
 @media (max-width: 359px) {
   .vie .detail { display: none; }
+  .panneau .eventail { --carte-l: 30px; }
 }
 
 /* En grille, les pseudos courts gardent toute leur largeur : seul un long
@@ -1126,6 +1128,120 @@ button.action.alerte {
 
 .raccourci span { font-size: 21px; line-height: 1.1; }
 .raccourci:hover { color: var(--texte); background: #ffffff0d; }
+
+/* L'affiche : l'accroche, et un éventail de vraies cartes pour dire « jeu de
+   cartes » avant même qu'on ait lu. */
+.affiche {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
+.panneau p.accroche {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--texte-pale);
+}
+
+.accroche b {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--creme);
+}
+
+/* Les trois façons de jouer ont leurs encadrés : sur téléphone, la phrase qui
+   les annonce ferait doublon. Sur PC, il y a la place de la dire. */
+.panneau p.modes { display: none; }
+
+.eventail {
+  /* --carte-h et --rayon se calculent à la racine : il faut les recalculer ici. */
+  --carte-l: 38px;
+  --carte-h: calc(var(--carte-l) * 1.42);
+  --rayon: calc(var(--carte-l) * 0.11);
+  flex: 0 0 auto;
+  position: relative;
+  width: calc(var(--carte-l) * 2.9);
+  height: calc(var(--carte-h) * 1.18);
+}
+
+.eventail .carte {
+  position: absolute;
+  left: calc(50% - var(--carte-l) / 2);
+  bottom: 0;
+  transform-origin: 50% 150%;
+  box-shadow: -3px 0 6px #00000047, 0 2px 5px #0007, inset 0 0 0 1px #ffffff80;
+}
+
+.eventail .carte:nth-child(1) { transform: rotate(-24deg); }
+.eventail .carte:nth-child(2) { transform: rotate(-8deg); }
+.eventail .carte:nth-child(3) { transform: rotate(8deg); }
+.eventail .carte:nth-child(4) { transform: rotate(24deg); }
+
+/* Sur PC : la vitrine à gauche, le jeu à droite, et plus de défilement. */
+@media (min-width: 900px) {
+  .panneau.accueil {
+    width: min(900px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 390px);
+    grid-template-rows: 1fr auto;
+    grid-template-areas: "vitrine jeu" "raccourcis jeu";
+    column-gap: 40px;
+    padding: 30px 36px;
+  }
+
+  .accueil .vitrine {
+    grid-area: vitrine;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .accueil .jeu { grid-area: jeu; }
+
+  .accueil .entete h2 { font-size: 34px; }
+  .accueil .entete .embleme { width: 52px; height: 52px; }
+
+  .accueil .affiche {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 34px;
+    margin: 22px 0 0;
+  }
+
+  .accueil p.accroche { font-size: 16px; }
+  .accueil .accroche b { font-size: 30px; margin-bottom: 8px; }
+
+  .accueil .eventail {
+    --carte-l: 96px;
+    align-self: center;
+  }
+
+  .accueil p.modes {
+    display: block;
+    margin: 34px 0 0;
+    font-size: 15px;
+  }
+
+  .accueil .raccourcis {
+    grid-area: raccourcis;
+    align-self: end;
+    justify-content: flex-start;
+    gap: 4px;
+    margin-top: 20px;
+  }
+
+  .accueil .raccourci {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .accueil .jeu .bloc:first-of-type { margin-top: 14px; }
+}
 
 .avatar-choix {
   flex: 0 0 auto;

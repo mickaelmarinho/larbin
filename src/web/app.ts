@@ -547,8 +547,8 @@ function boucle(): void {
 
 /* ------------------------------------------------------------- les voiles */
 
-function montrerVoile(html: string): void {
-  $('voile').innerHTML = `<div class="panneau">${html}</div>`;
+function montrerVoile(html: string, classe = ''): void {
+  $('voile').innerHTML = `<div class="panneau${classe ? ` ${classe}` : ''}">${html}</div>`;
   $('voile').hidden = false;
 }
 
@@ -1123,6 +1123,18 @@ function suivreLaVie(): void {
   });
 }
 
+/**
+ * L'éventail de l'accueil : quatre cartes qui montent jusqu'au 2, la plus forte
+ * du jeu — on reconnaît d'un coup d'œil un jeu de cartes, et celui-ci. Du
+ * décor seulement : ni bouton, ni focus, et les mêmes cartes qu'à la table.
+ */
+const EVENTAIL = `<div class="eventail" aria-hidden="true">${
+  ([['9', '♣'], ['V', '♦'], ['D', '♥'], ['2', '♠']] as const).map(([valeur, couleur]) => {
+    const rouge = couleur === '♥' || couleur === '♦' ? ' rouge' : '';
+    return `<span class="carte${rouge}"><span class="coin">${valeur}<i>${couleur}</i></span>`
+      + `<span class="centre">${couleur}</span></span>`;
+  }).join('')}</div>`;
+
 function voileAccueil(): void {
   const horsLigne = location.protocol === 'file:';
   const nomConnu = localStorage.getItem('larbin.nom') ?? '';
@@ -1137,14 +1149,24 @@ function voileAccueil(): void {
       <span aria-hidden="true">${icone}</span>${texte}
     </button>`;
 
+  // Sur PC, la vitrine et les raccourcis prennent la colonne de gauche, le jeu
+  // celle de droite ; sur téléphone, tout s'empile dans cet ordre.
   montrerVoile(`
+    <div class="vitrine">
     <div class="entete">
       ${EMBLEME}
       <h2>Le Larbin</h2>
       <button class="reglage" id="tapis-accueil" type="button" title="Tapis et musique"
               aria-label="Tapis et musique">🎨</button>
     </div>
-    <p>Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone ou son PC.</p>
+    <div class="affiche">
+      <p class="accroche"><b>Le Président, en plus nerveux.</b>
+        Une série ne fait qu’un tour de table. Sur téléphone ou PC.</p>
+      ${EVENTAIL}
+    </div>
+    <p class="modes">Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone ou son PC.</p>
+    </div>
+    <div class="jeu">
     <div class="identite">
       <button class="avatar-choix" id="avatar-accueil" type="button" title="Changer d’avatar">${avatarChoisi()}</button>
       ${moi
@@ -1183,6 +1205,7 @@ function voileAccueil(): void {
         <small>4 petites leçons · 2 minutes</small>
       </button>`}
     </section>
+    </div>
     <nav class="raccourcis">
       ${raccourci('succes', '🏆', 'Succès', `Vos succès — ${nombreDeSucces()} sur ${SUCCES.length}`)}
       ${horsLigne ? '' : raccourci('classement', '🏅', 'Classement')}
@@ -1191,7 +1214,7 @@ function voileAccueil(): void {
       ${raccourci('regles', '📖', 'Règles', 'Comment on joue ?')}
       ${raccourci('histoire', '📜', 'Histoire', 'D’où vient ce jeu ?')}
     </nav>
-  `);
+  `, 'accueil');
 
   const nom = () => {
     const valeur = ($('nom') as HTMLInputElement).value.trim();
