@@ -186,3 +186,57 @@ export const succesApresDonne = (partie: string, manche: number, main: Card[]) =
   noter((m) => succesDeMain(m, partie, manche, main));
 
 export const succesDidacticiel = () => noter(() => ['didacticiel']);
+
+/* -------------------------------------------------------------- les comptes */
+
+/** Un succès tel que le garde un compte : daté, et vérifié quand le serveur l'a vu lui-même. */
+export interface SuccesDate {
+  id: IdSucces;
+  date: string;
+  verifie: boolean;
+}
+
+/** Relit une liste venue d'ailleurs, en ne gardant que des succès connus et datés. */
+export function listeSucces(brut: unknown): SuccesDate[] {
+  if (!Array.isArray(brut)) return [];
+  return brut.flatMap((x) => {
+    if (!x || typeof x !== 'object') return [];
+    const s = x as Record<string, unknown>;
+    return IDS.has(s.id as IdSucces) && typeof s.date === 'string'
+      ? [{ id: s.id as IdSucces, date: s.date, verifie: s.verifie === true }]
+      : [];
+  });
+}
+
+/** Réunit deux listes : la première date obtenue l'emporte, et un succès vérifié le reste. */
+export function fusionnerSucces(a: SuccesDate[], b: SuccesDate[]): SuccesDate[] {
+  const parId = new Map<IdSucces, SuccesDate>();
+  for (const s of [...listeSucces(a), ...listeSucces(b)]) {
+    const deja = parId.get(s.id);
+    parId.set(s.id, deja
+      ? { id: s.id, date: deja.date < s.date ? deja.date : s.date, verifie: deja.verifie || s.verifie }
+      : s);
+  }
+  return [...parId.values()].sort((x, y) => x.date.localeCompare(y.date));
+}
+
+/** Les succès de ce navigateur, prêts à partir vers le compte. */
+export const succesLocaux = (): SuccesDate[] =>
+  Object.entries(lire().obtenus).map(([id, date]) => ({ id: id as IdSucces, date: date!, verifie: false }));
+
+/** Ajoute à ce navigateur des succès venus du compte ou du serveur ; renvoie ceux qui y étaient nouveaux. */
+export function adopterSucces(liste: Array<{ id: string; date: string }>): Succes[] {
+  const m = lire();
+  const nouveaux: Succes[] = [];
+  for (const { id, date } of liste) {
+    const succes = SUCCES.find((s) => s.id === id);
+    if (!succes || typeof date !== 'string') continue;
+    const deja = m.obtenus[succes.id];
+    if (!deja) nouveaux.push(succes);
+    if (!deja || date < deja) m.obtenus[succes.id] = date;
+  }
+  try {
+    localStorage.setItem(CLE, JSON.stringify(m));
+  } catch { /* stockage indisponible : on fêtera, sans retenir */ }
+  return nouveaux;
+}

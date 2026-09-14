@@ -14,6 +14,7 @@ import {
 } from '../reseau/protocole.ts';
 import { reactionDesBots } from './humeurs.ts';
 import { avatarChoisi } from './avatars.ts';
+import { jetonDeSession } from './session.ts';
 
 /** Les réactions encore à l'écran, par joueur, avec l'instant où elles sont arrivées. */
 export type Bulles = Map<string, { reaction: Reaction; recueA: number }>;
@@ -326,6 +327,8 @@ export class TableEnLigne implements Table {
   private battement: ReturnType<typeof setInterval> | undefined;
   /** La dernière réaction de chacun, et quand elle est arrivée. */
   private reactionsRecues = new Map<string, { reaction: Reaction; recueA: number }>();
+  /** Les succès que le serveur vient de vérifier, en attente d'être annoncés. */
+  private succesRecus: string[] = [];
 
   constructor(private nom: string, code: string) {
     this.chercheTablePublique = code === TABLE_PUBLIQUE;
@@ -417,6 +420,13 @@ export class TableEnLigne implements Table {
     return Math.max(0, Math.ceil((reste - (Date.now() - this.etatRecuA)) / 1000));
   }
 
+  /** Les succès vérifiés reçus depuis la dernière fois. */
+  retirerSucces(): string[] {
+    const liste = this.succesRecus;
+    this.succesRecus = [];
+    return liste;
+  }
+
   /** Lancer une réaction à la table. */
   reagir(reaction: Reaction): void {
     this.dire({ type: 'reaction', reaction });
@@ -454,7 +464,7 @@ export class TableEnLigne implements Table {
     this.ws.addEventListener('open', () => {
       // Une fois assis, on revient toujours à la même table, publique ou non.
       if (this.chercheTablePublique && !this.moi) {
-        this.dire({ type: 'rejoindre-public', nom: this.nom, avatar: avatarChoisi() });
+        this.dire({ type: 'rejoindre-public', nom: this.nom, avatar: avatarChoisi(), session: jetonDeSession() });
         return;
       }
       this.dire({
@@ -463,6 +473,7 @@ export class TableEnLigne implements Table {
         nom: this.nom,
         jeton: localStorage.getItem(CLE_JETON + this.code) ?? undefined,
         avatar: avatarChoisi(),
+        session: jetonDeSession(),
       });
     });
 
@@ -496,6 +507,9 @@ export class TableEnLigne implements Table {
           if (estReaction(recu.reaction)) {
             this.reactionsRecues.set(recu.de, { reaction: recu.reaction, recueA: Date.now() });
           }
+          break;
+        case 'succes':
+          if (Array.isArray(recu.ids)) this.succesRecus.push(...recu.ids.filter((id) => typeof id === 'string'));
           break;
       }
       this.prevenir();

@@ -35,10 +35,11 @@ const optionsEsbuild = {
 };
 
 async function assembler() {
-  const [gabarit, style, regles, paquet] = await Promise.all([
+  const [gabarit, style, regles, confidentialite, paquet] = await Promise.all([
     readFile(src('index.html'), 'utf8'),
     readFile(src('style.css'), 'utf8'),
     readFile(src('regles.html'), 'utf8'),
+    readFile(src('confidentialite.html'), 'utf8'),
     build(optionsEsbuild).then((r) => r.outputFiles[0].text),
   ]);
 
@@ -57,6 +58,7 @@ async function assembler() {
   await mkdir(publie, { recursive: true });
   await writeFile(path.join(publie, 'index.html'), enLigne(page), 'utf8');
   await writeFile(path.join(publie, 'regles.html'), regles, 'utf8');
+  await writeFile(path.join(publie, 'confidentialite.html'), confidentialite, 'utf8');
   await cp(src('statique'), publie, { recursive: true });
 
   const ko = (Buffer.byteLength(seul) / 1024).toFixed(0);

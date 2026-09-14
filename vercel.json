@@ -5,6 +5,7 @@
   "framework": null,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/regles", "destination": "/regles.html" }
+    { "source": "/regles", "destination": "/regles.html" },
+    { "source": "/confidentialite", "destination": "/confidentialite.html" }
   ]
 }

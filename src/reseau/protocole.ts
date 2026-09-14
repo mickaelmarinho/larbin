@@ -44,6 +44,8 @@ export interface Siege {
   pret: boolean;
   /** L'émoticône choisie par le joueur, ou null — les bots n'en ont pas. */
   avatar: string | null;
+  /** Joue sous un compte : son nom est un pseudo réservé. */
+  compte: boolean;
 }
 
 export interface EtatSalon {
@@ -70,8 +72,8 @@ export interface EtatSalon {
 }
 
 export type VersServeur =
-  | { type: 'rejoindre'; salon: string; nom: string; jeton?: string; avatar?: string }
-  | { type: 'rejoindre-public'; nom: string; avatar?: string }
+  | { type: 'rejoindre'; salon: string; nom: string; jeton?: string; avatar?: string; session?: string }
+  | { type: 'rejoindre-public'; nom: string; avatar?: string; session?: string }
   | { type: 'pret'; pret: boolean }
   | { type: 'taille'; taille: number }
   | { type: 'ajouter-bot' }
@@ -86,7 +88,9 @@ export type VersClient =
   | { type: 'vue'; vue: PlayerView }
   | { type: 'erreur'; message: string }
   /** Quelqu'un à la table a réagi : `de` est l'identifiant de sa place. */
-  | { type: 'reaction'; de: string; reaction: Reaction };
+  | { type: 'reaction'; de: string; reaction: Reaction }
+  /** Des succès que le serveur vient de vérifier pour ce joueur. */
+  | { type: 'succes'; ids: string[] };
 
 /** Codes de salon : quatre lettres, sans les caractères qu'on confond à l'oral. */
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';

@@ -15,10 +15,12 @@
     "serveur": "node src/reseau/serveur.ts"
   },
   "devDependencies": {
+    "@types/pg": "^8.23.1",
     "@types/ws": "^8.18.1",
     "esbuild": "^0.28.2"
   },
   "dependencies": {
+    "pg": "^8.23.0",
     "ws": "^8.21.3"
   }
 }

@@ -36,6 +36,14 @@ export interface Place {
   pret: boolean;
   /** L'avatar choisi, s'il est de la liste ; null sinon, et pour les bots. */
   avatar: string | null;
+  /** Le compte du joueur, s'il est connecté ; null pour un invité ou un bot. */
+  compteId: string | null;
+}
+
+/** Qui s'assoit : un compte, dont le pseudo s'impose, ou un invité, qui ne peut prendre un pseudo réservé. */
+export interface Identite {
+  compte?: { id: string; pseudo: string };
+  reserve?: (nom: string) => boolean;
 }
 
 export class Salon {
@@ -146,6 +154,7 @@ export class Salon {
       hote: p.id === this.hote,
       pret: p.pret,
       avatar: p.avatar,
+      compte: p.compteId !== null,
     }));
     return {
       code: this.code,
@@ -181,20 +190,21 @@ export class Salon {
   /* ------------------------------------------------------------ places */
 
   /** Ajoute un joueur humain. Renvoie sa place, ou une erreur si la table est pleine. */
-  asseoir(nom: string, jeton: string, avatar?: unknown): Place {
+  asseoir(nom: string, jeton: string, avatar?: unknown, qui: Identite = {}): Place {
     if (this.commencee) throw new RegleViolee('La partie a déjà commencé.');
     if (this.places.length >= this.capacite) throw new RegleViolee('La table est complète.');
 
     const place: Place = {
       id: `j${this.places.length + 1}-${jeton.slice(0, 4)}`,
       // Le nom s'affichera chez les autres : on le nettoie ici, côté serveur.
-      nom: nomLibre(nomPropre(nom) || 'Joueur', this.places),
+      nom: nomLibre(qui.compte?.pseudo ?? (nomPropre(nom) || 'Joueur'), this.places, qui.reserve),
       jeton,
       estBot: false,
       connecte: true,
       pret: false,
       // Il s'affichera chez les autres : seule la liste connue passe.
       avatar: estAvatar(avatar) ? avatar : null,
+      compteId: qui.compte?.id ?? null,
     };
     this.places.push(place);
     // À une table publique, personne ne décide pour les autres.
@@ -221,6 +231,7 @@ export class Salon {
       connecte: true,
       pret: true,
       avatar: null,
+      compteId: null,
     };
     this.places.push(place);
     this.derniereActivite = Date.now();
@@ -234,7 +245,7 @@ export class Salon {
    * justement avec des bots. Réservé à ces tables : dans un salon privé, on
    * n'entre pas dans une partie commencée sans y être invité.
    */
-  reprendreUnBot(nom: string, jeton: string, avatar?: unknown): Place | null {
+  reprendreUnBot(nom: string, jeton: string, avatar?: unknown, qui: Identite = {}): Place | null {
     if (!this.publique || !this.etat) return null;
     const bot = this.places.find((p) => p.estBot);
     if (!bot) return null;
@@ -244,7 +255,8 @@ export class Salon {
     bot.connecte = true;
     bot.pret = true;
     bot.avatar = estAvatar(avatar) ? avatar : null;
-    bot.nom = nomLibre(nomPropre(nom) || 'Joueur', this.places.filter((p) => p !== bot));
+    bot.compteId = qui.compte?.id ?? null;
+    bot.nom = nomLibre(qui.compte?.pseudo ?? (nomPropre(nom) || 'Joueur'), this.places.filter((p) => p !== bot), qui.reserve);
 
     // Le moteur garde la trace « c'est un bot » pour l'affichage : sans cette
     // correction, les autres continueraient de voir une machine à sa place.
@@ -366,11 +378,13 @@ export function tablePubliqueOuverte(salons: Iterable<Salon>): Salon | undefined
 }
 
 /** Deux « Marc » à la même table prêtent à confusion : on numérote. */
-function nomLibre(souhaite: string, places: Place[]): string {
+function nomLibre(souhaite: string, places: Place[], reserve?: (nom: string) => boolean): string {
   const pris = new Set(places.map((p) => p.nom));
-  if (!pris.has(souhaite)) return souhaite;
+  // Un pseudo réservé est pris, même quand son titulaire n'est pas là.
+  const libre = (nom: string) => !pris.has(nom) && !reserve?.(nom);
+  if (libre(souhaite)) return souhaite;
   for (let i = 2; i < 20; i++) {
-    if (!pris.has(`${souhaite} ${i}`)) return `${souhaite} ${i}`;
+    if (libre(`${souhaite} ${i}`)) return `${souhaite} ${i}`;
   }
   return souhaite;
 }

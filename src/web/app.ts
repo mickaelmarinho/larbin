@@ -24,6 +24,12 @@ import {
 import {
   AVATARS_A_GAGNER, AVATARS_LIBRES, BOTS_SOLO, avatarChoisi, avatarDebloquePar, choisirAvatar,
 } from './avatars.ts';
+import {
+  classementPublic, creerCompte, monCompte, nouveauCodeSecret, seConnecter, seDeconnecter,
+  supprimerMonCompte, synchroniserBientot,
+} from './compte.ts';
+import { sessionOuverte } from './session.ts';
+import { adopterSucces } from './succes.ts';
 import { jouerSons, ouvrirAuPremierGeste, reglerSons, sonsActifs } from './sons.ts';
 import {
   MUSIQUES, ORDRE_MUSIQUES, choisirMusique, musiqueAuPremierGeste, musiqueChoisie,
@@ -168,6 +174,10 @@ function avatarDe(id: string): string {
 /** L'avatar d'un siège de salle d'attente, tel que le serveur l'a transmis. */
 const avatarDuSiege = (s: { avatar: string | null; estBot: boolean }) =>
   `<span class="avatar">${s.avatar ?? (s.estBot ? '🤖' : '🙂')}</span>`;
+
+/** Un joueur avec un compte : son nom est un pseudo réservé, on le signale. */
+const marqueDeCompte = (s: { compte?: boolean }) =>
+  (s.compte ? '<span class="verifie" title="Joueur avec un compte">✓</span>' : '');
 
 function rendreAdversaires(vue: PlayerView): void {
   $('adversaires').innerHTML = vue.others.map((o) => {
@@ -377,6 +387,13 @@ function surChangement(): void {
   // dont les mains sont écrites d'avance.
   if (vue && vue.phase === 'jeu' && table?.mode !== 'didacticiel') {
     annoncerSucces(succesApresDonne(vue.partie, vue.round, vue.me.hand));
+  }
+  // Les succès que le serveur a vérifiés, pendant une partie en ligne.
+  if (table instanceof TableEnLigne) {
+    const verifies = table.retirerSucces();
+    if (verifies.length > 0) {
+      annoncerSucces(adopterSucces(verifies.map((id) => ({ id, date: new Date().toISOString() }))));
+    }
   }
   rendre();
   boucle();
@@ -699,6 +716,7 @@ function voileFinDeManche(vue: PlayerView): void {
   if (vue.me.role) {
     noterManche(vue.partie, vue.round, vue.me.role, vue.me.finishedOnTwo);
     annoncerSucces(succesApresManche(vue.partie, vue.round, vue.me.role, vue.me.finishedOnTwo));
+    synchroniserBientot();
   }
 
   const verdict = vue.me.role === 'boss' ? 'Vous êtes le Boss.'
@@ -761,6 +779,7 @@ function voileFinDePartie(vue: PlayerView): void {
     parties: b.parties,
     serie: b.serie,
   }));
+  synchroniserBientot();
   // Le moment où l'on referme une partie est celui où l'on décide d'en relancer
   // une : c'est là, et pas ailleurs, que le compteur a une chance d'être lu.
   const trace = b.serie >= 2 ? `${b.serie} victoires d'affilée.`
@@ -1063,6 +1082,7 @@ function voileAccueil(): void {
   const nomConnu = localStorage.getItem('larbin.nom') ?? '';
   // Rien à afficher au premier passage : l'accueil d'un inconnu doit rester net.
   const b = bilan(parcours());
+  const moi = sessionOuverte();
 
   montrerVoile(`
     ${EMBLEME}
@@ -1070,10 +1090,17 @@ function voileAccueil(): void {
     <p>Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone ou son PC.</p>
     <div class="identite">
       <button class="avatar-choix" id="avatar-accueil" type="button" title="Changer d’avatar">${avatarChoisi()}</button>
-      <label class="champ">Votre nom
+      ${moi
+    ? `<div class="champ connecte">Connecté
+        <b>✓ ${attribut(moi.pseudo)}</b>
+        <input id="nom" type="hidden" value="${attribut(moi.pseudo)}">
+      </div>`
+    : `<label class="champ">Votre nom
         <input id="nom" type="text" maxlength="14" placeholder="Votre prénom" value="${attribut(nomConnu)}">
-      </label>
+      </label>`}
     </div>
+    ${horsLigne ? '' : `<button class="lien" id="compte" type="button">${moi
+      ? '🔑 Mon compte' : '🔑 Créer un compte ou se connecter'}</button>`}
     <button class="action primaire" id="solo" type="button">Jouer contre les bots</button>
     ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
       <span>♥ Apprendre en jouant</span>
@@ -1095,6 +1122,7 @@ function voileAccueil(): void {
          ${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} partie${b.parties > 1 ? 's' : ''}</button>`
       : ''}
     <button class="lien" id="succes" type="button">🏆 Vos succès — ${nombreDeSucces()} sur ${SUCCES.length}</button>
+    ${horsLigne ? '' : '<button class="lien" id="classement" type="button">🏅 Classement</button>'}
     <button class="lien" id="regles" type="button">Comment on joue ?</button>
     <button class="lien" id="histoire" type="button">D'où vient ce jeu ?</button>
   `);
@@ -1110,6 +1138,8 @@ function voileAccueil(): void {
   $('tapis-accueil').addEventListener('click', () => voileTapis(voileAccueil));
   $('parcours')?.addEventListener('click', () => voileParcours(voileAccueil));
   $('succes').addEventListener('click', () => voileSucces(voileAccueil));
+  $('compte')?.addEventListener('click', () => voileCompte(voileAccueil));
+  $('classement')?.addEventListener('click', () => void voileClassement(voileAccueil));
   $('avatar-accueil').addEventListener('click', () => {
     nom();   // le nom tapé ne doit pas se perdre en chemin
     voileAvatar(voileAccueil);
@@ -1250,7 +1280,7 @@ function voileTablePublique(
   const libres = Math.max(0, salon.taille - assis);
   const places = [
     ...salon.sieges.map((s) => `<li>
-      <span>${avatarDuSiege(s)}${s.id === en.moi ? `${s.nom} (vous)` : s.nom}</span>
+      <span>${avatarDuSiege(s)}${s.id === en.moi ? `${s.nom} (vous)` : s.nom}${marqueDeCompte(s)}</span>
       <span class="gain">${s.estBot ? 'bot'
     : !s.connecte ? 'parti'
     : s.pret ? 'prêt' : 'pas prêt'}</span>
@@ -1358,7 +1388,7 @@ function voileSalon(en: TableEnLigne): void {
   const manque = salon.minJoueurs - salon.sieges.length;
 
   const sieges = salon.sieges.map((s) => `<li>
-      <span>${avatarDuSiege(s)}${s.nom}${s.hote ? ' <span class="gain">hôte</span>' : ''}</span>
+      <span>${avatarDuSiege(s)}${s.nom}${marqueDeCompte(s)}${s.hote ? ' <span class="gain">hôte</span>' : ''}</span>
       <span class="gain">${s.estBot ? 'bot' : s.connecte ? 'en ligne' : 'déconnecté'}</span>
       ${jeSuisHote && s.id !== en.moi ? `<button class="mini" data-retirer="${s.id}" type="button">✕</button>` : ''}
     </li>`).join('');
@@ -1559,6 +1589,7 @@ const succesAAnnoncer: Succes[] = [];
 let annonceDeSucces: ReturnType<typeof setTimeout> | undefined;
 
 function annoncerSucces(nouveaux: Succes[]): void {
+  if (nouveaux.length > 0) synchroniserBientot();
   succesAAnnoncer.push(...nouveaux);
   if (!annonceDeSucces) succesSuivant();
 }
@@ -1643,13 +1674,248 @@ function voileAvatar(retour: () => void): void {
 
   $('voile').querySelectorAll('[data-avatar]').forEach((b) => {
     b.addEventListener('click', () => {
-      if (choisirAvatar((b as HTMLElement).dataset.avatar!)) voileAvatar(retour);
+      if (!choisirAvatar((b as HTMLElement).dataset.avatar!)) return;
+      synchroniserBientot();
+      voileAvatar(retour);
     });
   });
   $('fermer-avatar').addEventListener('click', () => {
     suspendre(false);
     retour();
   });
+}
+
+/* ------------------------------------------------------------- comptes */
+
+const lienConfidentialite = () =>
+  (location.protocol === 'file:' ? `https://${ADRESSE_PUBLIQUE}/confidentialite` : '/confidentialite');
+
+/** Le panneau peut avoir été remplacé pendant qu'on attendait le serveur. */
+const encoreLa = (id: string) => document.getElementById(id) as HTMLButtonElement | null;
+
+/**
+ * Le compte : facultatif. Sans lui on joue en invité ; avec, les succès, le
+ * parcours et l'avatar suivent sur tous ses appareils, le pseudo est réservé,
+ * et l'on entre au classement.
+ */
+function voileCompte(retour: () => void): void {
+  suspendre(true);
+  const fermer = () => {
+    suspendre(false);
+    retour();
+  };
+  const moi = sessionOuverte();
+  if (moi) {
+    void voileMonCompte(moi.pseudo, retour, fermer);
+    return;
+  }
+
+  montrerVoile(`
+    <h2>Un compte ?</h2>
+    <p>C’est facultatif : sans compte, vous jouez en invité, comme avant. Avec, vos succès,
+       votre parcours et votre avatar vous suivent sur tous vos appareils, votre pseudo vous
+       est réservé, et vous entrez au classement.</p>
+    <h3>Créer un compte</h3>
+    <label class="champ">Votre pseudo
+      <input id="pseudo-creer" type="text" maxlength="14" autocomplete="nickname"
+        value="${attribut(localStorage.getItem('larbin.nom') ?? '')}">
+    </label>
+    <button class="action primaire" id="creer-compte" type="button">Créer mon compte</button>
+    <h3>J’ai déjà un compte</h3>
+    <label class="champ">Pseudo
+      <input id="pseudo-connexion" type="text" maxlength="14" autocomplete="username">
+    </label>
+    <label class="champ">Code secret
+      <input id="code-connexion" type="text" maxlength="19" placeholder="XXXX-XXXX-XXXX-XXXX"
+        autocapitalize="characters" autocomplete="off" spellcheck="false">
+    </label>
+    <button class="action" id="se-connecter" type="button">Se connecter</button>
+    <p class="mention alerte" id="erreur-compte" hidden></p>
+    <p class="mention">Ni adresse e-mail, ni mot de passe.
+       <a href="${lienConfidentialite()}" target="_blank" rel="noopener">Ce que nous gardons</a>.</p>
+    <button class="action" id="fermer-compte" type="button">Revenir</button>
+  `);
+
+  const signaler = (texte: string) => {
+    const p = document.getElementById('erreur-compte');
+    if (!p) return;
+    p.textContent = texte;
+    p.hidden = false;
+  };
+
+  $('creer-compte').addEventListener('click', async () => {
+    $('creer-compte').setAttribute('disabled', '');
+    const r = await creerCompte(($('pseudo-creer') as HTMLInputElement).value);
+    const bouton = encoreLa('creer-compte');
+    if (!bouton) return;
+    bouton.disabled = false;
+    if ('erreur' in r) {
+      signaler(r.erreur);
+      return;
+    }
+    voileCodeSecret(r.code, 'Votre compte est créé', '', fermer);
+  });
+
+  $('se-connecter').addEventListener('click', async () => {
+    $('se-connecter').setAttribute('disabled', '');
+    const r = await seConnecter(
+      ($('pseudo-connexion') as HTMLInputElement).value,
+      ($('code-connexion') as HTMLInputElement).value,
+    );
+    const bouton = encoreLa('se-connecter');
+    if (!bouton) return;
+    if (r) {
+      bouton.disabled = false;
+      signaler(r.erreur);
+      return;
+    }
+    fermer();
+  });
+
+  $('fermer-compte').addEventListener('click', fermer);
+}
+
+/** Le code secret, montré une seule fois : on insiste pour qu'il soit noté. */
+function voileCodeSecret(code: string, titre: string, note: string, suite: () => void): void {
+  montrerVoile(`
+    <h2>${titre}</h2>
+    <p>Voici votre <b>code secret</b>. Notez-le, ou gardez-en une capture d’écran : c’est la
+       seule façon de retrouver votre compte sur un autre appareil. Personne ne pourra vous le
+       renvoyer.</p>
+    <p class="code-secret">${code}</p>
+    ${note ? `<p class="mention">${note}</p>` : ''}
+    <button class="action" id="copier-code" type="button">Copier le code</button>
+    <button class="action primaire" id="code-note" type="button">J’ai noté mon code</button>
+  `);
+  $('copier-code').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      $('copier-code').textContent = 'Copié';
+    } catch {
+      $('copier-code').textContent = 'Recopiez-le à la main';
+    }
+  });
+  $('code-note').addEventListener('click', suite);
+}
+
+async function voileMonCompte(pseudo: string, retour: () => void, fermer: () => void): Promise<void> {
+  montrerVoile(`<h2>${attribut(pseudo)}</h2><p class="mention">On regarde votre compte…</p>`);
+  const infos = await monCompte();
+  if (infos === null) {
+    // La session a expiré, ou le compte a été supprimé ailleurs.
+    voileCompte(retour);
+    return;
+  }
+  if (infos === 'indisponible') {
+    montrerVoile(`
+      <h2>${attribut(pseudo)}</h2>
+      <p>Le serveur ne répond pas pour l’instant. Vos succès et votre parcours restent dans ce
+         navigateur ; ils rejoindront votre compte à la prochaine occasion.</p>
+      <button class="action primaire" id="fermer-compte" type="button">Revenir</button>
+    `);
+    $('fermer-compte').addEventListener('click', fermer);
+    return;
+  }
+
+  const b = bilan(parcours());
+  montrerVoile(`
+    <h2><span class="avatar">${avatarChoisi()}</span>${attribut(infos.compte.pseudo)}</h2>
+    <p>Vos succès, votre parcours et votre avatar suivent ce pseudo sur tous vos appareils.</p>
+    <p class="mention">Compte ouvert le ${jourCourt(infos.compte.creeLe)}</p>
+    <div class="compteurs">
+      <div><b>${nombreDeSucces()}</b><span>succès</span></div>
+      <div><b>${infos.verifies}</b><span>vérifiés en ligne</span></div>
+      <div><b>${b.parties}</b><span>partie${b.parties > 1 ? 's' : ''}</span></div>
+    </div>
+    <button class="action" id="nouveau-code" type="button">Obtenir un nouveau code secret</button>
+    <button class="action" id="deconnexion" type="button">Se déconnecter de cet appareil</button>
+    <button class="action alerte" id="supprimer-compte" type="button">Supprimer mon compte</button>
+    <p class="mention"><a href="${lienConfidentialite()}" target="_blank" rel="noopener">Ce que nous gardons</a></p>
+    <button class="action primaire" id="fermer-compte" type="button">Revenir</button>
+  `);
+
+  $('nouveau-code').addEventListener('click', async () => {
+    $('nouveau-code').setAttribute('disabled', '');
+    const code = await nouveauCodeSecret();
+    if (!encoreLa('nouveau-code')) return;
+    if (!code) {
+      $('nouveau-code').textContent = 'Le serveur ne répond pas — réessayez';
+      $('nouveau-code').removeAttribute('disabled');
+      return;
+    }
+    voileCodeSecret(code, 'Nouveau code secret',
+      'L’ancien code ne marche plus, et vos autres appareils devront se reconnecter.', fermer);
+  });
+  $('deconnexion').addEventListener('click', async () => {
+    await seDeconnecter();
+    fermer();
+  });
+  $('supprimer-compte').addEventListener('click', () => voileSupprimerCompte(infos.compte.pseudo, retour, fermer));
+  $('fermer-compte').addEventListener('click', fermer);
+}
+
+function voileSupprimerCompte(pseudo: string, retour: () => void, fermer: () => void): void {
+  montrerVoile(`
+    <h2>Supprimer « ${attribut(pseudo)} » ?</h2>
+    <p>Le compte, ses succès, son parcours et ses résultats seront effacés du serveur, et le pseudo
+       redeviendra libre. Ce qui est déjà dans ce navigateur y reste.</p>
+    <p class="mention alerte" id="erreur-compte" hidden></p>
+    <button class="action primaire" id="garder-compte" type="button">Garder mon compte</button>
+    <button class="action alerte" id="confirmer-suppression" type="button">Supprimer définitivement</button>
+  `);
+  $('garder-compte').addEventListener('click', () => voileCompte(retour));
+  $('confirmer-suppression').addEventListener('click', async () => {
+    $('confirmer-suppression').setAttribute('disabled', '');
+    const ok = await supprimerMonCompte();
+    if (ok) {
+      fermer();
+      return;
+    }
+    const p = document.getElementById('erreur-compte');
+    if (p) {
+      p.textContent = 'Le serveur ne répond pas. Réessayez dans un instant.';
+      p.hidden = false;
+    }
+    encoreLa('confirmer-suppression')?.removeAttribute('disabled');
+  });
+}
+
+/** Le classement public : les victoires en ligne, vérifiées par le serveur. */
+async function voileClassement(retour: () => void): Promise<void> {
+  suspendre(true);
+  const fermer = () => {
+    suspendre(false);
+    retour();
+  };
+  montrerVoile(`
+    <h2>Classement</h2>
+    <p class="mention">On compte les victoires…</p>
+    <button class="action primaire" id="fermer-classement" type="button">Revenir</button>
+  `);
+  $('fermer-classement').addEventListener('click', fermer);
+
+  const lignes = await classementPublic();
+  if (!encoreLa('fermer-classement')) return;
+  const moi = sessionOuverte()?.pseudo;
+  const corps = lignes === null
+    ? '<p>Le classement ne répond pas pour l’instant. Réessayez dans un moment.</p>'
+    : lignes.length === 0
+      ? '<p>Personne encore. Créez un compte et gagnez une partie en ligne : la première place est à prendre.</p>'
+      : `<ol class="classement-general">${lignes.map((l, i) => `<li class="${l.pseudo === moi ? 'moi' : ''}">
+          <span class="rang">${i + 1}</span>
+          <span class="avatar">${attribut(l.avatar ?? '🙂')}</span>
+          <span class="qui">${attribut(l.pseudo)}</span>
+          <span class="gain">${l.victoires} victoire${l.victoires > 1 ? 's' : ''} · ${l.parties} partie${l.parties > 1 ? 's' : ''}</span>
+        </li>`).join('')}</ol>`;
+
+  montrerVoile(`
+    <h2>Classement</h2>
+    <p>Les victoires en ligne des joueurs avec un compte — comptées par le serveur, qui a vu
+       chaque partie.</p>
+    ${corps}
+    <button class="action primaire" id="fermer-classement" type="button">Revenir</button>
+  `);
+  $('fermer-classement').addEventListener('click', fermer);
 }
 
 $('sons').addEventListener('click', () => {
@@ -1695,6 +1961,8 @@ appliquerTheme(themeCourant());
 afficherClochette();
 ouvrirAuPremierGeste();
 musiqueAuPremierGeste();
+// Un compte a pu avancer sur un autre appareil : on reprend ses succès et son parcours.
+if (sessionOuverte()) void monCompte();
 
 // On cherche le serveur de parties dès le premier instant : s'il dort ailleurs,
 // il se réveille pendant que le joueur entre son nom.

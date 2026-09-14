@@ -159,6 +159,40 @@ débloque rien de plus — et un succès qui dépend de toute la partie
 (« Intouchable ») n'est accordé qu'à qui l'a jouée en entier
 (`src/web/succes.ts`).
 
+### Les comptes
+
+Facultatifs : sans compte, on joue en invité, comme avant. Un compte, c'est un
+**pseudo et un code secret** — ni adresse e-mail ni mot de passe. Le code est
+tiré par le serveur (16 caractères, 80 bits) et montré une seule fois ; le
+serveur n'en garde qu'une empreinte, et personne ne peut le renvoyer. On en
+obtient un nouveau depuis le panneau du compte, ce qui déconnecte les autres
+appareils.
+
+Avec un compte :
+
+- les succès, le parcours et l'avatar suivent sur tous ses appareils — le
+  navigateur garde sa copie, et les deux se réunissent à chaque synchronisation ;
+- le pseudo est réservé : un invité qui le prend devient « Pseudo 2 », et les
+  joueurs avec un compte portent un ✓ dans les salles d'attente ;
+- en ligne, **le serveur décerne lui-même les succès** et les marque vérifiés
+  (`src/reseau/recompenses.ts`). En solo, la partie se joue dans le navigateur :
+  ses succès sont gardés, mais ne peuvent pas l'être ;
+- chaque partie en ligne terminée entre au **classement public** : victoires,
+  départagées par le nombre de parties.
+
+« Supprimer mon compte » efface tout du serveur et libère le pseudo. Ce que le
+jeu garde, et ne garde pas, est écrit sur la page
+[/confidentialite](https://larbin.vercel.app/confidentialite).
+
+Côté serveur, les comptes vivent dans PostgreSQL (`src/reseau/depot.ts`), dont
+l'adresse est lue dans `DATABASE_URL` ou `POSTGRES_URI`. Sans base, en local,
+ils vivent en mémoire ; sans base, en ligne, ils restent fermés — un dépôt en
+mémoire y perdrait tout au premier redémarrage.
+
+```
+node scripts/reseau/e2e-comptes.mjs localhost:5177   # création, pseudo réservé, suppression
+```
+
 ### Les avatars
 
 Le rond à côté du nom, sur l'accueil, ouvre le choix de l'**avatar** : une

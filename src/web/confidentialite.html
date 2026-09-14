@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d3b2e">
+<title>Confidentialité — Le Larbin</title>
+<meta name="description" content="Ce que le jeu Le Larbin garde de vous, et comment l'effacer.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/icone-192.png">
+<style>
+:root {
+  --feutre: #0d3b2e;
+  --fond-bas: #06231a;
+  --creme: #f7f1e3;
+  --laiton: #d9a441;
+  --texte: #e8e2d4;
+  --pale: #a9b6ad;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(ellipse 130% 70% at 50% 0%, #1a5a46 0%, var(--feutre) 55%, var(--fond-bas) 100%)
+              var(--fond-bas);
+  color: var(--texte);
+  font: 17px/1.65 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+main { max-width: 44rem; margin: 0 auto; padding: 28px 20px 72px; }
+h1 { font-size: clamp(27px, 6vw, 36px); line-height: 1.2; margin: 0 0 14px; }
+h2 { font-size: clamp(19px, 4.5vw, 23px); margin: 36px 0 10px; color: var(--creme); }
+.chapo { font-size: 19px; color: var(--pale); }
+strong { color: var(--creme); }
+a { color: var(--laiton); }
+li { margin-bottom: 6px; }
+.retour { display: inline-block; margin-bottom: 26px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <a class="retour" href="/">← Revenir au jeu</a>
+  <h1>Ce que le Larbin garde de vous</h1>
+  <p class="chapo">Le moins possible. On peut jouer sans rien donner du tout ; le compte est
+  facultatif, et il ne demande ni adresse e-mail, ni mot de passe, ni vrai nom.</p>
+
+  <h2>Sans compte</h2>
+  <p>Rien n'est envoyé nulle part. Votre nom de joueur, votre parcours, vos succès, votre
+  avatar et vos réglages restent <strong>dans votre navigateur</strong>, qui les garde pour
+  vous. Vider les données du site les efface.</p>
+  <p>Pendant une partie en ligne, le serveur connaît le nom et l'avatar que vous avez choisis,
+  le temps de la partie : il faut bien les montrer aux autres joueurs. Rien n'en est conservé
+  après.</p>
+
+  <h2>Avec un compte</h2>
+  <p>Le serveur garde :</p>
+  <ul>
+    <li>votre <strong>pseudo</strong> et votre <strong>avatar</strong> ;</li>
+    <li>une <strong>empreinte</strong> de votre code secret — jamais le code lui-même, que
+      personne ne peut donc vous renvoyer — et celles des sessions ouvertes sur vos appareils ;</li>
+    <li>vos <strong>succès</strong>, avec leur date ;</li>
+    <li>votre <strong>parcours</strong> : pour chaque partie, la date, le mode (solo ou en
+      ligne), le nombre de joueurs, votre place, vos points et le nombre de manches, ainsi que
+      le compte des rôles obtenus ;</li>
+    <li>le <strong>résultat de vos parties en ligne</strong> (date, victoire ou non), qui sert
+      au classement public.</li>
+  </ul>
+  <p>Le classement montre à tous votre pseudo, votre avatar, vos victoires et vos parties en
+  ligne. Rien d'autre n'est public.</p>
+
+  <h2>Ce qui n'est jamais gardé</h2>
+  <ul>
+    <li>ni adresse e-mail, ni mot de passe, ni nom réel ;</li>
+    <li>ni les cartes que vous avez jouées, ni les messages de la table ;</li>
+    <li>ni votre adresse IP : le serveur ne la retient que dix minutes, en mémoire, pour limiter
+      les tentatives de connexion répétées.</li>
+  </ul>
+
+  <h2>Où, et combien de temps</h2>
+  <p>La page du jeu est servie par <strong>Vercel</strong>, qui en mesure l'audience sans
+  cookie ni identifiant personnel. Le serveur de parties et la base des comptes sont hébergés
+  par <strong>Northflank</strong>, à Londres. Comme tout hébergeur, ils tiennent des journaux
+  techniques de connexion pour leurs propres besoins de sécurité.</p>
+  <p>Les données d'un compte sont gardées tant que le compte existe.</p>
+
+  <h2>Vos droits</h2>
+  <p><strong>Voir</strong> : tout ce qui est gardé s'affiche dans le jeu — votre compte, vos
+  succès, votre parcours. <strong>Effacer</strong> : « Supprimer mon compte », dans le panneau
+  du compte, efface immédiatement le compte, ses succès, son parcours et ses résultats du
+  serveur, et libère le pseudo. Ce qui est dans votre navigateur y reste, jusqu'à ce que vous
+  en vidiez les données.</p>
+  <p>Vous pouvez aussi adresser une réclamation à la
+  <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">CNIL</a>.</p>
+</main>
+</body>
+</html>

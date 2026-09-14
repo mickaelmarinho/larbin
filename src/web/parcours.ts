@@ -56,7 +56,7 @@ const entier = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v
  * plus ancienne, tronqué, ou bricolé à la main. On le relit pièce par pièce
  * plutôt que de faire confiance à sa forme.
  */
-function relire(brut: unknown): Parcours {
+export function relire(brut: unknown): Parcours {
   const p = vide();
   if (!brut || typeof brut !== 'object') return p;
   const o = brut as Record<string, unknown>;
@@ -178,4 +178,33 @@ export function bilan(p: Parcours): Bilan {
     meilleureSerie: meilleure,
     manches: ROLES.reduce((total, r) => total + p.roles[r], 0),
   };
+}
+
+/**
+ * Deux parcours du même joueur — ce navigateur, et son compte — réunis. Une
+ * partie vue des deux côtés ne compte qu'une fois. Pour les rôles, dont on ne
+ * sait pas ce que les deux côtés ont en commun, on garde le plus grand compte
+ * plutôt que de risquer de les doubler.
+ */
+export function fusionnerParcours(a: Parcours, b: Parcours): Parcours {
+  const vues = new Set<string>();
+  const p = vide();
+  p.parties = [...a.parties, ...b.parties]
+    .sort((x, y) => y.date.localeCompare(x.date))
+    .filter((x) => {
+      const cle = `${x.date}|${x.mode}|${x.place}|${x.points}`;
+      if (vues.has(cle)) return false;
+      vues.add(cle);
+      return true;
+    })
+    .slice(0, MAX_PARTIES);
+  for (const r of ROLES) p.roles[r] = Math.max(a.roles[r], b.roles[r]);
+  p.deuxFatals = Math.max(a.deuxFatals, b.deuxFatals);
+  p.dernier = a.dernier;
+  return p;
+}
+
+/** Remplace le parcours de ce navigateur, après une synchronisation avec le compte. */
+export function remplacerParcours(p: Parcours): void {
+  ecrire(p);
 }

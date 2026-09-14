@@ -17,7 +17,11 @@ import { WebSocketServer, type WebSocket } from 'ws';
 
 import { MAX_JOUEURS, RegleViolee } from '../engine/game.ts';
 import { codeDeSalon, codeValide, nomPropre, type VersClient, type VersServeur } from './protocole.ts';
-import { Salon, tablePubliqueOuverte } from './salon.ts';
+import { Salon, tablePubliqueOuverte, type Identite } from './salon.ts';
+import { repondreApi } from './api.ts';
+import { cleDePseudo, empreinte } from './comptes.ts';
+import { choisirDepot } from './depot.ts';
+import { Recompenses } from './recompenses.ts';
 
 const racine = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 /**
@@ -59,6 +63,19 @@ const salons = new Map<string, Salon>();
 /** À quel salon et à quelle place appartient chaque connexion ouverte. */
 const connexions = new Map<WebSocket, { salon: Salon; id: string }>();
 
+/**
+ * Les comptes, quand une base de données est branchée. Sans elle, on joue en
+ * invité, comme avant ; en local, les comptes vivent en mémoire.
+ */
+const depot = await choisirDepot();
+const recompenses = depot
+  ? new Recompenses(depot, (salon, compteId, ids) => {
+    for (const [ws, lien] of connexions) {
+      if (lien.salon === salon && salon.place(lien.id)?.compteId === compteId) envoyer(ws, { type: 'succes', ids });
+    }
+  })
+  : null;
+
 /* ------------------------------------------------------------- statique */
 
 const TYPES: Record<string, string> = {
@@ -77,6 +94,9 @@ const TYPES: Record<string, string> = {
 const serveur = http.createServer(async (req, res) => {
   const demande = decodeURIComponent((req.url ?? '/').split('?')[0]);
 
+  // Les comptes et le classement.
+  if (await repondreApi(req, res, depot)) return;
+
   // Les hébergeurs interrogent cette adresse pour savoir si le jeu répond — et
   // la page, quand elle est servie ailleurs, s'en sert pour réveiller le serveur
   // et savoir quand il est debout. D'où l'ouverture aux autres origines : c'est
@@ -88,6 +108,7 @@ const serveur = http.createServer(async (req, res) => {
       'Cache-Control': 'no-store',
     }).end(JSON.stringify({
       ok: true,
+      comptes: depot !== null,
       salons: salons.size,
       connexions: connexions.size,
       // De quoi dire à l'accueil s'il y a du monde, sans rien révéler de personne.
@@ -163,6 +184,8 @@ function envoyer(ws: WebSocket, message: VersClient): void {
 
 /** Chaque joueur reçoit sa propre vue, et personne ne reçoit celle d'un autre. */
 function diffuser(salon: Salon): void {
+  // Chaque changement de table peut valoir un succès à ses joueurs connectés.
+  if (recompenses) void recompenses.observer(salon).catch((err) => console.error('Récompenses', err));
   for (const [ws, lien] of connexions) {
     if (lien.salon !== salon) continue;
     if (salon.commencee) {
@@ -261,13 +284,36 @@ function avancer(salon: Salon): void {
   }, delai));
 }
 
-function traiter(ws: WebSocket, message: VersServeur): void {
+/**
+ * Qui arrive à la table. Un jeton de session valable : son compte, dont le
+ * pseudo s'imposera. Sinon, un invité — qui ne pourra pas s'asseoir sous le
+ * pseudo réservé d'un autre.
+ */
+async function identifier(message: { nom: string; session?: string }): Promise<Identite> {
+  if (!depot) return {};
+  try {
+    if (typeof message.session === 'string' && message.session) {
+      const compte = await depot.compteParSession(empreinte(message.session));
+      if (compte) return { compte: { id: compte.id, pseudo: compte.pseudo } };
+    }
+    const souhaite = nomPropre(typeof message.nom === 'string' ? message.nom : '');
+    if (souhaite && await depot.pseudoPris(souhaite)) {
+      return { reserve: (nom) => cleDePseudo(nom) === cleDePseudo(souhaite) };
+    }
+  } catch (err) {
+    console.error('Identification', err);
+  }
+  return {};
+}
+
+async function traiter(ws: WebSocket, message: VersServeur): Promise<void> {
   const lien = connexions.get(ws);
 
   // Table publique : le serveur choisit où asseoir le visiteur, ou lui en ouvre
   // une. Ensuite, reconnexions et coups passent par le même chemin qu'un salon.
   if (message.type === 'rejoindre-public') {
     if (lien) return;
+    const qui = await identifier(message);
     let salon = tablePubliqueOuverte(salons.values());
     if (!salon) {
       if (salons.size >= MAX_SALONS) {
@@ -277,7 +323,7 @@ function traiter(ws: WebSocket, message: VersServeur): void {
       salon = new Salon(codeLibre(), { publique: true });
       salons.set(salon.code, salon);
     }
-    const place = salon.asseoir(message.nom, randomUUID(), message.avatar);
+    const place = salon.asseoir(message.nom, randomUUID(), message.avatar, qui);
     connexions.set(ws, { salon, id: place.id });
     envoyer(ws, { type: 'bienvenue', jeton: place.jeton, moi: place.id, salon: salon.code });
     if (salon.places.length >= MAX_JOUEURS) {
@@ -291,6 +337,7 @@ function traiter(ws: WebSocket, message: VersServeur): void {
 
   if (message.type === 'rejoindre') {
     if (lien) return;
+    const qui = await identifier(message);
     const demande = message.salon.toUpperCase();
 
     let salon: Salon;
@@ -334,11 +381,11 @@ function traiter(ws: WebSocket, message: VersServeur): void {
     } else {
       // Une partie publique déjà lancée se complète avec des bots : plutôt que
       // d'attendre la fin, un arrivant en reprend un et joue tout de suite.
-      place = salon.reprendreUnBot(message.nom, randomUUID(), message.avatar) ?? undefined;
+      place = salon.reprendreUnBot(message.nom, randomUUID(), message.avatar, qui) ?? undefined;
     }
     if (!place) {
       try {
-        place = salon.asseoir(message.nom, randomUUID(), message.avatar);
+        place = salon.asseoir(message.nom, randomUUID(), message.avatar, qui);
       } catch (err) {
         envoyer(ws, {
           type: 'erreur',
@@ -431,6 +478,9 @@ function exigerHote(salon: Salon, id: string): void {
 wss.on('connection', (ws) => {
   // Un joueur clique de temps en temps ; un script, non. On coupe les seconds.
   let recents: number[] = [];
+  // Les messages d'une connexion se traitent dans l'ordre, même quand l'un
+  // d'eux attend la base de données.
+  let chaine: Promise<void> = Promise.resolve();
 
   ws.on('message', (donnees) => {
     const maintenant = Date.now();
@@ -449,12 +499,10 @@ wss.on('connection', (ws) => {
       envoyer(ws, { type: 'erreur', message: 'Message illisible.' });
       return;
     }
-    try {
-      traiter(ws, message);
-    } catch (err) {
+    chaine = chaine.then(() => traiter(ws, message)).catch((err) => {
       console.error('Erreur en traitant', message.type, err);
       envoyer(ws, { type: 'erreur', message: 'Le serveur a trébuché sur ce message.' });
-    }
+    });
   });
 
   ws.on('close', () => {
