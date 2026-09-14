@@ -20,6 +20,18 @@ export type Reaction = (typeof REACTIONS)[number];
 export const estReaction = (x: unknown): x is Reaction =>
   typeof x === 'string' && (REACTIONS as readonly string[]).includes(x);
 
+/**
+ * Les avatars qu'un joueur peut afficher. Une liste fermée, comme les
+ * réactions : rien d'autre ne s'affiche chez les autres.
+ */
+export const AVATARS = [
+  '🦊', '🐼', '🐸', '🦉', '🐙', '🦁', '🐯', '🐨', '🐧', '🦄', '🎩', '😎',
+  '👑', '⚡', '🛡️', '🃏', '🔥', '🤡', '🎓', '🏛️',
+] as const;
+
+export const estAvatar = (x: unknown): x is string =>
+  typeof x === 'string' && (AVATARS as readonly string[]).includes(x);
+
 /** Une place à la table, telle qu'on la voit depuis le salon. */
 export interface Siege {
   id: string;
@@ -30,6 +42,8 @@ export interface Siege {
   hote: boolean;
   /** S'est dit prêt à jouer. Les bots le sont d'office. */
   pret: boolean;
+  /** L'émoticône choisie par le joueur, ou null — les bots n'en ont pas. */
+  avatar: string | null;
 }
 
 export interface EtatSalon {
@@ -56,8 +70,8 @@ export interface EtatSalon {
 }
 
 export type VersServeur =
-  | { type: 'rejoindre'; salon: string; nom: string; jeton?: string }
-  | { type: 'rejoindre-public'; nom: string }
+  | { type: 'rejoindre'; salon: string; nom: string; jeton?: string; avatar?: string }
+  | { type: 'rejoindre-public'; nom: string; avatar?: string }
   | { type: 'pret'; pret: boolean }
   | { type: 'taille'; taille: number }
   | { type: 'ajouter-bot' }

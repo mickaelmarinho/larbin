@@ -159,6 +159,21 @@ débloque rien de plus — et un succès qui dépend de toute la partie
 (« Intouchable ») n'est accordé qu'à qui l'a jouée en entier
 (`src/web/succes.ts`).
 
+### Les avatars
+
+Le rond à côté du nom, sur l'accueil, ouvre le choix de l'**avatar** : une
+émoticône qui s'affiche à table, dans les salles d'attente et dans les
+classements — et que les autres voient en ligne. Douze sont libres ; huit se
+gagnent avec les succès (👑 pour **De Larbin à Boss**, 🤡 pour **Larbin
+d'office**…), et la bannière du succès annonce l'avatar offert.
+
+Le serveur n'accepte que la liste connue (`AVATARS`, dans le protocole) : comme
+pour les réactions, rien d'autre ne s'affiche chez les autres. Il ne sait pas,
+en revanche, quels succès un joueur a obtenus — ils restent dans son
+navigateur —, si bien qu'un tricheur obstiné porterait une couronne imméritée.
+C'est un risque qu'on accepte tant qu'il n'y a pas de comptes
+(`src/web/avatars.ts`).
+
 ## Jouer à distance
 
 Le jeu se joue sur **https://larbin.vercel.app**. Envoyez ce lien à vos proches,

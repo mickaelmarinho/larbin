@@ -13,6 +13,7 @@ import {
   estReaction, type EtatSalon, type Reaction, type VersClient, type VersServeur,
 } from '../reseau/protocole.ts';
 import { reactionDesBots } from './humeurs.ts';
+import { avatarChoisi } from './avatars.ts';
 
 /** Les réactions encore à l'écran, par joueur, avec l'instant où elles sont arrivées. */
 export type Bulles = Map<string, { reaction: Reaction; recueA: number }>;
@@ -453,7 +454,7 @@ export class TableEnLigne implements Table {
     this.ws.addEventListener('open', () => {
       // Une fois assis, on revient toujours à la même table, publique ou non.
       if (this.chercheTablePublique && !this.moi) {
-        this.dire({ type: 'rejoindre-public', nom: this.nom });
+        this.dire({ type: 'rejoindre-public', nom: this.nom, avatar: avatarChoisi() });
         return;
       }
       this.dire({
@@ -461,6 +462,7 @@ export class TableEnLigne implements Table {
         salon: this.code,
         nom: this.nom,
         jeton: localStorage.getItem(CLE_JETON + this.code) ?? undefined,
+        avatar: avatarChoisi(),
       });
     });
 

@@ -17,7 +17,7 @@ import {
 } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
 import {
-  codeDeSalon, estReaction, nomPropre, type EtatSalon, type Reaction, type Siege,
+  codeDeSalon, estAvatar, estReaction, nomPropre, type EtatSalon, type Reaction, type Siege,
 } from './protocole.ts';
 
 /** Le temps minimal entre deux réactions d'un même joueur. */
@@ -34,6 +34,8 @@ export interface Place {
   connecte: boolean;
   /** S'est dit prêt à jouer. Un bot ne fait jamais attendre personne. */
   pret: boolean;
+  /** L'avatar choisi, s'il est de la liste ; null sinon, et pour les bots. */
+  avatar: string | null;
 }
 
 export class Salon {
@@ -143,6 +145,7 @@ export class Salon {
       connecte: p.connecte,
       hote: p.id === this.hote,
       pret: p.pret,
+      avatar: p.avatar,
     }));
     return {
       code: this.code,
@@ -178,7 +181,7 @@ export class Salon {
   /* ------------------------------------------------------------ places */
 
   /** Ajoute un joueur humain. Renvoie sa place, ou une erreur si la table est pleine. */
-  asseoir(nom: string, jeton: string): Place {
+  asseoir(nom: string, jeton: string, avatar?: unknown): Place {
     if (this.commencee) throw new RegleViolee('La partie a déjà commencé.');
     if (this.places.length >= this.capacite) throw new RegleViolee('La table est complète.');
 
@@ -190,6 +193,8 @@ export class Salon {
       estBot: false,
       connecte: true,
       pret: false,
+      // Il s'affichera chez les autres : seule la liste connue passe.
+      avatar: estAvatar(avatar) ? avatar : null,
     };
     this.places.push(place);
     // À une table publique, personne ne décide pour les autres.
@@ -215,6 +220,7 @@ export class Salon {
       estBot: true,
       connecte: true,
       pret: true,
+      avatar: null,
     };
     this.places.push(place);
     this.derniereActivite = Date.now();
@@ -228,7 +234,7 @@ export class Salon {
    * justement avec des bots. Réservé à ces tables : dans un salon privé, on
    * n'entre pas dans une partie commencée sans y être invité.
    */
-  reprendreUnBot(nom: string, jeton: string): Place | null {
+  reprendreUnBot(nom: string, jeton: string, avatar?: unknown): Place | null {
     if (!this.publique || !this.etat) return null;
     const bot = this.places.find((p) => p.estBot);
     if (!bot) return null;
@@ -237,6 +243,7 @@ export class Salon {
     bot.jeton = jeton;
     bot.connecte = true;
     bot.pret = true;
+    bot.avatar = estAvatar(avatar) ? avatar : null;
     bot.nom = nomLibre(nomPropre(nom) || 'Joueur', this.places.filter((p) => p !== bot));
 
     // Le moteur garde la trace « c'est un bot » pour l'affichage : sans cette
@@ -248,6 +255,12 @@ export class Salon {
     }
     this.derniereActivite = Date.now();
     return bot;
+  }
+
+  /** Un joueur qui revient a pu changer d'avatar entre-temps. */
+  changerAvatar(id: string, avatar: unknown): void {
+    const place = this.place(id);
+    if (place && !place.estBot && estAvatar(avatar)) place.avatar = avatar;
   }
 
   retirer(id: string): void {

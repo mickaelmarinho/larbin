@@ -277,7 +277,7 @@ function traiter(ws: WebSocket, message: VersServeur): void {
       salon = new Salon(codeLibre(), { publique: true });
       salons.set(salon.code, salon);
     }
-    const place = salon.asseoir(message.nom, randomUUID());
+    const place = salon.asseoir(message.nom, randomUUID(), message.avatar);
     connexions.set(ws, { salon, id: place.id });
     envoyer(ws, { type: 'bienvenue', jeton: place.jeton, moi: place.id, salon: salon.code });
     if (salon.places.length >= MAX_JOUEURS) {
@@ -330,14 +330,15 @@ function traiter(ws: WebSocket, message: VersServeur): void {
       // Même nettoyage qu'à l'arrivée : un nom repris à la reconnexion
       // s'affiche chez les autres tout autant.
       place.nom = nomPropre(message.nom) || place.nom;
+      salon.changerAvatar(place.id, message.avatar);
     } else {
       // Une partie publique déjà lancée se complète avec des bots : plutôt que
       // d'attendre la fin, un arrivant en reprend un et joue tout de suite.
-      place = salon.reprendreUnBot(message.nom, randomUUID()) ?? undefined;
+      place = salon.reprendreUnBot(message.nom, randomUUID(), message.avatar) ?? undefined;
     }
     if (!place) {
       try {
-        place = salon.asseoir(message.nom, randomUUID());
+        place = salon.asseoir(message.nom, randomUUID(), message.avatar);
       } catch (err) {
         envoyer(ws, {
           type: 'erreur',

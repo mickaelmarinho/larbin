@@ -21,6 +21,9 @@ import {
   SUCCES, type Succes, succesApresDonne, succesApresManche, succesApresPartie, succesDidacticiel,
   succesObtenus,
 } from './succes.ts';
+import {
+  AVATARS_A_GAGNER, AVATARS_LIBRES, BOTS_SOLO, avatarChoisi, avatarDebloquePar, choisirAvatar,
+} from './avatars.ts';
 import { jouerSons, ouvrirAuPremierGeste, reglerSons, sonsActifs } from './sons.ts';
 import {
   MUSIQUES, ORDRE_MUSIQUES, choisirMusique, musiqueAuPremierGeste, musiqueChoisie,
@@ -148,6 +151,24 @@ function programmerBulles(): void {
   if (restes.length > 0) minuteurBulles = setTimeout(rendre, Math.max(50, Math.min(...restes) + 20));
 }
 
+/**
+ * L'avatar d'un joueur à table : le mien, celui qu'un autre a choisi en ligne,
+ * ou celui des bots.
+ */
+function avatarDe(id: string): string {
+  if (!table) return '';
+  if (id === table.moi) return avatarChoisi();
+  if (table instanceof TableEnLigne) {
+    const siege = table.salon()?.sieges.find((s) => s.id === id);
+    return siege?.avatar ?? (siege?.estBot ? '🤖' : '🙂');
+  }
+  return BOTS_SOLO[id] ?? '🤖';
+}
+
+/** L'avatar d'un siège de salle d'attente, tel que le serveur l'a transmis. */
+const avatarDuSiege = (s: { avatar: string | null; estBot: boolean }) =>
+  `<span class="avatar">${s.avatar ?? (s.estBot ? '🤖' : '🙂')}</span>`;
+
 function rendreAdversaires(vue: PlayerView): void {
   $('adversaires').innerHTML = vue.others.map((o) => {
     const actif = vue.turnPlayer === o.id && vue.phase === 'jeu';
@@ -168,7 +189,7 @@ function rendreAdversaires(vue: PlayerView): void {
         ${'<div class="dos"></div>'.repeat(dos)}
         ${o.count > 0 ? `<span class="compte">${o.count}</span>` : ''}
       </div>
-      <span class="nom">${o.name}</span>
+      <span class="nom"><span class="avatar">${avatarDe(o.id)}</span>${o.name}</span>
       ${o.role ? `<span class="role ${o.role}">${o.role}</span>` : ''}
       <span class="etat">${etatTexte}</span>
       ${bulle(o.id)}
@@ -254,7 +275,8 @@ function rendreMaMain(vue: PlayerView): void {
          title="Réagir">😊</button>${paletteOuverte ? `<div class="palette">${REACTIONS
       .map((r) => `<button data-reaction="${r}" type="button">${r}</button>`).join('')}</div>` : ''}`
     : '';
-  $('ma-ligne').innerHTML = `${role}<span>Manche ${vue.round} — ${vue.me.hand.length} cartes</span>${reagir}`;
+  $('ma-ligne').innerHTML = `<span class="avatar">${avatarDe(vue.me.id)}</span>${role}`
+    + `<span>Manche ${vue.round} — ${vue.me.hand.length} cartes</span>${reagir}`;
 
   const poser = $('poser') as HTMLButtonElement;
   const passer = $('passer') as HTMLButtonElement;
@@ -666,7 +688,7 @@ function lignesDuClassement(vue: PlayerView): string {
     const deux = p.finishedOnTwo ? ' <span class="sur-un-deux">fini sur un 2</span>' : '';
     return `<li>
       <span class="place">${i + 1}${i === 0 ? 'er' : 'e'}</span>
-      <span>${p.nom}${deux}</span>
+      <span><span class="avatar">${avatarDe(id)}</span>${p.nom}${deux}</span>
       <span class="gain">+${n - 1 - i} → ${p.points}</span>
       <span class="role ${p.role}">${TITRES[p.role!]}</span>
     </li>`;
@@ -716,7 +738,7 @@ function voileFinDePartie(vue: PlayerView): void {
 
   const lignes = tous.map((p, i) => `<li>
       <span class="place">${i + 1}${i === 0 ? 'er' : 'e'}</span>
-      <span>${p.nom}</span>
+      <span><span class="avatar">${avatarDe(p.id)}</span>${p.nom}</span>
       <span class="gain">${p.points} pt${p.points > 1 ? 's' : ''}</span>
     </li>`).join('');
 
@@ -1046,9 +1068,12 @@ function voileAccueil(): void {
     ${EMBLEME}
     <h2>Le Larbin</h2>
     <p>Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone ou son PC.</p>
-    <label class="champ">Votre nom
-      <input id="nom" type="text" maxlength="14" placeholder="Votre prénom" value="${attribut(nomConnu)}">
-    </label>
+    <div class="identite">
+      <button class="avatar-choix" id="avatar-accueil" type="button" title="Changer d’avatar">${avatarChoisi()}</button>
+      <label class="champ">Votre nom
+        <input id="nom" type="text" maxlength="14" placeholder="Votre prénom" value="${attribut(nomConnu)}">
+      </label>
+    </div>
     <button class="action primaire" id="solo" type="button">Jouer contre les bots</button>
     ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
       <span>♥ Apprendre en jouant</span>
@@ -1085,6 +1110,10 @@ function voileAccueil(): void {
   $('tapis-accueil').addEventListener('click', () => voileTapis(voileAccueil));
   $('parcours')?.addEventListener('click', () => voileParcours(voileAccueil));
   $('succes').addEventListener('click', () => voileSucces(voileAccueil));
+  $('avatar-accueil').addEventListener('click', () => {
+    nom();   // le nom tapé ne doit pas se perdre en chemin
+    voileAvatar(voileAccueil);
+  });
   $('regles').addEventListener('click', () => voileBienvenue(voileAccueil));
   $('histoire').addEventListener('click', () => voileHistoire(voileAccueil));
 
@@ -1221,7 +1250,7 @@ function voileTablePublique(
   const libres = Math.max(0, salon.taille - assis);
   const places = [
     ...salon.sieges.map((s) => `<li>
-      <span>${s.id === en.moi ? `${s.nom} (vous)` : s.nom}</span>
+      <span>${avatarDuSiege(s)}${s.id === en.moi ? `${s.nom} (vous)` : s.nom}</span>
       <span class="gain">${s.estBot ? 'bot'
     : !s.connecte ? 'parti'
     : s.pret ? 'prêt' : 'pas prêt'}</span>
@@ -1329,7 +1358,7 @@ function voileSalon(en: TableEnLigne): void {
   const manque = salon.minJoueurs - salon.sieges.length;
 
   const sieges = salon.sieges.map((s) => `<li>
-      <span>${s.nom}${s.hote ? ' <span class="gain">hôte</span>' : ''}</span>
+      <span>${avatarDuSiege(s)}${s.nom}${s.hote ? ' <span class="gain">hôte</span>' : ''}</span>
       <span class="gain">${s.estBot ? 'bot' : s.connecte ? 'en ligne' : 'déconnecté'}</span>
       ${jeSuisHote && s.id !== en.moi ? `<button class="mini" data-retirer="${s.id}" type="button">✕</button>` : ''}
     </li>`).join('');
@@ -1542,7 +1571,9 @@ function succesSuivant(): void {
     annonceDeSucces = undefined;
     return;
   }
-  toast.innerHTML = `<span class="icone">${s.icone}</span><span><small>Succès débloqué</small>${s.nom}</span>`;
+  const offert = avatarDebloquePar(s.id);
+  toast.innerHTML = `<span class="icone">${s.icone}</span><span><small>Succès débloqué</small>${s.nom}`
+    + `${offert ? ` <span class="offert">· avatar ${offert} offert</span>` : ''}</span>`;
   // Cacher puis montrer relance l'animation d'entrée, même d'un succès à l'autre.
   void toast.offsetWidth;
   toast.hidden = false;
@@ -1562,7 +1593,8 @@ function voileSucces(retour: () => void): void {
     const date = obtenus[s.id];
     return `<li class="${date ? 'obtenu' : 'verrouille'}">
       <span class="icone">${s.icone}</span>
-      <span class="texte"><b>${s.nom}</b><small>${s.comment}${date ? ` · ${jourCourt(date)}` : ''}</small></span>
+      <span class="texte"><b>${s.nom}</b><small>${s.comment}${date ? ` · ${jourCourt(date)}` : ''}${
+        avatarDebloquePar(s.id) ? ` · avatar ${avatarDebloquePar(s.id)}` : ''}</small></span>
     </li>`;
   }).join('');
 
@@ -1573,6 +1605,48 @@ function voileSucces(retour: () => void): void {
     <button class="action primaire" id="fermer-succes" type="button">Revenir</button>
   `);
   $('fermer-succes').addEventListener('click', () => {
+    suspendre(false);
+    retour();
+  });
+}
+
+/**
+ * Le choix de l'avatar. Ceux qui se gagnent sont montrés avec le succès qui les
+ * débloque : c'est le plus sûr moyen de donner envie de le chercher.
+ */
+function voileAvatar(retour: () => void): void {
+  suspendre(true);
+  const actuel = avatarChoisi();
+  const obtenus = succesObtenus();
+  const bouton = (avatar: string, permis: boolean, titre: string) => `<button data-avatar="${avatar}"
+      class="${avatar === actuel ? 'actif' : ''}" type="button" title="${attribut(titre)}"
+      ${permis ? '' : 'disabled'}>${avatar}</button>`;
+
+  const libres = AVATARS_LIBRES.map((a) => bouton(a, true, a)).join('');
+  const aGagner = AVATARS_A_GAGNER.map(({ avatar, succes }) => {
+    const s = SUCCES.find((x) => x.id === succes)!;
+    const obtenu = Boolean(obtenus[succes]);
+    return `<li class="${obtenu ? 'obtenu' : 'verrouille'}">
+      ${bouton(avatar, obtenu, s.nom)}
+      <span><b>${s.nom}</b><small>${obtenu ? 'Débloqué' : s.comment}</small></span>
+    </li>`;
+  }).join('');
+
+  montrerVoile(`
+    <h2>Votre avatar</h2>
+    <p>Il s’affiche à côté de votre nom — et les autres le voient, en ligne.</p>
+    <div class="avatars">${libres}</div>
+    <h3>À gagner avec les succès</h3>
+    <ul class="avatars-a-gagner">${aGagner}</ul>
+    <button class="action primaire" id="fermer-avatar" type="button">Revenir</button>
+  `);
+
+  $('voile').querySelectorAll('[data-avatar]').forEach((b) => {
+    b.addEventListener('click', () => {
+      if (choisirAvatar((b as HTMLElement).dataset.avatar!)) voileAvatar(retour);
+    });
+  });
+  $('fermer-avatar').addEventListener('click', () => {
     suspendre(false);
     retour();
   });
