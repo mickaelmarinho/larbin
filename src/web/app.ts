@@ -17,6 +17,10 @@ import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parc
 import { TableDidacticiel, type Morale } from './didacticiel.ts';
 import { RIEN, quoiEntendre, type Instant } from './bruitages.ts';
 import { REACTIONS } from '../reseau/protocole.ts';
+import {
+  SUCCES, type Succes, succesApresDonne, succesApresManche, succesApresPartie, succesDidacticiel,
+  succesObtenus,
+} from './succes.ts';
 import { jouerSons, ouvrirAuPremierGeste, reglerSons, sonsActifs } from './sons.ts';
 import {
   MUSIQUES, ORDRE_MUSIQUES, choisirMusique, musiqueAuPremierGeste, musiqueChoisie,
@@ -347,6 +351,11 @@ function surChangement(): void {
   const vue = table?.vue() ?? null;
   if (vue) annonce = dernierCoup(vue);
   ecouter(vue);
+  // Une donne se regarde une fois, à son arrivée — pas dans le didacticiel,
+  // dont les mains sont écrites d'avance.
+  if (vue && vue.phase === 'jeu' && table?.mode !== 'didacticiel') {
+    annoncerSucces(succesApresDonne(vue.partie, vue.round, vue.me.hand));
+  }
   rendre();
   boucle();
 }
@@ -665,7 +674,10 @@ function lignesDuClassement(vue: PlayerView): string {
 }
 
 function voileFinDeManche(vue: PlayerView): void {
-  if (vue.me.role) noterManche(vue.partie, vue.round, vue.me.role, vue.me.finishedOnTwo);
+  if (vue.me.role) {
+    noterManche(vue.partie, vue.round, vue.me.role, vue.me.finishedOnTwo);
+    annoncerSucces(succesApresManche(vue.partie, vue.round, vue.me.role, vue.me.finishedOnTwo));
+  }
 
   const verdict = vue.me.role === 'boss' ? 'Vous êtes le Boss.'
     : vue.me.role === 'larbin' ? 'Vous voilà Larbin. La prochaine manche va piquer.'
@@ -719,6 +731,13 @@ function voileFinDePartie(vue: PlayerView): void {
     points: vue.me.points,
     gagnant: vainqueur.id === vue.me.id ? 'Vous' : vainqueur.nom,
     manches: vue.round,
+  }));
+  annoncerSucces(succesApresPartie(vue.partie, {
+    gagne: vainqueur.id === vue.me.id,
+    enLigne: Boolean(enLigne),
+    manches: vue.round,
+    parties: b.parties,
+    serie: b.serie,
   }));
   // Le moment où l'on referme une partie est celui où l'on décide d'en relancer
   // une : c'est là, et pas ailleurs, que le compteur a une chance d'être lu.
@@ -804,6 +823,7 @@ function voileMorale(cours: TableDidacticiel, morale: Morale): void {
     try {
       localStorage.setItem(CLE_DIDACTICIEL, 'fini');
     } catch { /* on le reproposera, ce n'est pas grave */ }
+    annoncerSucces(succesDidacticiel());
     table = null;
     $('lecon').hidden = true;
     $('table').hidden = true;
@@ -1006,8 +1026,10 @@ function voileParcours(retour: () => void): void {
   montrerVoile(`
     <h2>Votre parcours</h2>
     ${corps}
+    <button class="action" id="voir-succes" type="button">🏆 Vos succès — ${nombreDeSucces()} sur ${SUCCES.length}</button>
     <button class="action primaire" id="fermer-parcours" type="button">Revenir</button>
   `);
+  $('voir-succes').addEventListener('click', () => voileSucces(() => voileParcours(retour)));
   $('fermer-parcours').addEventListener('click', () => {
     suspendre(false);
     retour();
@@ -1023,7 +1045,7 @@ function voileAccueil(): void {
   montrerVoile(`
     ${EMBLEME}
     <h2>Le Larbin</h2>
-    <p>Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone.</p>
+    <p>Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone ou son PC.</p>
     <label class="champ">Votre nom
       <input id="nom" type="text" maxlength="14" placeholder="Votre prénom" value="${attribut(nomConnu)}">
     </label>
@@ -1047,6 +1069,7 @@ function voileAccueil(): void {
       ? `<button class="lien" id="parcours" type="button">Votre parcours —
          ${b.victoires} victoire${b.victoires > 1 ? 's' : ''} en ${b.parties} partie${b.parties > 1 ? 's' : ''}</button>`
       : ''}
+    <button class="lien" id="succes" type="button">🏆 Vos succès — ${nombreDeSucces()} sur ${SUCCES.length}</button>
     <button class="lien" id="regles" type="button">Comment on joue ?</button>
     <button class="lien" id="histoire" type="button">D'où vient ce jeu ?</button>
   `);
@@ -1061,6 +1084,7 @@ function voileAccueil(): void {
 
   $('tapis-accueil').addEventListener('click', () => voileTapis(voileAccueil));
   $('parcours')?.addEventListener('click', () => voileParcours(voileAccueil));
+  $('succes').addEventListener('click', () => voileSucces(voileAccueil));
   $('regles').addEventListener('click', () => voileBienvenue(voileAccueil));
   $('histoire').addEventListener('click', () => voileHistoire(voileAccueil));
 
@@ -1496,6 +1520,63 @@ $('accueil').addEventListener('click', () => {
   if (table instanceof TableEnLigne && vue && vue.phase !== 'fin-de-partie') voileQuitterLaTable();
   else revenirAccueil();
 });
+
+/* ------------------------------------------------------------- succès */
+
+const nombreDeSucces = () => Object.keys(succesObtenus()).length;
+
+/** Les succès attendent leur tour : deux débloqués d'un coup s'affichent l'un après l'autre. */
+const succesAAnnoncer: Succes[] = [];
+let annonceDeSucces: ReturnType<typeof setTimeout> | undefined;
+
+function annoncerSucces(nouveaux: Succes[]): void {
+  succesAAnnoncer.push(...nouveaux);
+  if (!annonceDeSucces) succesSuivant();
+}
+
+function succesSuivant(): void {
+  const toast = $('toast-succes');
+  const s = succesAAnnoncer.shift();
+  toast.hidden = true;
+  if (!s) {
+    annonceDeSucces = undefined;
+    return;
+  }
+  toast.innerHTML = `<span class="icone">${s.icone}</span><span><small>Succès débloqué</small>${s.nom}</span>`;
+  // Cacher puis montrer relance l'animation d'entrée, même d'un succès à l'autre.
+  void toast.offsetWidth;
+  toast.hidden = false;
+  jouerSons(['succes']);
+  annonceDeSucces = setTimeout(succesSuivant, 3800);
+}
+
+/**
+ * Tous les succès, obtenus ou non. Ceux qui restent à décrocher sont montrés
+ * aussi, avec leur consigne : un défi qu'on ne connaît pas ne donne envie à
+ * personne.
+ */
+function voileSucces(retour: () => void): void {
+  suspendre(true);
+  const obtenus = succesObtenus();
+  const liste = SUCCES.map((s) => {
+    const date = obtenus[s.id];
+    return `<li class="${date ? 'obtenu' : 'verrouille'}">
+      <span class="icone">${s.icone}</span>
+      <span class="texte"><b>${s.nom}</b><small>${s.comment}${date ? ` · ${jourCourt(date)}` : ''}</small></span>
+    </li>`;
+  }).join('');
+
+  montrerVoile(`
+    <h2>Vos succès</h2>
+    <p><b>${nombreDeSucces()}</b> sur ${SUCCES.length}. Ils restent dans ce navigateur.</p>
+    <ul class="succes">${liste}</ul>
+    <button class="action primaire" id="fermer-succes" type="button">Revenir</button>
+  `);
+  $('fermer-succes').addEventListener('click', () => {
+    suspendre(false);
+    retour();
+  });
+}
 
 $('sons').addEventListener('click', () => {
   reglerSons(!sonsActifs());

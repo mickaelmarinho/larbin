@@ -1,7 +1,7 @@
 # Le Larbin
 
 Version en ligne du **Larbin**, variante maison du Président / Trou du cul :
-y jouer à quatre ou six, chacun sur son téléphone.
+y jouer à quatre ou six, chacun sur son téléphone ou son PC.
 
 Le jeu est en ligne sur **[larbin.vercel.app](https://larbin.vercel.app)**, et
 ses règles sont expliquées sur [/regles](https://larbin.vercel.app/regles) pour
@@ -144,6 +144,20 @@ aux moments qui se voient : un 👑 quand l'un d'eux sort premier, un 🔥 quand
 coupe au 2, un 😱 ou un 😤 quand c'est vous qui coupez, des 👏 si vous sortez
 premier — et un 😂 si vous finissez sur un 2. Chaque moment n'a qu'une chance
 d'être relevé, pour qu'ils ne commentent pas tout (`src/web/humeurs.ts`).
+
+### Les succès
+
+Treize défis à relever en jouant — **De Larbin à Boss**, **Intouchable** (gagner
+sans jamais avoir été Larbin), **Remontada**, **Carré de 2**, et même **Larbin
+d'office** pour qui finit sur un 2. Une bannière les annonce quand on les
+décroche ; « Vos succès », sur l'accueil et dans le parcours, montre ceux qu'on
+a et ceux qui restent, avec leur consigne.
+
+Comme le parcours, ils restent dans le navigateur : aucun compte, aucun envoi.
+Chaque moment n'est compté qu'une fois — recharger la page sur l'écran de fin ne
+débloque rien de plus — et un succès qui dépend de toute la partie
+(« Intouchable ») n'est accordé qu'à qui l'a jouée en entier
+(`src/web/succes.ts`).
 
 ## Jouer à distance
 
