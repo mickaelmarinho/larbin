@@ -67,6 +67,12 @@ table, le 2 qui coupe, finir sur un 2) et les raccourcis à gauche, les façons 
 jouer à droite. Au-delà de 1400 × 820 px, l'ensemble grandit (1120 px de large)
 sans s'étirer.
 
+Qui n'a pas donné de prénom trouve un nom tiré au sort dans le champ — « Valet
+malin », « Joker farceur » (`src/web/noms.ts`) — plutôt que de s'asseoir sous
+« Joueur ». Il est gardé d'une visite à l'autre, et chacun le remplace à sa
+guise. Sous les façons de jouer, « 📣 Faire découvrir le jeu à un proche » ouvre
+la feuille de partage du téléphone (ou copie le lien sur PC).
+
 Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
 dans l'encadré Solo, juste sous « Jouer contre les bots » : une carte crème
 frappée d'un cœur, qui se remarque sans prendre la première place. Une fois les

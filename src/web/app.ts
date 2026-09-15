@@ -30,6 +30,7 @@ import {
 } from './compte.ts';
 import { sessionOuverte } from './session.ts';
 import { podium, signeDeVie, texteDuBoutonPublic, type SigneDeVie } from './vitrine.ts';
+import { nomPropose } from './noms.ts';
 import type { Activite } from './table.ts';
 import type { LigneClassement } from './compte.ts';
 import { adopterSucces } from './succes.ts';
@@ -1140,7 +1141,8 @@ const EVENTAIL = `<div class="eventail" aria-hidden="true">${
 
 function voileAccueil(): void {
   const horsLigne = location.protocol === 'file:';
-  const nomConnu = localStorage.getItem('larbin.nom') ?? '';
+  // Un nom tiré au sort attend dans le champ : on peut jouer sans rien taper.
+  const nomConnu = localStorage.getItem('larbin.nom') || nomPropose();
   // Rien à afficher au premier passage : l'accueil d'un inconnu doit rester net.
   const b = bilan(parcours());
   const moi = sessionOuverte();
@@ -1215,6 +1217,7 @@ function voileAccueil(): void {
         <small>4 petites leçons · 2 minutes</small>
       </button>`}
     </section>
+    <button class="lien" id="faire-decouvrir" type="button">📣 Faire découvrir le jeu à un proche</button>
     </div>
     <nav class="raccourcis">
       ${raccourci('succes', '🏆', 'Succès', `Vos succès — ${nombreDeSucces()} sur ${SUCCES.length}`)}
@@ -1231,7 +1234,7 @@ function voileAccueil(): void {
     try {
       localStorage.setItem('larbin.nom', valeur);
     } catch { /* peu importe */ }
-    return valeur || 'Joueur';
+    return valeur || nomPropose();
   };
 
   $('tapis-accueil').addEventListener('click', () => voileTapis(voileAccueil));
@@ -1244,6 +1247,13 @@ function voileAccueil(): void {
     voileAvatar(voileAccueil);
   });
   $('regles').addEventListener('click', () => voileBienvenue(voileAccueil));
+  // Le bouche-à-oreille, tant que le site est jeune, c'est ce qui fait venir du
+  // monde : le lien part dans la conversation où il a sa place.
+  $('faire-decouvrir').addEventListener('click', (e) => {
+    void partager(e.currentTarget as HTMLElement,
+      'Je joue au Larbin : le Président (Trou du cul) en plus nerveux, en ligne et gratuit. Une partie ?',
+      `https://${ADRESSE_PUBLIQUE}`);
+  });
   $('histoire').addEventListener('click', () => voileHistoire(voileAccueil));
 
   // La première fois, on explique avant de lancer : cinq lignes, puis on joue.
@@ -2075,12 +2085,12 @@ function voileAccueilPourRejoindre(code: string): void {
     <h2>Salon ${code.toUpperCase()}</h2>
     <p>On vous attend à cette table. Sous quel nom ?</p>
     <label class="champ">Votre nom
-      <input id="nom" type="text" maxlength="14" placeholder="Votre prénom">
+      <input id="nom" type="text" maxlength="14" placeholder="Votre prénom" value="${attribut(nomPropose())}">
     </label>
     <button class="action primaire" id="entrer" type="button">Rejoindre</button>
   `);
   $('entrer').addEventListener('click', () => {
-    const valeur = ($('nom') as HTMLInputElement).value.trim() || 'Joueur';
+    const valeur = ($('nom') as HTMLInputElement).value.trim() || nomPropose();
     try {
       localStorage.setItem('larbin.nom', valeur);
     } catch { /* peu importe */ }
