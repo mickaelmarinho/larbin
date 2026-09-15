@@ -1154,9 +1154,9 @@ button.action.alerte {
   color: var(--creme);
 }
 
-/* Les trois façons de jouer ont leurs encadrés : sur téléphone, la phrase qui
-   les annonce ferait doublon. Sur PC, il y a la place de la dire. */
-.panneau p.modes { display: none; }
+/* Les trois règles qui font le Larbin : sur téléphone, l'accroche en dit
+   l'essentiel et la place manque ; sur PC, elles remplissent la colonne. */
+.trois-regles { display: none; }
 
 .eventail {
   /* --carte-h et --rayon se calculent à la racine : il faut les recalculer ici. */
@@ -1220,11 +1220,38 @@ button.action.alerte {
     align-self: center;
   }
 
-  .accueil p.modes {
-    display: block;
-    margin: 34px 0 0;
-    font-size: 15px;
+  /* Les règles le disent déjà, juste en dessous. */
+  .accueil .accroche .tour { display: none; }
+
+  .accueil .trois-regles {
+    display: grid;
+    gap: 10px;
+    margin: 30px 0 0;
+    padding: 0;
+    list-style: none;
   }
+
+  .trois-regles li {
+    position: relative;
+    padding-left: 26px;
+    font-size: 14.5px;
+    line-height: 1.45;
+    color: var(--texte-pale);
+  }
+
+  .trois-regles li::before {
+    position: absolute;
+    left: 2px;
+    top: -1px;
+    font-size: 17px;
+    color: var(--laiton);
+  }
+
+  .trois-regles li:nth-child(1)::before { content: '♠'; }
+  .trois-regles li:nth-child(2)::before { content: '♥'; color: var(--rouge-embleme); }
+  .trois-regles li:nth-child(3)::before { content: '♣'; }
+
+  .trois-regles b { color: var(--creme); }
 
   .accueil .raccourcis {
     grid-area: raccourcis;
@@ -1241,6 +1268,29 @@ button.action.alerte {
   }
 
   .accueil .jeu .bloc:first-of-type { margin-top: 14px; }
+}
+
+/* Les grands écrans : tout grandit un peu, sans s'étirer — un bouton de 800 px
+   de long se lit moins bien qu'un bouton à sa taille. */
+@media (min-width: 1400px) and (min-height: 820px) {
+  .panneau.accueil {
+    width: min(1120px, 100%);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+    column-gap: 64px;
+    padding: 40px 48px;
+  }
+
+  .accueil .entete h2 { font-size: 40px; }
+  .accueil .entete .embleme { width: 60px; height: 60px; }
+  .accueil .accroche b { font-size: 38px; }
+  .accueil p.accroche { font-size: 18px; }
+  .accueil .eventail { --carte-l: 116px; }
+  .accueil .trois-regles { gap: 12px; }
+  .accueil .trois-regles li { font-size: 16px; }
+  .accueil .identite input[type="text"] { font-size: 17px; }
+  .accueil .bloc button.action { padding: 15px 12px; font-size: 16px; }
+  .accueil .bloc h3 { font-size: 13px; }
+  .accueil .raccourci { font-size: 13px; }
 }
 
 .avatar-choix {

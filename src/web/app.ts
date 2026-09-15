@@ -1164,10 +1164,15 @@ function voileAccueil(): void {
     </div>
     <div class="affiche">
       <p class="accroche"><b>Le Président, en plus nerveux.</b>
-        Une série ne fait qu’un tour de table. Sur téléphone ou PC.</p>
+        <span class="tour">Une série ne fait qu’un tour de table.</span> Sur téléphone ou PC.</p>
       ${EVENTAIL}
     </div>
-    <p class="modes">Contre des bots, avec vos proches ou avec d'autres visiteurs — chacun sur son téléphone ou son PC.</p>
+    <!-- Sur PC seulement : ce qui change du Président classique, lu en cinq secondes. -->
+    <ul class="trois-regles">
+      <li><b>Un seul tour de table</b> par série : chacun ne parle qu’une fois.</li>
+      <li><b>Le 2 coupe net</b> : plus fort que l’as, il clôt la série dès qu’il tombe.</li>
+      <li><b>Finir sur un 2</b> rend Larbin d’office.</li>
+    </ul>
     </div>
     <div class="jeu">
     <div class="identite">
