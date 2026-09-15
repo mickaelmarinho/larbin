@@ -196,7 +196,11 @@ Avec un compte :
   (`src/reseau/recompenses.ts`). En solo, la partie se joue dans le navigateur :
   ses succès sont gardés, mais ne peuvent pas l'être ;
 - chaque partie en ligne terminée entre au **classement public** : victoires,
-  départagées par le nombre de parties.
+  départagées par le nombre de parties ;
+- mais il faut **au moins deux humains à la table** : seul face aux bots sur une
+  table publique, on joue comme en solo — les succès se gagnent, sans être
+  vérifiés, et rien n'entre au classement. « Premier contact » demande, lui
+  aussi, un autre joueur en face.
 
 « Supprimer mon compte » efface tout du serveur et libère le pseudo. Ce que le
 jeu garde, et ne garde pas, est écrit sur la page

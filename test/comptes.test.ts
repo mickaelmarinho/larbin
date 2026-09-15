@@ -7,7 +7,7 @@ import { createGame } from '../src/engine/game.ts';
 import { repondreApi } from '../src/reseau/api.ts';
 import { cleDePseudo, codeNormalise, nouveauCode, pseudoValide } from '../src/reseau/comptes.ts';
 import { DepotMemoire, type Depot } from '../src/reseau/depot.ts';
-import { Recompenses, vainqueur } from '../src/reseau/recompenses.ts';
+import { Recompenses, entreHumains, vainqueur } from '../src/reseau/recompenses.ts';
 import { Salon } from '../src/reseau/salon.ts';
 import { fusionnerParcours, relire } from '../src/web/parcours.ts';
 import { fusionnerSucces } from '../src/web/succes.ts';
@@ -224,6 +224,7 @@ test('en ligne, le serveur décerne lui-même les succès, et note le résultat'
 
   const salon = new Salon('PUBL', { publique: true });
   const place = salon.asseoir('Mickaël', 'jeton', undefined, { compte: { id: compte.id, pseudo: 'Mickaël' } });
+  salon.asseoir('Invité', 'jeton-2');   // un autre humain en face
   salon.completerEtDemarrer();
   const etat = salon.etat!;
 
@@ -247,6 +248,31 @@ test('en ligne, le serveur décerne lui-même les succès, et note le résultat'
   assert.ok(donnees.succes.some((s) => s.id === 'en-ligne'));
   assert.deepEqual(await depot.resultats(compte.id), { parties: 1, serie: 1 });
   assert.deepEqual((await depot.classement(10))[0], { pseudo: 'Mickaël', avatar: null, victoires: 1, parties: 1 });
+});
+
+test('seul face aux bots, une table en ligne ne vérifie rien et ne compte pas au classement', async () => {
+  const depot = new DepotMemoire();
+  const compte = (await depot.creerCompte('Mickaël', 'x'))!;
+  const prevenus: string[][] = [];
+  const recompenses = new Recompenses(depot, (_salon, _id, ids) => prevenus.push(ids));
+
+  const salon = new Salon('PUBL', { publique: true });
+  const place = salon.asseoir('Mickaël', 'jeton', undefined, { compte: { id: compte.id, pseudo: 'Mickaël' } });
+  salon.completerEtDemarrer();   // les bots prennent les places vides
+  assert.equal(entreHumains(salon), false);
+  const etat = salon.etat!;
+
+  etat.phase = 'fin-de-manche';
+  etat.players.find((p) => p.id === place.id)!.role = 'boss';
+  await recompenses.observer(salon);
+  etat.phase = 'fin-de-partie';
+  for (const p of etat.players) p.points = p.id === place.id ? etat.objectif : 0;
+  await recompenses.observer(salon);
+
+  assert.deepEqual(prevenus, []);
+  assert.deepEqual((await depot.lireDonnees(compte.id)).succes, []);
+  assert.deepEqual(await depot.resultats(compte.id), { parties: 0, serie: 0 });
+  assert.deepEqual(await depot.classement(10), []);
 });
 
 test('une nouvelle partie ne remet pas de vieux rôles en jeu', () => {

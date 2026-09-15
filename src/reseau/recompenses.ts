@@ -22,7 +22,11 @@ export function vainqueur(etat: GameState): string | null {
   return candidats[0]?.id ?? null;
 }
 
-export type Prevenir = (salon: Salon, compteId: string, ids: IdSucces[]) => void;
+/** Au moins deux humains à la table : la seule partie en ligne qui compte vraiment. */
+export const entreHumains = (salon: Salon): boolean =>
+  salon.places.filter((p) => !p.estBot).length >= 2;
+
+export type Prevenir =(salon: Salon, compteId: string, ids: IdSucces[]) => void;
 
 export class Recompenses {
   private depot: Depot;
@@ -45,6 +49,11 @@ export class Recompenses {
     if (this.vus.get(salon) === moment) return;
     this.vus.set(salon, moment);
     if (etat.phase !== 'jeu' && etat.phase !== 'fin-de-manche' && etat.phase !== 'fin-de-partie') return;
+    // Seul face aux bots, on joue en ligne comme on jouerait en solo : les
+    // succès se gagnent toujours dans le navigateur, mais le serveur ne les
+    // vérifie pas, et la partie ne compte pas au classement. Sans cela, on
+    // pourrait y grimper sans jamais croiser personne.
+    if (!entreHumains(salon)) return;
 
     for (const place of salon.places) {
       if (!place.compteId) continue;

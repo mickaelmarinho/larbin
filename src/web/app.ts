@@ -775,9 +775,12 @@ function voileFinDePartie(vue: PlayerView): void {
     gagnant: vainqueur.id === vue.me.id ? 'Vous' : vainqueur.nom,
     manches: vue.round,
   }));
+  // « Premier contact » veut un autre humain en face : seul avec des bots, une
+  // table en ligne vaut une partie solo.
+  const autresHumains = (enLigne?.salon()?.sieges.filter((s) => !s.estBot).length ?? 0) >= 2;
   annoncerSucces(succesApresPartie(vue.partie, {
     gagne: vainqueur.id === vue.me.id,
-    enLigne: Boolean(enLigne),
+    enLigne: autresHumains,
     manches: vue.round,
     parties: b.parties,
     serie: b.serie,

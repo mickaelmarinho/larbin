@@ -34,7 +34,7 @@ export const SUCCES: Succes[] = [
   { id: 'quatre-deux', icone: '🃏', nom: 'Carré de 2', comment: 'Recevoir les quatre 2 dans sa main.' },
   { id: 'fini-sur-deux', icone: '🤡', nom: 'Larbin d’office', comment: 'Finir une manche sur un 2. Ça arrive aux meilleurs.' },
   { id: 'serie-trois', icone: '🔥', nom: 'Série de trois', comment: 'Gagner trois parties d’affilée.' },
-  { id: 'en-ligne', icone: '🌍', nom: 'Premier contact', comment: 'Terminer une partie en ligne.' },
+  { id: 'en-ligne', icone: '🌍', nom: 'Premier contact', comment: 'Terminer une partie en ligne face à un autre joueur.' },
   { id: 'didacticiel', icone: '🎓', nom: 'Bon élève', comment: 'Suivre le didacticiel jusqu’au bout.' },
   { id: 'dix-parties', icone: '🎲', nom: 'Habitué', comment: 'Terminer dix parties.' },
   { id: 'cinquante-parties', icone: '🏛️', nom: 'Pilier du tripot', comment: 'Terminer cinquante parties.' },
