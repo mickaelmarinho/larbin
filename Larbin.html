@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d3b2e">
-<title>Le Larbin</title>
-<meta name="description" content="Le Président — ou Trou du cul — en plus nerveux : une série ne fait qu'un tour de table. Jouez contre des bots ou avec vos proches, gratuitement, sans compte.">
+<title>Le Larbin — le Président (Trou du cul) en ligne, gratuit</title>
+<meta name="description" content="Le Président (Trou du cul) en ligne et gratuit : contre des bots, entre amis ou avec d'autres joueurs, sur téléphone ou PC. Une série ne fait qu'un tour.">
 
 <!--
   Ce bloc n'a de sens que sur le site : le fichier unique, lui, doit rester
@@ -343,6 +343,23 @@ button.action:disabled {
   filter: grayscale(.75) brightness(.72);
   cursor: default;
 }
+
+/* ------------------------------------------------- la page sans le script */
+
+/* Le texte en clair de la page : ce que lisent les moteurs de recherche, et
+   ce qu'on aperçoit une fraction de seconde avant que le jeu ne démarre. */
+#presentation {
+  max-width: 34rem;
+  margin: 14vh auto 0;
+  padding: 0 20px;
+  color: var(--texte);
+  line-height: 1.5;
+}
+
+#presentation h1 { margin: 0 0 12px; font-size: 26px; line-height: 1.25; }
+#presentation p, #presentation li { color: var(--texte-pale); font-size: 15px; }
+#presentation strong { color: var(--creme); }
+#presentation a { color: var(--laiton); }
 
 /* -------------------------------------------------------------- le voile */
 
@@ -977,10 +994,12 @@ button.action.alerte {
 
 .panneau .entete .embleme { margin: 0; }
 
-.panneau .entete h2 {
+.panneau .entete h1 {
   flex: 1;
   margin: 0;
   font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: .3px;
 }
 
 .reglage {
@@ -1179,6 +1198,7 @@ button.action.alerte {
 /* Les trois règles qui font le Larbin : sur téléphone, l'accroche en dit
    l'essentiel et la place manque ; sur PC, elles remplissent la colonne. */
 .trois-regles { display: none; }
+.accroche .long { display: none; }
 
 .eventail {
   /* --carte-h et --rayon se calculent à la racine : il faut les recalculer ici. */
@@ -1224,7 +1244,7 @@ button.action.alerte {
 
   .accueil .jeu { grid-area: jeu; }
 
-  .accueil .entete h2 { font-size: 34px; }
+  .accueil .entete h1 { font-size: 34px; }
   .accueil .entete .embleme { width: 52px; height: 52px; }
 
   .accueil .affiche {
@@ -1242,8 +1262,10 @@ button.action.alerte {
     align-self: center;
   }
 
-  /* Les règles le disent déjà, juste en dessous. */
-  .accueil .accroche .tour { display: none; }
+  /* Les règles disent déjà le tour unique, juste en dessous : l'accroche dit
+     plutôt de quel jeu il s'agit. */
+  .accueil .accroche .court { display: none; }
+  .accueil .accroche .long { display: inline; }
 
   .accueil .trois-regles {
     display: grid;
@@ -1302,7 +1324,7 @@ button.action.alerte {
     padding: 40px 48px;
   }
 
-  .accueil .entete h2 { font-size: 40px; }
+  .accueil .entete h1 { font-size: 40px; }
   .accueil .entete .embleme { width: 60px; height: 60px; }
   .accueil .accroche b { font-size: 38px; }
   .accueil p.accroche { font-size: 18px; }
@@ -1670,6 +1692,24 @@ button.lien:hover { color: var(--texte); }
 </head>
 <body>
 
+<!--
+  Ce que lisent les moteurs de recherche, les aperçus de lien et quiconque
+  n'exécute pas le script : l'essentiel du jeu, en clair. Le jeu le retire dès
+  son démarrage pour afficher son propre accueil — le temps de charger, c'est
+  aussi un premier écran plutôt qu'une page vide.
+-->
+<main id="presentation">
+  <h1>Le Larbin — le Président en ligne, en plus nerveux</h1>
+  <p>Le jeu de cartes du Président, aussi appelé Trou du cul, à jouer gratuitement en ligne :
+     contre des bots, avec vos proches ou avec d'autres joueurs — chacun sur son téléphone ou son PC.</p>
+  <ul>
+    <li><strong>Un seul tour de table</strong> par série : chacun ne parle qu’une fois.</li>
+    <li><strong>Le 2 coupe net</strong> : plus fort que l’as, il clôt la série dès qu’il tombe.</li>
+    <li><strong>Finir sur un 2</strong> rend Larbin d’office.</li>
+  </ul>
+  <p><a href="/regles">Toutes les règles du Président et de sa variante, le Larbin</a></p>
+</main>
+
 <div id="table" hidden>
   <div id="scores">
     <div id="tableau-scores"></div>
@@ -1852,13 +1892,15 @@ button.lien:hover { color: var(--texte); }
     <div class="vitrine">
     <div class="entete">
       ${zo}
-      <h2>Le Larbin</h2>
+      <h1>Le Larbin</h1>
       <button class="reglage" id="tapis-accueil" type="button" title="Tapis et musique"
               aria-label="Tapis et musique">\u{1F3A8}</button>
     </div>
     <div class="affiche">
       <p class="accroche"><b>Le Pr\xE9sident, en plus nerveux.</b>
-        <span class="tour">Une s\xE9rie ne fait qu\u2019un tour de table.</span> Sur t\xE9l\xE9phone ou PC.</p>
+        <span class="court">Une s\xE9rie ne fait qu\u2019un tour de table. Sur t\xE9l\xE9phone ou PC.</span>
+        <span class="long">Le jeu de cartes du Pr\xE9sident \u2014 ou Trou du cul \u2014 en ligne et gratuit,
+          sur t\xE9l\xE9phone ou PC.</span></p>
       ${Fo}
     </div>
     <!-- Sur PC seulement : ce qui change du Pr\xE9sident classique, lu en cinq secondes. -->
@@ -2081,7 +2123,7 @@ button.lien:hover { color: var(--texte); }
        chaque partie.</p>
     ${o}
     <button class="action primaire" id="fermer-classement" type="button">Revenir</button>
-  `),c("fermer-classement").addEventListener("click",t)}c("sons").addEventListener("click",()=>{St(!Z()),He()});c("musique-choix").addEventListener("click",()=>zt(()=>{L(),J()}));c("tapis-choix").addEventListener("click",()=>Ge(()=>{L(),J()}));c("voir-restantes").addEventListener("click",()=>{Se=!Se,c("voir-restantes").classList.toggle("actif",Se),oe()});c("recommencer").addEventListener("click",()=>{if(d instanceof Q){(!d.entamee||confirm("Abandonner la partie en cours et tout remettre \xE0 z\xE9ro ?"))&&(L(),ne=0,Ae="",d.recommencer());return}confirm("Quitter la table ?")&&(location.href=location.pathname)});window.addEventListener("resize",()=>{let e=d?.vue();e&&fr(e.me.hand.length)});ut(ct());He();Kn();tr();k()&&gt();K();var Mt=new URLSearchParams(location.search).get("salon");if(Mt&&location.protocol!=="file:"){let e=localStorage.getItem("larbin.nom")??"";e?_(new y(e,Mt)):Zo(Mt)}else A();function Zo(e){h(`
+  `),c("fermer-classement").addEventListener("click",t)}c("sons").addEventListener("click",()=>{St(!Z()),He()});c("musique-choix").addEventListener("click",()=>zt(()=>{L(),J()}));c("tapis-choix").addEventListener("click",()=>Ge(()=>{L(),J()}));c("voir-restantes").addEventListener("click",()=>{Se=!Se,c("voir-restantes").classList.toggle("actif",Se),oe()});c("recommencer").addEventListener("click",()=>{if(d instanceof Q){(!d.entamee||confirm("Abandonner la partie en cours et tout remettre \xE0 z\xE9ro ?"))&&(L(),ne=0,Ae="",d.recommencer());return}confirm("Quitter la table ?")&&(location.href=location.pathname)});window.addEventListener("resize",()=>{let e=d?.vue();e&&fr(e.me.hand.length)});document.getElementById("presentation")?.remove();ut(ct());He();Kn();tr();k()&&gt();K();var Mt=new URLSearchParams(location.search).get("salon");if(Mt&&location.protocol!=="file:"){let e=localStorage.getItem("larbin.nom")??"";e?_(new y(e,Mt)):Zo(Mt)}else A();function Zo(e){h(`
     <h2>Salon ${e.toUpperCase()}</h2>
     <p>On vous attend \xE0 cette table. Sous quel nom ?</p>
     <label class="champ">Votre nom

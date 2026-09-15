@@ -237,6 +237,16 @@ C'est un risque qu'on accepte tant qu'il n'y a pas de comptes
 Le jeu se joue sur **https://larbin.vercel.app**. Envoyez ce lien à vos proches,
 ou dictez-leur le code du salon.
 
+### Être trouvé
+
+Personne ne cherche « Le Larbin » : on cherche « président jeu de cartes en
+ligne » ou « trou du cul en ligne ». Le titre de la page et sa description le
+disent donc en toutes lettres. L'accueil étant dessiné par le script, la page
+porte aussi un court texte en clair (`#presentation` : titre, description, les
+trois règles, lien vers `/regles`) pour les moteurs de recherche et les aperçus
+de lien ; le jeu le retire dès son démarrage. Sur le site seulement, des données
+structurées (`VideoGame`, gratuit) décrivent le jeu aux moteurs.
+
 ### Pourquoi deux hébergements
 
 Render endort le service après un quart d'heure sans visite : le premier à

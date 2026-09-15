@@ -322,6 +322,23 @@ button.action:disabled {
   cursor: default;
 }
 
+/* ------------------------------------------------- la page sans le script */
+
+/* Le texte en clair de la page : ce que lisent les moteurs de recherche, et
+   ce qu'on aperçoit une fraction de seconde avant que le jeu ne démarre. */
+#presentation {
+  max-width: 34rem;
+  margin: 14vh auto 0;
+  padding: 0 20px;
+  color: var(--texte);
+  line-height: 1.5;
+}
+
+#presentation h1 { margin: 0 0 12px; font-size: 26px; line-height: 1.25; }
+#presentation p, #presentation li { color: var(--texte-pale); font-size: 15px; }
+#presentation strong { color: var(--creme); }
+#presentation a { color: var(--laiton); }
+
 /* -------------------------------------------------------------- le voile */
 
 #voile {
@@ -955,10 +972,12 @@ button.action.alerte {
 
 .panneau .entete .embleme { margin: 0; }
 
-.panneau .entete h2 {
+.panneau .entete h1 {
   flex: 1;
   margin: 0;
   font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: .3px;
 }
 
 .reglage {
@@ -1157,6 +1176,7 @@ button.action.alerte {
 /* Les trois règles qui font le Larbin : sur téléphone, l'accroche en dit
    l'essentiel et la place manque ; sur PC, elles remplissent la colonne. */
 .trois-regles { display: none; }
+.accroche .long { display: none; }
 
 .eventail {
   /* --carte-h et --rayon se calculent à la racine : il faut les recalculer ici. */
@@ -1202,7 +1222,7 @@ button.action.alerte {
 
   .accueil .jeu { grid-area: jeu; }
 
-  .accueil .entete h2 { font-size: 34px; }
+  .accueil .entete h1 { font-size: 34px; }
   .accueil .entete .embleme { width: 52px; height: 52px; }
 
   .accueil .affiche {
@@ -1220,8 +1240,10 @@ button.action.alerte {
     align-self: center;
   }
 
-  /* Les règles le disent déjà, juste en dessous. */
-  .accueil .accroche .tour { display: none; }
+  /* Les règles disent déjà le tour unique, juste en dessous : l'accroche dit
+     plutôt de quel jeu il s'agit. */
+  .accueil .accroche .court { display: none; }
+  .accueil .accroche .long { display: inline; }
 
   .accueil .trois-regles {
     display: grid;
@@ -1280,7 +1302,7 @@ button.action.alerte {
     padding: 40px 48px;
   }
 
-  .accueil .entete h2 { font-size: 40px; }
+  .accueil .entete h1 { font-size: 40px; }
   .accueil .entete .embleme { width: 60px; height: 60px; }
   .accueil .accroche b { font-size: 38px; }
   .accueil p.accroche { font-size: 18px; }

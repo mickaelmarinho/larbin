@@ -1158,13 +1158,15 @@ function voileAccueil(): void {
     <div class="vitrine">
     <div class="entete">
       ${EMBLEME}
-      <h2>Le Larbin</h2>
+      <h1>Le Larbin</h1>
       <button class="reglage" id="tapis-accueil" type="button" title="Tapis et musique"
               aria-label="Tapis et musique">🎨</button>
     </div>
     <div class="affiche">
       <p class="accroche"><b>Le Président, en plus nerveux.</b>
-        <span class="tour">Une série ne fait qu’un tour de table.</span> Sur téléphone ou PC.</p>
+        <span class="court">Une série ne fait qu’un tour de table. Sur téléphone ou PC.</span>
+        <span class="long">Le jeu de cartes du Président — ou Trou du cul — en ligne et gratuit,
+          sur téléphone ou PC.</span></p>
       ${EVENTAIL}
     </div>
     <!-- Sur PC seulement : ce qui change du Président classique, lu en cinq secondes. -->
@@ -2044,6 +2046,9 @@ window.addEventListener('resize', () => {
   if (vue) ajusterChevauchement(vue.me.hand.length);
 });
 
+// Le texte en clair de la page (pour les moteurs et les aperçus de lien) cède
+// la place au vrai accueil.
+document.getElementById('presentation')?.remove();
 appliquerTheme(themeCourant());
 afficherClochette();
 ouvrirAuPremierGeste();

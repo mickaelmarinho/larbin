@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d3b2e">
-<title>Le Larbin</title>
-<meta name="description" content="Le Président — ou Trou du cul — en plus nerveux : une série ne fait qu'un tour de table. Jouez contre des bots ou avec vos proches, gratuitement, sans compte.">
+<title>Le Larbin — le Président (Trou du cul) en ligne, gratuit</title>
+<meta name="description" content="Le Président (Trou du cul) en ligne et gratuit : contre des bots, entre amis ou avec d'autres joueurs, sur téléphone ou PC. Une série ne fait qu'un tour.">
+
 
 <!--
   Ce bloc n'a de sens que sur le site : le fichier unique, lui, doit rester
@@ -17,14 +18,34 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Le Larbin">
 <meta property="og:locale" content="fr_FR">
-<meta property="og:title" content="Le Larbin — le Président, en plus nerveux">
-<meta property="og:description" content="Une série ne fait qu'un tour de table. Contre des bots, ou avec vos proches — chacun sur son téléphone ou son PC. Gratuit, sans compte.">
+<meta property="og:title" content="Le Larbin — le Président en ligne, en plus nerveux">
+<meta property="og:description" content="Le Président (Trou du cul) en ligne et gratuit : contre des bots, entre amis ou avec d'autres joueurs, sur téléphone ou PC. Une série ne fait qu'un tour de table.">
 <meta property="og:url" content="https://larbin.vercel.app/">
 <meta property="og:image" content="https://larbin.vercel.app/partage.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Le Larbin, jeu de cartes du Président en ligne">
 <meta name="twitter:card" content="summary_large_image">
 <script defer src="/_vercel/insights/script.js"></script>
+<!-- Ce que les moteurs de recherche comprennent d'un coup : un jeu, gratuit, jouable dans le navigateur. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Le Larbin",
+  "alternateName": ["Président en ligne", "Trou du cul en ligne"],
+  "description": "Le jeu de cartes du Président, aussi appelé Trou du cul, en ligne et gratuit : contre des bots, entre amis ou avec d'autres joueurs, sur téléphone ou PC.",
+  "url": "https://larbin.vercel.app/",
+  "image": "https://larbin.vercel.app/partage.jpg",
+  "inLanguage": "fr",
+  "genre": "Jeu de cartes",
+  "gamePlatform": ["Navigateur web", "Téléphone", "PC"],
+  "playMode": ["SinglePlayer", "MultiPlayer"],
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Tout navigateur récent",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+}
+</script>
 EN-LIGNE-->
 
 <!--
@@ -38,6 +59,24 @@ EN-LIGNE-->
 <style>/*STYLE*/</style>
 </head>
 <body>
+
+<!--
+  Ce que lisent les moteurs de recherche, les aperçus de lien et quiconque
+  n'exécute pas le script : l'essentiel du jeu, en clair. Le jeu le retire dès
+  son démarrage pour afficher son propre accueil — le temps de charger, c'est
+  aussi un premier écran plutôt qu'une page vide.
+-->
+<main id="presentation">
+  <h1>Le Larbin — le Président en ligne, en plus nerveux</h1>
+  <p>Le jeu de cartes du Président, aussi appelé Trou du cul, à jouer gratuitement en ligne :
+     contre des bots, avec vos proches ou avec d'autres joueurs — chacun sur son téléphone ou son PC.</p>
+  <ul>
+    <li><strong>Un seul tour de table</strong> par série : chacun ne parle qu’une fois.</li>
+    <li><strong>Le 2 coupe net</strong> : plus fort que l’as, il clôt la série dès qu’il tombe.</li>
+    <li><strong>Finir sur un 2</strong> rend Larbin d’office.</li>
+  </ul>
+  <p><a href="/regles">Toutes les règles du Président et de sa variante, le Larbin</a></p>
+</main>
 
 <div id="table" hidden>
   <div id="scores">
