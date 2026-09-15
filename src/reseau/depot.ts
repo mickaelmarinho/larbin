@@ -196,7 +196,21 @@ const SCHEMA = `
     gagne BOOLEAN NOT NULL
   );
   CREATE INDEX IF NOT EXISTS resultats_par_compte ON resultats (compte_id, date DESC);
+  CREATE TABLE IF NOT EXISTS reperes (
+    nom TEXT PRIMARY KEY,
+    le TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
 `;
+
+/**
+ * Les remises en ordre à ne jouer qu'une fois. Chacune laisse son nom dans
+ * `reperes`, dans la même transaction : un redémarrage ne la rejoue jamais.
+ */
+const UNE_FOIS: Array<{ nom: string; sql: string }> = [
+  // Jusqu'au 15 sept. 2026, une partie gagnée seul face aux bots comptait au
+  // classement. La base ne dit pas qui était à table : on repart de zéro.
+  { nom: 'classement-sans-parties-contre-les-bots', sql: 'DELETE FROM resultats' },
+];
 
 interface LigneCompte {
   id: string;
@@ -229,6 +243,23 @@ class DepotPostgres implements Depot {
 
   async preparer(): Promise<void> {
     await this.pool.query(SCHEMA);
+    for (const { nom, sql } of UNE_FOIS) {
+      const client = await this.pool.connect();
+      try {
+        await client.query('BEGIN');
+        const { rowCount } = await client.query('INSERT INTO reperes (nom) VALUES ($1) ON CONFLICT DO NOTHING', [nom]);
+        if (rowCount) {
+          await client.query(sql);
+          console.log(`Base : « ${nom} » appliqué.`);
+        }
+        await client.query('COMMIT');
+      } catch (erreur) {
+        await client.query('ROLLBACK');
+        throw erreur;
+      } finally {
+        client.release();
+      }
+    }
   }
 
   async creerCompte(pseudo: string, codeHash: string): Promise<Compte | null> {
