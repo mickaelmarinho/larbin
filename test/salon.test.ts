@@ -213,7 +213,8 @@ test('un nom ne peut pas servir à glisser du code chez les autres', () => {
 
   const salon = new Salon('TEST');
   assert.doesNotMatch(salon.asseoir('<b onmouseover=x>Zoé</b>', 'j1').nom, /[<>=]/);
-  assert.equal(salon.asseoir('<<>>', 'j2').nom, 'Joueur', 'un nom vidé par le nettoyage retombe sur « Joueur »');
+  assert.match(salon.asseoir('<<>>', 'j2').nom, /^\p{L}+ \p{L}+$/u,
+    'un nom vidé par le nettoyage retombe sur un nom tiré au sort');
 });
 
 test('une table publique n’a pas d’hôte, et chacun peut y relancer', () => {

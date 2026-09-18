@@ -16,6 +16,7 @@ import {
   type PlayerView,
 } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
+import { nomAuHasard } from '../web/noms.ts';
 import {
   codeDeSalon, estAvatar, estReaction, nomPropre, type EtatSalon, type Reaction, type Siege,
 } from './protocole.ts';
@@ -197,7 +198,7 @@ export class Salon {
     const place: Place = {
       id: `j${this.places.length + 1}-${jeton.slice(0, 4)}`,
       // Le nom s'affichera chez les autres : on le nettoie ici, côté serveur.
-      nom: nomLibre(qui.compte?.pseudo ?? (nomPropre(nom) || 'Joueur'), this.places, qui.reserve),
+      nom: nomLibre(qui.compte?.pseudo ?? (nomPropre(nom) || nomAuHasard()), this.places, qui.reserve),
       jeton,
       estBot: false,
       connecte: true,
@@ -256,7 +257,7 @@ export class Salon {
     bot.pret = true;
     bot.avatar = estAvatar(avatar) ? avatar : null;
     bot.compteId = qui.compte?.id ?? null;
-    bot.nom = nomLibre(qui.compte?.pseudo ?? (nomPropre(nom) || 'Joueur'), this.places.filter((p) => p !== bot), qui.reserve);
+    bot.nom = nomLibre(qui.compte?.pseudo ?? (nomPropre(nom) || nomAuHasard()), this.places.filter((p) => p !== bot), qui.reserve);
 
     // Le moteur garde la trace « c'est un bot » pour l'affichage : sans cette
     // correction, les autres continueraient de voir une machine à sa place.

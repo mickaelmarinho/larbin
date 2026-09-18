@@ -8,6 +8,7 @@
  */
 import type { Action } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
+import { nomConvenable } from './moderation.ts';
 
 /**
  * Les réactions qu'on peut lancer à table. Une poignée, toujours la même : pas
@@ -117,13 +118,27 @@ export const NOM_MAX = 14;
  * l'espace, le trait d'union, l'apostrophe et le point — de quoi écrire
  * « Jean-Mi », « D'Artagnan » ou « Zoé 2 », et rien qui ressemble à du code.
  * C'est le serveur qui l'applique : lui fait autorité, pas le navigateur.
+ *
+ * Un nom grossier (voir moderation.ts) vaut comme s'il était vide : l'invité
+ * reçoit un nom tiré au sort, et un compte ne peut pas le prendre.
  */
 export function nomPropre(brut: string): string {
-  return brut
+  const nom = brut
     .normalize('NFC')
     .replace(/[^\p{L}\p{N} '’.-]/gu, '')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, NOM_MAX)
     .trim();
+  return nomConvenable(nom) ? nom : '';
 }
+
+/**
+ * Ce que comptent les compteurs anonymes. Le navigateur n'annonce que ce qu'il
+ * est seul à voir ; le serveur compte lui-même les parties en ligne et les
+ * comptes créés, pour que personne ne puisse les gonfler.
+ */
+export const EVENEMENTS_NAVIGATEUR = ['visite', 'solo-lancee', 'solo-finie', 'didacticiel-fini', 'partage'] as const;
+export const EVENEMENTS = [...EVENEMENTS_NAVIGATEUR, 'en-ligne-finie', 'en-ligne-entre-humains', 'compte-cree'] as const;
+export type EvenementNavigateur = (typeof EVENEMENTS_NAVIGATEUR)[number];
+export type Evenement = (typeof EVENEMENTS)[number];

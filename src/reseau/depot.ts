@@ -12,6 +12,7 @@ import pg from 'pg';
 import type { Parcours } from '../web/parcours.ts';
 import { listeSucces, type SuccesDate } from '../web/succes.ts';
 import { cleDePseudo } from './comptes.ts';
+import type { Evenement } from './protocole.ts';
 
 export interface Compte {
   id: string;
@@ -55,7 +56,22 @@ export interface Depot {
   noterResultat(compteId: string, resultat: { date: string; gagne: boolean }): Promise<void>;
   resultats(compteId: string): Promise<{ parties: number; serie: number }>;
   classement(limite: number): Promise<LigneClassement[]>;
+  /** Ajoute 1 au compteur anonyme d'un événement, pour ce jour (AAAA-MM-JJ). */
+  compter(evenement: Evenement, jour: string): Promise<void>;
+  /** Les compteurs depuis ce jour inclus. */
+  compteurs(depuis: string): Promise<LigneCompteur[]>;
 }
+
+export interface LigneCompteur {
+  jour: string;
+  evenement: Evenement;
+  n: number;
+}
+
+/** Le jour qu'il est à Paris (AAAA-MM-JJ) : c'est là que vit le jeu, et que minuit tombe. */
+export const jourDeParis = (date = new Date()): string =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' })
+    .format(date);
 
 const donneesVides = (): Donnees => ({ parcours: null, succes: [] });
 
@@ -71,8 +87,20 @@ export class DepotMemoire implements Depot {
   private comptes = new Map<string, { compte: Compte; cle: string; codeHash: string; donnees: Donnees }>();
   private sessions = new Map<string, string>();
   private resultatsParCompte = new Map<string, Array<{ date: string; gagne: boolean }>>();
+  private totaux = new Map<string, LigneCompteur>();
 
   async preparer(): Promise<void> {}
+
+  async compter(evenement: Evenement, jour: string): Promise<void> {
+    const cle = `${jour}|${evenement}`;
+    const ligne = this.totaux.get(cle) ?? { jour, evenement, n: 0 };
+    ligne.n += 1;
+    this.totaux.set(cle, ligne);
+  }
+
+  async compteurs(depuis: string): Promise<LigneCompteur[]> {
+    return [...this.totaux.values()].filter((l) => l.jour >= depuis).map((l) => ({ ...l }));
+  }
 
   async creerCompte(pseudo: string, codeHash: string): Promise<Compte | null> {
     const cle = cleDePseudo(pseudo);
@@ -199,6 +227,12 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS reperes (
     nom TEXT PRIMARY KEY,
     le TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE TABLE IF NOT EXISTS compteurs (
+    jour DATE NOT NULL,
+    evenement TEXT NOT NULL,
+    n INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (jour, evenement)
   );
 `;
 
@@ -375,6 +409,23 @@ class DepotPostgres implements Depot {
        ORDER BY victoires DESC, parties ASC, c.pseudo ASC
        LIMIT $1`,
       [limite],
+    );
+    return rows;
+  }
+
+  async compter(evenement: Evenement, jour: string): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO compteurs (jour, evenement, n) VALUES ($1::date, $2, 1)
+       ON CONFLICT (jour, evenement) DO UPDATE SET n = compteurs.n + 1`,
+      [jour, evenement],
+    );
+  }
+
+  async compteurs(depuis: string): Promise<LigneCompteur[]> {
+    const { rows } = await this.pool.query<LigneCompteur>(
+      `SELECT to_char(jour, 'YYYY-MM-DD') AS jour, evenement, n
+       FROM compteurs WHERE jour >= $1::date ORDER BY jour DESC`,
+      [depuis],
     );
     return rows;
   }

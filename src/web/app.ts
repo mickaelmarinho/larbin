@@ -31,6 +31,7 @@ import {
 import { sessionOuverte } from './session.ts';
 import { podium, signeDeVie, texteDuBoutonPublic, type SigneDeVie } from './vitrine.ts';
 import { nomPropose } from './noms.ts';
+import { compter } from './mesure.ts';
 import type { Activite } from './table.ts';
 import type { LigneClassement } from './compte.ts';
 import { adopterSucces } from './succes.ts';
@@ -747,6 +748,9 @@ function voileFinDeManche(vue: PlayerView): void {
   });
 }
 
+/** Les parties solo déjà comptées : réafficher l'écran de fin ne les recompte pas. */
+const partiesComptees = new Set<string>();
+
 function voileFinDePartie(vue: PlayerView): void {
   const tous = [
     { id: vue.me.id, nom: 'Vous', points: vue.me.points },
@@ -787,6 +791,10 @@ function voileFinDePartie(vue: PlayerView): void {
     serie: b.serie,
   }));
   synchroniserBientot();
+  if (!enLigne && !partiesComptees.has(vue.partie)) {
+    partiesComptees.add(vue.partie);
+    compter('solo-finie');
+  }
   // Le moment où l'on referme une partie est celui où l'on décide d'en relancer
   // une : c'est là, et pas ailleurs, que le compteur a une chance d'être lu.
   const trace = b.serie >= 2 ? `${b.serie} victoires d'affilée.`
@@ -871,6 +879,7 @@ function voileMorale(cours: TableDidacticiel, morale: Morale): void {
     try {
       localStorage.setItem(CLE_DIDACTICIEL, 'fini');
     } catch { /* on le reproposera, ce n'est pas grave */ }
+    compter('didacticiel-fini');
     annoncerSucces(succesDidacticiel());
     table = null;
     $('lecon').hidden = true;
@@ -991,6 +1000,7 @@ function voileHistoire(retour: () => void): void {
  * voyage avec le texte : c'est tout l'intérêt de l'affaire.
  */
 async function partager(bouton: HTMLElement, texte: string, url: string): Promise<void> {
+  compter('partage');
   const repondre = (mot: string) => {
     const avant = bouton.textContent;
     bouton.textContent = mot;
@@ -1263,6 +1273,7 @@ function voileAccueil(): void {
   };
 
   $('solo').addEventListener('click', () => enPassantParLesRegles(() => {
+    compter('solo-lancee');
     cacherVoile();
     installer(new TableSolo());
   }));
@@ -2069,6 +2080,7 @@ if (sessionOuverte()) void monCompte();
 // On cherche le serveur de parties dès le premier instant : s'il dort ailleurs,
 // il se réveille pendant que le joueur entre son nom.
 void hoteDuJeu();
+compter('visite');
 
 const salonDemande = new URLSearchParams(location.search).get('salon');
 if (salonDemande && location.protocol !== 'file:') {

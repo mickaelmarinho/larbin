@@ -12,8 +12,9 @@ import { timingSafeEqual } from 'node:crypto';
 import { fusionnerParcours, relire as relireParcours } from '../web/parcours.ts';
 import { fusionnerSucces, listeSucces } from '../web/succes.ts';
 import { codeNormalise, empreinte, nouveauCode, nouveauJeton, pseudoValide } from './comptes.ts';
-import type { Compte, Depot } from './depot.ts';
-import { estAvatar } from './protocole.ts';
+import { jourDeParis, type Compte, type Depot } from './depot.ts';
+import { nomConvenable } from './moderation.ts';
+import { EVENEMENTS, EVENEMENTS_NAVIGATEUR, estAvatar, type Evenement } from './protocole.ts';
 
 const ENTETES = {
   'Access-Control-Allow-Origin': '*',
@@ -59,19 +60,27 @@ function adresseDe(req: IncomingMessage): string {
   return premiere || req.socket.remoteAddress || '?';
 }
 
-function tropDEssais(req: IncomingMessage): boolean {
+/** Les compteurs : une partie toutes les deux minutes, c'est déjà beaucoup ; une rafale, non. */
+const ENVOIS_MAX = 120;
+const envois = new Map<string, number[]>();
+
+function tropSouvent(req: IncomingMessage, registre: Map<string, number[]>, max: number): boolean {
   const cle = adresseDe(req);
   const maintenant = Date.now();
-  const liste = (essais.get(cle) ?? []).filter((t) => maintenant - t < FENETRE_ESSAIS);
+  const liste = (registre.get(cle) ?? []).filter((t) => maintenant - t < FENETRE_ESSAIS);
   liste.push(maintenant);
-  essais.set(cle, liste);
-  return liste.length > ESSAIS_MAX;
+  registre.set(cle, liste);
+  return liste.length > max;
 }
+
+const tropDEssais = (req: IncomingMessage) => tropSouvent(req, essais, ESSAIS_MAX);
 
 setInterval(() => {
   const maintenant = Date.now();
-  for (const [cle, liste] of essais) {
-    if (liste.every((t) => maintenant - t >= FENETRE_ESSAIS)) essais.delete(cle);
+  for (const registre of [essais, envois]) {
+    for (const [cle, liste] of registre) {
+      if (liste.every((t) => maintenant - t >= FENETRE_ESSAIS)) registre.delete(cle);
+    }
   }
 }, FENETRE_ESSAIS).unref();
 
@@ -88,10 +97,23 @@ function jetonDe(req: IncomingMessage): string | null {
 /** Répond si la demande concerne l'API ; renvoie faux sinon, pour que le serveur serve la page. */
 export async function repondreApi(req: IncomingMessage, res: Reponse, depot: Depot | null): Promise<boolean> {
   const chemin = (req.url ?? '/').split('?')[0];
-  if (chemin !== '/classement' && chemin !== '/compte' && !chemin.startsWith('/compte/')) return false;
+  if (chemin !== '/classement' && chemin !== '/stats' && chemin !== '/compte' && !chemin.startsWith('/compte/')) {
+    return false;
+  }
 
   if (req.method === 'OPTIONS') {
     repondre(res, 204);
+    return true;
+  }
+  // Les compteurs se passent des comptes : sans base, ils se taisent simplement.
+  if (chemin === '/stats') {
+    try {
+      if (req.method === 'POST') await compterDepuisLeNavigateur(req, res, depot);
+      else await montrerLesCompteurs(req, res, depot);
+    } catch (err) {
+      console.error('Compteurs', err);
+      if (!res.headersSent) repondre(res, 500);
+    }
     return true;
   }
   if (!depot) {
@@ -185,6 +207,10 @@ async function aiguiller(req: IncomingMessage, res: Reponse, depot: Depot, chemi
 }
 
 async function creer(res: Reponse, depot: Depot, corps: Record<string, unknown>): Promise<void> {
+  if (typeof corps.pseudo === 'string' && !nomConvenable(corps.pseudo)) {
+    repondre(res, 400, { erreur: 'Ce pseudo n’est pas accepté ici. Choisissez-en un autre.' });
+    return;
+  }
   const pseudo = pseudoValide(corps.pseudo);
   if (!pseudo) {
     repondre(res, 400, { erreur: 'Un pseudo de 3 à 14 caractères : lettres, chiffres, espace, trait d’union.' });
@@ -198,6 +224,7 @@ async function creer(res: Reponse, depot: Depot, corps: Record<string, unknown>)
   }
   const jeton = nouveauJeton();
   await depot.ouvrirSession(compte.id, empreinte(jeton));
+  await depot.compter('compte-cree', jourDeParis());
   repondre(res, 201, { compte: enPublic(compte), code, jeton, donnees: await depot.lireDonnees(compte.id) });
 }
 
@@ -212,4 +239,79 @@ async function connecter(res: Reponse, depot: Depot, corps: Record<string, unkno
   const jeton = nouveauJeton();
   await depot.ouvrirSession(trouve.compte.id, empreinte(jeton));
   repondre(res, 200, { compte: enPublic(trouve.compte), jeton, donnees: await depot.lireDonnees(trouve.compte.id) });
+}
+
+/* ------------------------------------------------------------ les compteurs */
+
+/*
+ * Des compteurs anonymes : combien de visites, de parties, de partages, de
+ * comptes, jour par jour. On ne reçoit que le nom d'un événement, et le serveur
+ * ajoute 1 au total du jour — c'est tout ce qu'il garde.
+ */
+
+async function compterDepuisLeNavigateur(req: IncomingMessage, res: Reponse, depot: Depot | null): Promise<void> {
+  if (tropSouvent(req, envois, ENVOIS_MAX)) {
+    repondre(res, 429);
+    return;
+  }
+  const evenement = (await lireCorps(req))?.evenement;
+  if (!(EVENEMENTS_NAVIGATEUR as readonly unknown[]).includes(evenement)) {
+    repondre(res, 400, { erreur: 'Événement inconnu.' });
+    return;
+  }
+  if (depot) await depot.compter(evenement as Evenement, jourDeParis());
+  repondre(res, 204);
+}
+
+const LIBELLES: Record<Evenement, string> = {
+  'visite': 'Visites',
+  'solo-lancee': 'Solo lancées',
+  'solo-finie': 'Solo finies',
+  'didacticiel-fini': 'Didacticiels finis',
+  'partage': 'Partages',
+  'en-ligne-finie': 'En ligne finies',
+  'en-ligne-entre-humains': 'dont entre humains',
+  'compte-cree': 'Comptes créés',
+};
+const JOURS_MONTRES = 14;
+
+/** La page de lecture : réservée à qui connaît la clé (variable STATS_CLE), invisible sinon. */
+async function montrerLesCompteurs(req: IncomingMessage, res: Reponse, depot: Depot | null): Promise<void> {
+  const attendue = process.env.STATS_CLE;
+  const donnee = new URL(req.url ?? '/', 'http://larbin').searchParams.get('cle') ?? '';
+  if (!attendue || !depot || !memes(donnee, attendue)) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }).end('Introuvable.');
+    return;
+  }
+
+  const [a, m, j] = jourDeParis().split('-').map(Number);
+  const jours = Array.from({ length: JOURS_MONTRES }, (_, i) => new Date(Date.UTC(a, m - 1, j - i)).toISOString().slice(0, 10));
+  const lignes = await depot.compteurs(jours[jours.length - 1]);
+  const n = (jour: string, e: Evenement) => lignes.find((l) => l.jour === jour && l.evenement === e)?.n ?? 0;
+  const total = (e: Evenement) => jours.reduce((s, jour) => s + n(jour, e), 0);
+  const cellule = (v: number) => `<td${v === 0 ? ' class="zero"' : ''}>${v}</td>`;
+
+  const corps = jours.map((jour) => `<tr><td>${jour.slice(8)}/${jour.slice(5, 7)}</td>${
+    EVENEMENTS.map((e) => cellule(n(jour, e))).join('')}</tr>`).join('');
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }).end(`<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>Compteurs — Le Larbin</title>
+<style>
+body{margin:0;padding:20px 16px;background:#0d3b2e;color:#e8e2d4;font:14px/1.4 system-ui,sans-serif}
+h1{font-size:20px;margin:0 0 4px}p{color:#a9b6ad;margin:0 0 14px}.defile{overflow-x:auto}
+table{border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid #ffffff1a;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:#0d3b2e}
+thead th{font-size:12px;color:#d9a441;vertical-align:bottom;white-space:normal;min-width:64px}
+tfoot td{font-weight:700;border-top:2px solid #d9a441;border-bottom:none}.zero{color:#ffffff40}
+</style></head><body>
+<h1>Compteurs du Larbin</h1>
+<p>Les ${JOURS_MONTRES} derniers jours, heure de Paris. Anonymes : aucun joueur n'y est reconnaissable.</p>
+<div class="defile"><table>
+<thead><tr><th>Jour</th>${EVENEMENTS.map((e) => `<th>${LIBELLES[e]}</th>`).join('')}</tr></thead>
+<tbody>${corps}</tbody>
+<tfoot><tr><td>Total</td>${EVENEMENTS.map((e) => cellule(total(e))).join('')}</tr></tfoot>
+</table></div>
+</body></html>`);
 }

@@ -11,7 +11,7 @@ import type { GameState, Player } from '../engine/types.ts';
 import {
   fusionnerSucces, memoireVide, succesDeMain, succesDeManche, succesDePartie, type IdSucces, type Memoire,
 } from '../web/succes.ts';
-import type { Depot } from './depot.ts';
+import { jourDeParis, type Depot } from './depot.ts';
 import type { Salon } from './salon.ts';
 
 /** Le vainqueur d'une partie terminée, selon la règle du moteur. */
@@ -49,6 +49,12 @@ export class Recompenses {
     if (this.vus.get(salon) === moment) return;
     this.vus.set(salon, moment);
     if (etat.phase !== 'jeu' && etat.phase !== 'fin-de-manche' && etat.phase !== 'fin-de-partie') return;
+    // Les compteurs anonymes : chaque partie en ligne terminée, une seule fois.
+    if (etat.phase === 'fin-de-partie') {
+      const jour = jourDeParis();
+      await this.depot.compter('en-ligne-finie', jour);
+      if (entreHumains(salon)) await this.depot.compter('en-ligne-entre-humains', jour);
+    }
     // Seul face aux bots, on joue en ligne comme on jouerait en solo : les
     // succès se gagnent toujours dans le navigateur, mais le serveur ne les
     // vérifie pas, et la partie ne compte pas au classement. Sans cela, on

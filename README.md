@@ -200,6 +200,9 @@ Avec un compte :
   navigateur garde sa copie, et les deux se réunissent à chaque synchronisation ;
 - le pseudo est réservé : un invité qui le prend devient « Pseudo 2 », et les
   joueurs avec un compte portent un ✓ dans les salles d'attente ;
+- les grossièretés sont refusées, même déguisées (`src/reseau/moderation.ts`) :
+  un compte ne peut pas les prendre, et un invité qui en tape une s'assoit sous
+  un nom tiré au sort ;
 - en ligne, **le serveur décerne lui-même les succès** et les marque vérifiés
   (`src/reseau/recompenses.ts`). En solo, la partie se joue dans le navigateur :
   ses succès sont gardés, mais ne peuvent pas l'être ;
@@ -252,6 +255,18 @@ porte aussi un court texte en clair (`#presentation` : titre, description, les
 trois règles, lien vers `/regles`) pour les moteurs de recherche et les aperçus
 de lien ; le jeu le retire dès son démarrage. Sur le site seulement, des données
 structurées (`VideoGame`, gratuit) décrivent le jeu aux moteurs.
+
+### Compter sans ficher
+
+Pour savoir si le jeu plaît, le serveur tient des compteurs anonymes, jour par
+jour (heure de Paris) : visites, parties solo lancées et finies, didacticiels
+finis, partages — annoncés par le navigateur (`src/web/mesure.ts`) — et, comptés
+par le serveur lui-même, parties en ligne finies (dont entre humains) et comptes
+créés. Rien d'autre qu'un total : ni joueur, ni appareil, ni adresse.
+
+On les lit sur `https://<serveur>/stats?cle=…`, où la clé est celle de la
+variable d'environnement `STATS_CLE` du serveur. Sans cette variable, la page
+n'existe pas.
 
 ### Pourquoi deux hébergements
 
