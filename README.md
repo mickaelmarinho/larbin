@@ -71,7 +71,13 @@ Qui n'a pas donné de prénom trouve un nom tiré au sort dans le champ — « V
 malin », « Joker farceur » (`src/web/noms.ts`) — plutôt que de s'asseoir sous
 « Joueur ». Il est gardé d'une visite à l'autre, et chacun le remplace à sa
 guise. Sous les façons de jouer, « 📣 Faire découvrir le jeu à un proche » ouvre
-la feuille de partage du téléphone (ou copie le lien sur PC).
+la feuille de partage du téléphone (ou copie le lien sur PC). En bas, un pied
+de page mène aux règles complètes, à la confidentialité et au contact.
+
+À partir de la deuxième partie, l'écran de fin propose d'installer le jeu sur
+l'écran d'accueil (`src/web/installation.ts`) : la fenêtre du navigateur sur
+Android et PC, le geste expliqué sur iPhone. « Plus tard » est respecté — on ne
+redemande qu'après dix parties de plus, deux fois au plus.
 
 Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
 dans l'encadré Solo, juste sous « Jouer contre les bots » : une carte crème

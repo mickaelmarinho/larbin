@@ -138,7 +138,9 @@ export function nomPropre(brut: string): string {
  * est seul à voir ; le serveur compte lui-même les parties en ligne et les
  * comptes créés, pour que personne ne puisse les gonfler.
  */
-export const EVENEMENTS_NAVIGATEUR = ['visite', 'solo-lancee', 'solo-finie', 'didacticiel-fini', 'partage'] as const;
+export const EVENEMENTS_NAVIGATEUR = [
+  'visite', 'solo-lancee', 'solo-finie', 'didacticiel-fini', 'partage', 'installation',
+] as const;
 export const EVENEMENTS = [...EVENEMENTS_NAVIGATEUR, 'en-ligne-finie', 'en-ligne-entre-humains', 'compte-cree'] as const;
 export type EvenementNavigateur = (typeof EVENEMENTS_NAVIGATEUR)[number];
 export type Evenement = (typeof EVENEMENTS)[number];

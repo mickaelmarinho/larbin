@@ -32,6 +32,9 @@ import { sessionOuverte } from './session.ts';
 import { podium, signeDeVie, texteDuBoutonPublic, type SigneDeVie } from './vitrine.ts';
 import { nomPropose } from './noms.ts';
 import { compter } from './mesure.ts';
+import {
+  ecouterInstallation, installer as installerLeJeu, moyenDInstaller, proposerInstallation, refusGarde, refuser,
+} from './installation.ts';
 import type { Activite } from './table.ts';
 import type { LigneClassement } from './compte.ts';
 import { adopterSucces } from './succes.ts';
@@ -805,11 +808,23 @@ function voileFinDePartie(vue: PlayerView): void {
     || (enLigne.salon()?.publique ?? false)
     || (enLigne.salon()?.sieges.find((s) => s.id === enLigne.moi)?.hote ?? false);
 
+  // Le jeu plaît assez pour qu'on y revienne : c'est le moment de proposer
+  // l'icône sur l'écran d'accueil.
+  const moyen = moyenDInstaller();
+  const proposer = moyen !== null && proposerInstallation(b.parties, refusGarde());
+
   montrerVoile(`
     <h2>Partie terminée</h2>
     <p>${verdict}</p>
     <ul class="classement">${lignes}</ul>
     <p class="trace">${trace} <button class="lien" id="parcours-fin" type="button">Votre parcours</button></p>
+    ${proposer ? `<div class="installer" id="installer">
+      <p>📲 <b>Le Larbin sur votre écran d’accueil</b>, comme une appli : on le retrouve d’un geste.</p>
+      <div class="rangee">
+        <button class="action" id="installer-oui" type="button">${moyen === 'iphone' ? 'Comment faire ?' : 'Installer'}</button>
+        <button class="lien" id="installer-non" type="button">Plus tard</button>
+      </div>
+    </div>` : ''}
     <button class="action" id="partager" type="button">Partager le résultat</button>
     ${jeRelance
       ? '<button class="action primaire" id="rejouer" type="button">Nouvelle partie</button>'
@@ -818,6 +833,21 @@ function voileFinDePartie(vue: PlayerView): void {
   `);
 
   $('parcours-fin').addEventListener('click', () => voileParcours(() => boucle()));
+
+  $('installer-non')?.addEventListener('click', () => {
+    refuser(b.parties);
+    $('installer').remove();
+  });
+  $('installer-oui')?.addEventListener('click', () => {
+    if (moyen === 'iphone') {
+      // Safari n'a pas de fenêtre d'installation : on dit le geste.
+      $('installer').innerHTML = `<p>Touchez <b>Partager</b> (le carré avec une flèche vers le haut),
+        puis <b>« Sur l’écran d’accueil »</b>. L’icône du Larbin apparaît avec vos applis.</p>`;
+      return;
+    }
+    $('installer').remove();
+    void installerLeJeu();
+  });
 
   // Sans lui, la seule issue d'une partie finie était d'en recommencer une.
   $('accueil-fin').addEventListener('click', revenirAccueil);
@@ -1229,6 +1259,7 @@ function voileAccueil(): void {
     </section>
     <button class="lien" id="faire-decouvrir" type="button">📣 Faire découvrir le jeu à un proche</button>
     </div>
+    <div class="bas">
     <nav class="raccourcis">
       ${raccourci('succes', '🏆', 'Succès', `Vos succès — ${nombreDeSucces()} sur ${SUCCES.length}`)}
       ${horsLigne ? '' : raccourci('classement', '🏅', 'Classement')}
@@ -1237,6 +1268,12 @@ function voileAccueil(): void {
       ${raccourci('regles', '📖', 'Règles', 'Comment on joue ?')}
       ${raccourci('histoire', '📜', 'Histoire', 'D’où vient ce jeu ?')}
     </nav>
+    <p class="pied">
+      <a href="${horsLigne ? `https://${ADRESSE_PUBLIQUE}` : ''}/regles" target="_blank" rel="noopener">Toutes les règles</a>
+      · <a href="${lienConfidentialite()}" target="_blank" rel="noopener">Confidentialité</a>
+      · <a href="mailto:mickagames1@outlook.fr">Contact</a>
+    </p>
+    </div>
   `, 'accueil');
 
   const nom = () => {
@@ -2081,6 +2118,7 @@ if (sessionOuverte()) void monCompte();
 // il se réveille pendant que le joueur entre son nom.
 void hoteDuJeu();
 compter('visite');
+ecouterInstallation(() => compter('installation'));
 
 const salonDemande = new URLSearchParams(location.search).get('salon');
 if (salonDemande && location.protocol !== 'file:') {

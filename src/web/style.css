@@ -19,7 +19,7 @@
   --laiton: #d9a441;
   --laiton-sombre: #a97b26;
   --texte: #e8e2d4;
-  --texte-pale: #a9b6ad;
+  --texte-pale: #b4c0b8;
 
   --carte-l: clamp(48px, 13.5vw, 64px);
   --carte-h: calc(var(--carte-l) * 1.42);
@@ -982,8 +982,8 @@ button.action.alerte {
 
 .reglage {
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   border: 1px solid #ffffff26;
   background: #ffffff10;
@@ -1008,8 +1008,8 @@ button.action.alerte {
 
 /* Les trois façons de jouer : chacune son encadré, qu'on repère d'un coup d'œil. */
 .bloc {
-  margin-top: 10px;
-  padding: 9px 12px 12px;
+  margin-top: 8px;
+  padding: 9px 12px 10px;
   border: 1px solid #ffffff14;
   border-radius: 14px;
   background: #00000024;
@@ -1117,7 +1117,52 @@ button.action.alerte {
   display: flex;
   justify-content: space-around;
   gap: 2px;
-  margin-top: 10px;
+  margin-top: 6px;
+}
+
+#faire-decouvrir { margin-top: 8px; }
+
+/* Le pied de page : ce qu'on cherche une fois, et qu'on doit alors trouver. */
+.panneau p.pied {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--texte-pale);
+}
+
+.pied a {
+  color: var(--texte-pale);
+  text-underline-offset: 3px;
+}
+
+.pied a:hover { color: var(--texte); }
+
+/* La proposition d'installer le jeu, en fin de partie. */
+.installer {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #d9a44155;
+  border-radius: 12px;
+  background: #d9a4411a;
+}
+
+.panneau .installer p { margin: 0 0 8px; color: var(--texte); }
+
+.installer .rangee {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.panneau .installer .rangee .action {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 9px 18px;
+}
+
+.installer .rangee button.lien {
+  width: auto;
+  margin: 0;
 }
 
 .raccourci {
@@ -1155,7 +1200,7 @@ button.action.alerte {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
 }
 
 .panneau p.accroche {
@@ -1275,12 +1320,22 @@ button.action.alerte {
 
   .trois-regles b { color: var(--creme); }
 
-  .accueil .raccourcis {
+  .accueil .bas {
     grid-area: raccourcis;
     align-self: end;
+    margin-top: 20px;
+  }
+
+  .accueil .raccourcis {
     justify-content: flex-start;
     gap: 4px;
-    margin-top: 20px;
+    margin-top: 0;
+  }
+
+  .accueil p.pied {
+    margin-top: 8px;
+    padding-left: 12px;
+    text-align: left;
   }
 
   .accueil .raccourci {

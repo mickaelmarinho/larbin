@@ -269,6 +269,7 @@ const LIBELLES: Record<Evenement, string> = {
   'solo-finie': 'Solo finies',
   'didacticiel-fini': 'Didacticiels finis',
   'partage': 'Partages',
+  'installation': 'Installations',
   'en-ligne-finie': 'En ligne finies',
   'en-ligne-entre-humains': 'dont entre humains',
   'compte-cree': 'Comptes créés',
