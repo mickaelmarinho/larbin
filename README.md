@@ -359,8 +359,16 @@ node scripts/reseau/e2e-publique.mjs localhost:5177  # prêt, compte à rebours,
 node scripts/reseau/e2e-tables.mjs localhost:5177    # liste, reprise d'un bot, salon privé
 node scripts/reseau/e2e-inactif.mjs localhost:5177   # le joueur muet (une minute d'attente)
 node scripts/reseau/e2e-reactions.mjs localhost:5177 # réactions : relayées, filtrées, espacées
+node scripts/reseau/e2e-pause.mjs localhost:5177     # une table sans humain se met en pause
 node scripts/reseau/un-visiteur.mjs localhost:5177   # s'assoit et reste, pour regarder l'écran
+node scripts/reseau/charge.mjs localhost:5177 --paliers 10,50,100 --duree 30   # test de charge
 ```
+
+Le test de charge ouvre des tables de quatre joueurs simulés, par paliers, et
+mesure le temps de réponse à chaque coup (`--pid` ajoute le processeur du
+serveur, sous Windows). Ses tables s'arrêtent après la troisième manche : aucune
+partie de test ne se termine, rien n'entre aux compteurs. Mesuré le 26 sept.
+2026 : 250 tables (1 000 joueurs) sur un PC tiennent en 11 % d'un cœur et 204 Mo.
 
 Elles fonctionnent aussi sur le serveur en ligne (p01--larbin--xp64cmfbzy56.code.run). Deux avertissements dans ce
 cas : un hébergeur qui endort ses serveurs met du temps à les réveiller, et une dizaine

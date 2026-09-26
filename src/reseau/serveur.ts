@@ -250,6 +250,12 @@ function avancer(salon: Salon): void {
   clearTimeout(minuteurs.get(salon));
   salon.aJouerAvant = null;
 
+  // Plus aucun humain à table : on s'arrête là. Jouer pour des absents
+  // pendant une heure ne sert personne, use le serveur, et finirait par
+  // compter une partie que nul n'a terminée. Le premier qui revient relance
+  // la table (voir « rejoindre »).
+  if (!salon.places.some((p) => !p.estBot && p.connecte)) return;
+
   const acteur = salon.acteurAttendu;
   if (!acteur) return;
   const place = salon.place(acteur);
