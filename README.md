@@ -262,6 +262,12 @@ trois règles, lien vers `/regles`) pour les moteurs de recherche et les aperçu
 de lien ; le jeu le retire dès son démarrage. Sur le site seulement, des données
 structurées (`VideoGame`, gratuit) décrivent le jeu aux moteurs.
 
+Bing et les moteurs du protocole **IndexNow** sont prévenus à chaque mise en
+ligne de production : l'assemblage sur Vercel appelle `scripts/indexnow.mjs`,
+qui leur signale l'accueil et les règles. La clé est le fichier
+`src/web/statique/<clé>.txt`, publié à la racine du site ; elle n'a rien de
+secret. On peut aussi les prévenir à la main : `node scripts/indexnow.mjs`.
+
 ### Compter sans ficher
 
 Pour savoir si le jeu plaît, le serveur tient des compteurs anonymes, jour par

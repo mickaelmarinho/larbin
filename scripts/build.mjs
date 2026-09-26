@@ -74,4 +74,14 @@ if (process.argv.includes('--watch')) {
   console.log('Surveillance active. Ctrl+C pour arrêter.');
 } else {
   await assembler();
+  // Sur Vercel, en production seulement : on prévient les moteurs que les pages
+  // ont changé. Un échec ne doit jamais empêcher la mise en ligne.
+  if (process.env.VERCEL_ENV === 'production') {
+    try {
+      const { prevenirIndexNow } = await import('./indexnow.mjs');
+      console.log(`IndexNow prévenu : ${await prevenirIndexNow()}`);
+    } catch (err) {
+      console.log(`IndexNow injoignable, tant pis : ${err instanceof Error ? err.message : err}`);
+    }
+  }
 }
