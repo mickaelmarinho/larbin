@@ -17,7 +17,8 @@ import { avatarChoisi } from './avatars.ts';
 import { jetonDeSession } from './session.ts';
 import { TABLEE_SOLO } from './solo.ts';
 import {
-  bilanDuJour, bilanVierge, garderBilan, hasardDuDefi, lireBilan, noterLaManche, partieDuDefi, type BilanDuDefi,
+  bilanDuJour, bilanVierge, garderBilan, garderCoups, hasardDuDefi, lireBilan, lireCoups, noterLaManche, partieDuDefi,
+  type BilanDuDefi,
 } from './defi.ts';
 import { jourDeParis } from './jour.ts';
 import type { Role } from '../engine/types.ts';
@@ -221,6 +222,7 @@ function reglagesDuDefi(jour: string): ReglagesSolo {
       localStorage.removeItem(CLE_PARTIE_DEFI);
     } catch { /* rien à effacer */ }
     garderBilan(bilanVierge(jour));
+    garderCoups([]);
   }
   return { cle: CLE_PARTIE_DEFI, creer: () => partieDuDefi(jour), hasard: hasardDuDefi };
 }
@@ -236,6 +238,27 @@ export class TableDefi extends TableSolo {
 
   /** Un seul essai par jour. */
   override recommencer(): void {}
+
+  /**
+   * Chaque coup du joueur est noté : c'est ce que le serveur rejouera pour
+   * classer le score. Noté avant d'être joué, parce que le dernier coup peut
+   * clore le défi — et l'envoi part aussitôt.
+   */
+  override envoyer(action: Action): void {
+    const mien = !('player' in action) || action.player === this.moi;
+    if (!mien) {
+      super.envoyer(action);
+      return;
+    }
+    const coups = lireCoups();
+    garderCoups([...coups, action]);
+    try {
+      super.envoyer(action);
+    } catch (err) {
+      garderCoups(coups);
+      throw err;
+    }
+  }
 
   /** Note la manche ; renvoie le bilan, et s'il vient tout juste de s'achever. */
   noterManche(manche: number, role: Role, points: number): { bilan: BilanDuDefi; acheve: boolean } {

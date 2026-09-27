@@ -60,7 +60,36 @@ export interface Depot {
   compter(evenement: Evenement, jour: string): Promise<void>;
   /** Les compteurs depuis ce jour inclus. */
   compteurs(depuis: string): Promise<LigneCompteur[]>;
+  /**
+   * Un score du défi, déjà vérifié. Renvoie la place obtenue et le nombre de
+   * scores du jour, ou null si ce compte en a déjà un pour ce jour.
+   */
+  noterDefi(score: ScoreDefi): Promise<{ place: number; total: number } | null>;
+  classementDefi(jour: string, limite: number): Promise<{ total: number; lignes: LigneDefi[] }>;
 }
+
+export interface ScoreDefi {
+  jour: string;
+  nom: string;
+  points: number;
+  /** Les rôles des trois manches, séparés par des virgules. */
+  roles: string;
+  compteId: string | null;
+}
+
+export interface LigneDefi {
+  nom: string;
+  points: number;
+  roles: string;
+  compte: boolean;
+}
+
+/** On ne garde qu'un mois de défis : assez pour revoir, pas pour ficher. */
+const JOURS_DE_DEFIS = 30;
+
+/** Le plus de points d'abord ; à égalité, qui l'a fait le premier. */
+const ordreDuDefi = (a: { points: number; le: number }, b: { points: number; le: number }) =>
+  b.points - a.points || a.le - b.le;
 
 export interface LigneCompteur {
   jour: string;
@@ -85,8 +114,26 @@ export class DepotMemoire implements Depot {
   private sessions = new Map<string, string>();
   private resultatsParCompte = new Map<string, Array<{ date: string; gagne: boolean }>>();
   private totaux = new Map<string, LigneCompteur>();
+  private defis: Array<ScoreDefi & { le: number }> = [];
+  /** L'ordre d'arrivée, qui départage les égalités. */
+  private arrivees = 0;
 
   async preparer(): Promise<void> {}
+
+  async noterDefi(score: ScoreDefi): Promise<{ place: number; total: number } | null> {
+    if (score.compteId && this.defis.some((d) => d.jour === score.jour && d.compteId === score.compteId)) return null;
+    this.defis.push({ ...score, le: this.arrivees++ });
+    const duJour = this.defis.filter((d) => d.jour === score.jour);
+    return { place: duJour.filter((d) => d.points >= score.points).length, total: duJour.length };
+  }
+
+  async classementDefi(jour: string, limite: number) {
+    const duJour = this.defis.filter((d) => d.jour === jour).sort(ordreDuDefi);
+    return {
+      total: duJour.length,
+      lignes: duJour.slice(0, limite).map((d) => ({ nom: d.nom, points: d.points, roles: d.roles, compte: d.compteId !== null })),
+    };
+  }
 
   async compter(evenement: Evenement, jour: string): Promise<void> {
     const cle = `${jour}|${evenement}`;
@@ -225,6 +272,16 @@ const SCHEMA = `
     nom TEXT PRIMARY KEY,
     le TIMESTAMPTZ NOT NULL DEFAULT now()
   );
+  CREATE TABLE IF NOT EXISTS defis (
+    jour DATE NOT NULL,
+    nom TEXT NOT NULL,
+    points INTEGER NOT NULL,
+    roles TEXT NOT NULL,
+    compte_id TEXT REFERENCES comptes(id) ON DELETE CASCADE,
+    le TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS defis_un_par_compte ON defis (jour, compte_id) WHERE compte_id IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS defis_du_jour ON defis (jour, points DESC, le);
   CREATE TABLE IF NOT EXISTS compteurs (
     jour DATE NOT NULL,
     evenement TEXT NOT NULL,
@@ -416,6 +473,35 @@ class DepotPostgres implements Depot {
        ON CONFLICT (jour, evenement) DO UPDATE SET n = compteurs.n + 1`,
       [jour, evenement],
     );
+  }
+
+  async noterDefi(score: ScoreDefi): Promise<{ place: number; total: number } | null> {
+    const { rowCount } = await this.pool.query(
+      `INSERT INTO defis (jour, nom, points, roles, compte_id) VALUES ($1::date, $2, $3, $4, $5)
+       ON CONFLICT DO NOTHING`,
+      [score.jour, score.nom, score.points, score.roles, score.compteId],
+    );
+    if (!rowCount) return null;
+    // Le ménage d'un mois, en passant : un défi n'intéresse plus personne après.
+    await this.pool.query(`DELETE FROM defis WHERE jour < $1::date - ${JOURS_DE_DEFIS}`, [score.jour]);
+    const { rows } = await this.pool.query<{ place: number; total: number }>(
+      `SELECT COUNT(*) FILTER (WHERE points >= $2)::int AS place, COUNT(*)::int AS total
+       FROM defis WHERE jour = $1::date`,
+      [score.jour, score.points],
+    );
+    return rows[0];
+  }
+
+  async classementDefi(jour: string, limite: number) {
+    const [lignes, total] = await Promise.all([
+      this.pool.query<LigneDefi>(
+        `SELECT nom, points, roles, compte_id IS NOT NULL AS compte
+         FROM defis WHERE jour = $1::date ORDER BY points DESC, le ASC LIMIT $2`,
+        [jour, limite],
+      ),
+      this.pool.query<{ total: number }>('SELECT COUNT(*)::int AS total FROM defis WHERE jour = $1::date', [jour]),
+    ]);
+    return { total: total.rows[0].total, lignes: lignes.rows };
   }
 
   async compteurs(depuis: string): Promise<LigneCompteur[]> {

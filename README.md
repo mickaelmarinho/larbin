@@ -87,6 +87,15 @@ temps. La donne suit une graine tirée de la date de Paris, et le seul hasard de
 bots (la coupe) suit l'état de la partie : `test/defi.test.ts` rejoue un défi
 deux fois et vérifie qu'il finit à l'identique (`src/web/defi.ts`).
 
+Le défi a son **classement du jour**, qu'on ne peut pas truquer : le navigateur
+note les coups du joueur, et à la fin il les envoie (`POST /defi`) — jamais le
+score. Le serveur rejoue toute la partie avec ces coups (`rejouerLeDefi`) : les
+bots rejouent les leurs à l'identique, le moteur refuse tout coup impossible, et
+le score qui sort est le seul qui compte. Un score par compte et par jour ; pour
+les invités, un par adresse et par jour (une empreinte gardée en mémoire jusqu'au
+lendemain). Les dix meilleurs s'affichent sous le score (`GET /defi`), avec sa
+place ; les lignes s'effacent au bout d'un mois.
+
 Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
 dans l'encadré Solo, juste sous « Contre les bots » : une carte crème
 frappée d'un cœur, qui se remarque sans prendre la première place. Une fois les

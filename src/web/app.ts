@@ -35,6 +35,7 @@ import { sessionOuverte } from './session.ts';
 import { podium, signeDeVie, texteDuBoutonPublic, type SigneDeVie } from './vitrine.ts';
 import { nomPropose } from './noms.ts';
 import { compter } from './mesure.ts';
+import { classementDuDefi, emojisDeLaLigne, envoyerLeDefi } from './defi-en-ligne.ts';
 import {
   ecouterInstallation, installer as installerLeJeu, moyenDInstaller, proposerInstallation, refusGarde, refuser,
 } from './installation.ts';
@@ -735,7 +736,7 @@ function voileFinDeManche(vue: PlayerView): void {
     const { bilan, acheve } = table.noterManche(vue.round, vue.me.role, vue.me.points);
     if (acheve) compter('defi-fini');
     if (bilan.fini) {
-      voileDefiFini(bilan, revenirAccueil, vue);
+      voileDefiFini(bilan, revenirAccueil);
       return;
     }
   }
@@ -787,12 +788,13 @@ function voileDefi(bilan: BilanDuDefi): void {
 }
 
 /** Le score du défi : les rôles en émojis, à comparer — et à envoyer. */
-function voileDefiFini(bilan: BilanDuDefi, retour: () => void, vue?: PlayerView): void {
+function voileDefiFini(bilan: BilanDuDefi, retour: () => void): void {
+  const horsLigne = location.protocol === 'file:';
   montrerVoile(`
     <h2>🗓️ Défi du ${jourCourt(bilan.jour)}</h2>
     <p class="score-defi"><b>${bilan.points}</b>/${DEFI_MAXIMUM}</p>
     <p class="roles-defi" aria-label="${bilan.roles.map((r) => TITRES[r]).join(', ')}">${emojisDuDefi(bilan)}</p>
-    ${vue ? `<ul class="classement">${lignesDuClassement(vue)}</ul>` : ''}
+    ${horsLigne ? '' : '<div id="classement-defi"><p class="mention">On compare les scores du jour…</p></div>'}
     <p class="mention">Même donne pour tout le monde : défiez vos proches. Prochain défi à minuit.</p>
     <button class="action primaire" id="defi-partager" type="button">Partager mon score</button>
     <button class="action" id="defi-fin" type="button">Revenir à l’accueil</button>
@@ -801,6 +803,34 @@ function voileDefiFini(bilan: BilanDuDefi, retour: () => void, vue?: PlayerView)
     void partager(e.currentTarget as HTMLElement, texteDuDefi(bilan), `https://${ADRESSE_PUBLIQUE}`);
   });
   $('defi-fin').addEventListener('click', retour);
+  if (!horsLigne) void afficherLeClassementDuDefi(bilan);
+}
+
+/**
+ * Envoie le score s'il ne l'est pas encore — le serveur le vérifie en rejouant
+ * la partie — puis montre les meilleurs du jour.
+ */
+async function afficherLeClassementDuDefi(bilan: BilanDuDefi): Promise<void> {
+  const nom = sessionOuverte()?.pseudo || localStorage.getItem('larbin.nom') || nomPropose();
+  const envoye = await envoyerLeDefi(bilan, nom);
+  const classement = await classementDuDefi(bilan.jour);
+  const cadre = document.getElementById('classement-defi');
+  if (!cadre) return;   // le joueur est passé à autre chose
+  if (!classement || classement.total === 0) {
+    cadre.innerHTML = '<p class="mention">Le classement du jour ne répond pas. Il sera là à la prochaine ouverture.</p>';
+    return;
+  }
+  const ma = envoye.place
+    ? `<p class="ma-place">Vous êtes <b>${envoye.place === 1 ? '1er' : `${envoye.place}e`}</b> sur ${classement.total}
+       joueur${classement.total > 1 ? 's' : ''} aujourd’hui.</p>`
+    : `<p class="ma-place">${classement.total} joueur${classement.total > 1 ? 's' : ''} aujourd’hui.</p>`;
+  cadre.innerHTML = `${ma}
+    <ol class="classement-general defi-du-jour">${classement.lignes.map((l, i) => `<li>
+      <span class="rang">${i + 1}</span>
+      <span class="qui">${attribut(l.nom)}${l.compte ? ' <span class="verifie" title="Joueur avec un compte">✓</span>' : ''}</span>
+      <span class="roles">${emojisDeLaLigne(l)}</span>
+      <b class="points">${l.points}</b>
+    </li>`).join('')}</ol>`;
 }
 
 /** Les parties solo déjà comptées : réafficher l'écran de fin ne les recompte pas. */
@@ -1374,6 +1404,7 @@ function voileAccueil(): void {
   }));
 
   $('defi').addEventListener('click', () => {
+    nom();   // c'est sous ce nom que le score entrera au classement du jour
     const bilan = bilanDuJour();
     if (bilan.fini) voileDefiFini(bilan, voileAccueil);
     else enPassantParLesRegles(() => voileDefi(bilan));

@@ -14,7 +14,9 @@ import { fusionnerSucces, listeSucces } from '../web/succes.ts';
 import { codeNormalise, empreinte, nouveauCode, nouveauJeton, pseudoValide } from './comptes.ts';
 import { jourDeParis, type Compte, type Depot } from './depot.ts';
 import { nomConvenable } from './moderation.ts';
-import { EVENEMENTS, EVENEMENTS_NAVIGATEUR, estAvatar, type Evenement } from './protocole.ts';
+import { EVENEMENTS, EVENEMENTS_NAVIGATEUR, estAvatar, nomPropre, type Evenement } from './protocole.ts';
+import { rejouerLeDefi } from '../web/defi.ts';
+import { nomAuHasard } from '../web/noms.ts';
 
 const ENTETES = {
   'Access-Control-Allow-Origin': '*',
@@ -97,7 +99,8 @@ function jetonDe(req: IncomingMessage): string | null {
 /** Répond si la demande concerne l'API ; renvoie faux sinon, pour que le serveur serve la page. */
 export async function repondreApi(req: IncomingMessage, res: Reponse, depot: Depot | null): Promise<boolean> {
   const chemin = (req.url ?? '/').split('?')[0];
-  if (chemin !== '/classement' && chemin !== '/stats' && chemin !== '/compte' && !chemin.startsWith('/compte/')) {
+  if (chemin !== '/classement' && chemin !== '/stats' && chemin !== '/defi' && chemin !== '/compte'
+    && !chemin.startsWith('/compte/')) {
     return false;
   }
 
@@ -132,6 +135,12 @@ export async function repondreApi(req: IncomingMessage, res: Reponse, depot: Dep
 async function aiguiller(req: IncomingMessage, res: Reponse, depot: Depot, chemin: string): Promise<void> {
   if (req.method === 'GET' && chemin === '/classement') {
     repondre(res, 200, await depot.classement(20));
+    return;
+  }
+
+  if (chemin === '/defi') {
+    if (req.method === 'POST') await recevoirUnDefi(req, res, depot);
+    else await montrerLeDefi(req, res, depot);
     return;
   }
 
@@ -239,6 +248,81 @@ async function connecter(res: Reponse, depot: Depot, corps: Record<string, unkno
   const jeton = nouveauJeton();
   await depot.ouvrirSession(trouve.compte.id, empreinte(jeton));
   repondre(res, 200, { compte: enPublic(trouve.compte), jeton, donnees: await depot.lireDonnees(trouve.compte.id) });
+}
+
+/* ------------------------------------------------------- le défi du jour */
+
+/*
+ * Le navigateur n'envoie pas son score : il envoie ses coups, et le serveur
+ * rejoue la partie du jour pour trouver le score lui-même (voir web/defi.ts).
+ * Un score par compte et par jour ; pour les invités, un par adresse et par
+ * jour — l'adresse n'est gardée qu'en mémoire, sous forme d'empreinte, et
+ * oubliée le lendemain.
+ */
+
+const LIGNES_DU_DEFI = 10;
+const JOUR = /^\d{4}-\d{2}-\d{2}$/;
+const invitesDuJour = new Map<string, Set<string>>();
+
+/** Aujourd'hui, ou hier : un défi commencé avant minuit s'envoie après. */
+function jourAdmis(jour: unknown): jour is string {
+  if (typeof jour !== 'string' || !JOUR.test(jour)) return false;
+  const maintenant = new Date();
+  return jour === jourDeParis(maintenant) || jour === jourDeParis(new Date(maintenant.getTime() - 86_400_000));
+}
+
+async function montrerLeDefi(req: IncomingMessage, res: Reponse, depot: Depot): Promise<void> {
+  const demande = new URL(req.url ?? '/', 'http://larbin').searchParams.get('jour') ?? '';
+  const jour = JOUR.test(demande) ? demande : jourDeParis();
+  repondre(res, 200, { jour, ...await depot.classementDefi(jour, LIGNES_DU_DEFI) });
+}
+
+async function recevoirUnDefi(req: IncomingMessage, res: Reponse, depot: Depot): Promise<void> {
+  if (tropSouvent(req, envois, ENVOIS_MAX)) {
+    repondre(res, 429, { erreur: 'Trop d’envois. Réessayez dans quelques minutes.' });
+    return;
+  }
+  const corps = await lireCorps(req);
+  if (!corps || !jourAdmis(corps.jour)) {
+    repondre(res, 400, { erreur: 'Ce défi n’est plus ouvert.' });
+    return;
+  }
+  const jour = corps.jour as string;
+  const resultat = rejouerLeDefi(jour, corps.coups);
+  if (!resultat) {
+    repondre(res, 400, { erreur: 'Cette partie ne se rejoue pas : score refusé.' });
+    return;
+  }
+
+  const jeton = jetonDe(req);
+  const compte = jeton ? await depot.compteParSession(empreinte(jeton)) : null;
+  let nom: string;
+  if (compte) {
+    nom = compte.pseudo;
+  } else {
+    // Un invité par adresse et par jour : sinon, on rejouerait jusqu'au meilleur score.
+    const adresse = empreinte(`${adresseDe(req)}|${jour}`);
+    for (const j of invitesDuJour.keys()) if (!jourAdmis(j)) invitesDuJour.delete(j);
+    const vus = invitesDuJour.get(jour) ?? new Set<string>();
+    if (vus.has(adresse)) {
+      repondre(res, 409, { erreur: 'Un score a déjà été envoyé d’ici pour ce défi.' });
+      return;
+    }
+    vus.add(adresse);
+    invitesDuJour.set(jour, vus);
+    const souhaite = typeof corps.nom === 'string' ? nomPropre(corps.nom) : '';
+    // Un invité ne signe pas du pseudo réservé d'un compte.
+    nom = souhaite && !await depot.pseudoPris(souhaite) ? souhaite : nomAuHasard();
+  }
+
+  const rang = await depot.noterDefi({
+    jour, nom, points: resultat.points, roles: resultat.roles.join(','), compteId: compte?.id ?? null,
+  });
+  if (!rang) {
+    repondre(res, 409, { erreur: 'Vous avez déjà un score pour ce défi.' });
+    return;
+  }
+  repondre(res, 201, { ...rang, points: resultat.points, nom });
 }
 
 /* ------------------------------------------------------------ les compteurs */

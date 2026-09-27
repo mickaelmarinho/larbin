@@ -1157,6 +1157,17 @@ button.action.defi small {
   color: var(--creme);
 }
 
+.panneau p.ma-place {
+  margin: 0 0 4px;
+  text-align: center;
+  color: var(--texte);
+}
+
+.ma-place b { color: var(--laiton); }
+
+.defi-du-jour .roles { font-size: 13px; letter-spacing: 1px; white-space: nowrap; }
+.defi-du-jour .points { flex: 0 0 18px; text-align: right; color: var(--creme); }
+
 .panneau p.roles-defi {
   margin: 4px 0 12px;
   text-align: center;

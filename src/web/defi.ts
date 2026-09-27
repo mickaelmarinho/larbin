@@ -11,8 +11,9 @@
  * aléatoire des bots — où couper le paquet — suit l'état de la partie. Deux
  * joueurs qui jouent les mêmes coups voient donc exactement la même chose.
  */
-import type { GameState, Role } from '../engine/types.ts';
-import { createGame } from '../engine/game.ts';
+import type { Action, GameState, Role } from '../engine/types.ts';
+import { apply, createGame, viewFor } from '../engine/game.ts';
+import { botAction } from '../engine/bot.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { jourDeParis } from './jour.ts';
 import { TABLEE_SOLO } from './solo.ts';
@@ -43,6 +44,70 @@ export function hasardDuDefi(etat: GameState): () => number {
 
 export const partieDuDefi = (jour: string): GameState => createGame(TABLEE_SOLO, graineDuJour(jour));
 
+/* ------------------------------------------------------------ le rejeu */
+
+const MOI = 'moi';
+/** Trois manches tiennent en bien moins de coups que ça. */
+const COUPS_MAX = 600;
+
+/**
+ * Un coup du joueur tel qu'il arrive du navigateur, remis en forme — ou null.
+ * On ne garde que ce qu'il faut, et c'est toujours « moi » qui joue.
+ */
+function coupPropre(brut: unknown): Action | null {
+  if (!brut || typeof brut !== 'object') return null;
+  const c = brut as Record<string, unknown>;
+  switch (c.type) {
+    case 'poser':
+      return Array.isArray(c.cards) && c.cards.length > 0 && c.cards.length <= 13
+        && c.cards.every((id) => typeof id === 'string' && id.length <= 4)
+        ? { type: 'poser', player: MOI, cards: c.cards as string[] } : null;
+    case 'passer':
+      return { type: 'passer', player: MOI };
+    case 'couper':
+      return Number.isInteger(c.position) ? { type: 'couper', player: MOI, position: c.position as number } : null;
+    case 'manche-suivante':
+      return { type: 'manche-suivante' };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Rejoue le défi d'un jour à partir des seuls coups du joueur : les bots
+ * rejouent les leurs, à l'identique, et le moteur refuse tout coup impossible.
+ * C'est ainsi que le serveur connaît le vrai score, quel que soit ce que
+ * prétend le navigateur. Renvoie null si les coups ne mènent pas, exactement,
+ * au bout des trois manches.
+ */
+export function rejouerLeDefi(jour: string, coups: unknown): { points: number; roles: Role[] } | null {
+  if (!Array.isArray(coups) || coups.length > COUPS_MAX) return null;
+  let e = partieDuDefi(jour);
+  let suivant = 0;
+  const roles: Role[] = [];
+  for (let garde = 0; garde < 20 * COUPS_MAX; garde++) {
+    if (e.phase === 'fin-de-manche') {
+      const moi = e.players.find((p) => p.id === MOI)!;
+      roles.push(moi.role!);
+      if (e.round === DEFI_MANCHES) return suivant === coups.length ? { points: moi.points, roles } : null;
+    }
+    let coup: Action | null;
+    if (e.phase === 'fin-de-manche' || e.order[e.turn] === MOI) {
+      coup = coupPropre(coups[suivant]);
+      suivant += 1;
+    } else {
+      coup = botAction(viewFor(e, e.order[e.turn]), hasardDuDefi(e));
+    }
+    if (!coup) return null;
+    try {
+      e = apply(e, coup);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 /* ------------------------------------------------------------ le bilan */
 
 export interface BilanDuDefi {
@@ -51,6 +116,10 @@ export interface BilanDuDefi {
   roles: Role[];
   points: number;
   fini: boolean;
+  /** Le score a été reçu par le serveur ; place et total du jour à ce moment-là. */
+  envoye?: boolean;
+  place?: number;
+  total?: number;
 }
 
 export const bilanVierge = (jour: string): BilanDuDefi => ({ jour, roles: [], points: 0, fini: false });
@@ -80,6 +149,23 @@ export const texteDuDefi = (b: BilanDuDefi): string =>
 /* ------------------------------------------------------------ le disque */
 
 const CLE_BILAN = 'larbin.defi.bilan';
+const CLE_COUPS = 'larbin.defi.coups';
+
+/** Les coups joués dans le défi du jour : ce que le serveur rejouera. */
+export function lireCoups(): Action[] {
+  try {
+    const c = JSON.parse(localStorage.getItem(CLE_COUPS) ?? '[]');
+    return Array.isArray(c) ? c : [];
+  } catch {
+    return [];
+  }
+}
+
+export function garderCoups(coups: Action[]): void {
+  try {
+    localStorage.setItem(CLE_COUPS, JSON.stringify(coups));
+  } catch { /* sans eux, le score ne sera pas classé */ }
+}
 
 export function lireBilan(): BilanDuDefi | null {
   try {
