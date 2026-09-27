@@ -284,6 +284,19 @@ C'est un risque qu'on accepte tant qu'il n'y a pas de comptes
 Le jeu se joue sur **https://larbin.vercel.app**. Envoyez ce lien à vos proches,
 ou dictez-leur le code du salon.
 
+### En anglais
+
+Le jeu existe en anglais sous **`/en`** (`/en/rules`, `/en/strategy`,
+`/en/variants`, `/en/privacy`). C'est le même script : il lit sa langue dans
+l'adresse (`src/web/langue.ts`), et chaque texte s'écrit avec ses deux versions
+côte à côte — `tr('Passer', 'Pass')`. Ce qui vient d'ailleurs se traduit à
+l'affichage : les annonces du moteur, qui parle français (`src/web/journal.ts`),
+et les messages du serveur (`src/web/messages.ts`) — un test échoue si le
+serveur gagne un message sans traduction. La page `/en` est tirée de la
+française à l'assemblage (`scripts/page-anglaise.mjs` : titre, description,
+présentation), et les pages se déclarent l'une l'autre par `hreflang`. En
+anglais, les rôles s'appellent Boss, Deputy, Neutral, Underling et Lackey.
+
 ### Être trouvé
 
 Personne ne cherche « Le Larbin » : on cherche « président jeu de cartes en

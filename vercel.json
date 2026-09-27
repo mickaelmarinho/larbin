@@ -8,6 +8,11 @@
     { "source": "/regles", "destination": "/regles.html" },
     { "source": "/confidentialite", "destination": "/confidentialite.html" },
     { "source": "/strategie", "destination": "/strategie.html" },
-    { "source": "/variantes", "destination": "/variantes.html" }
+    { "source": "/variantes", "destination": "/variantes.html" },
+    { "source": "/en", "destination": "/en/index.html" },
+    { "source": "/en/rules", "destination": "/en/rules.html" },
+    { "source": "/en/strategy", "destination": "/en/strategy.html" },
+    { "source": "/en/variants", "destination": "/en/variants.html" },
+    { "source": "/en/privacy", "destination": "/en/privacy.html" }
   ]
 }

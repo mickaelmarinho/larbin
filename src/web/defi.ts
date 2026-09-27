@@ -16,6 +16,7 @@ import { apply, createGame, viewFor } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
 import { nextRandom } from '../engine/rng.ts';
 import { jourDeParis } from './jour.ts';
+import { tr } from './langue.ts';
 import { TABLEE_SOLO } from './solo.ts';
 
 export const DEFI_MANCHES = 3;
@@ -143,9 +144,10 @@ export const jourCourt = (jour: string): string => `${jour.slice(8, 10)}/${jour.
 
 /** Le message qu'on envoie à ses proches : le score, les rôles, la série, et de quoi les piquer au jeu. */
 export const texteDuDefi = (b: BilanDuDefi, serie = 0): string =>
-  `Le Larbin — défi du ${jourCourt(b.jour)} : ${b.points}/${DEFI_MAXIMUM}\n${emojisDuDefi(b)}\n`
-  + (serie >= 2 ? `🔥 ${serie} jours de suite\n` : '')
-  + 'Même donne pour tout le monde. Tu fais mieux ?';
+  tr(`Le Larbin — défi du ${jourCourt(b.jour)} : ${b.points}/${DEFI_MAXIMUM}\n${emojisDuDefi(b)}\n`,
+    `Le Larbin — challenge of ${jourCourt(b.jour)}: ${b.points}/${DEFI_MAXIMUM}\n${emojisDuDefi(b)}\n`)
+  + (serie >= 2 ? tr(`🔥 ${serie} jours de suite\n`, `🔥 ${serie} days in a row\n`) : '')
+  + tr('Même donne pour tout le monde. Tu fais mieux ?', 'Same deal for everyone. Can you beat that?');
 
 /* ------------------------------------------------------------ les séries */
 

@@ -22,22 +22,37 @@ export interface Succes {
   icone: string;
   nom: string;
   comment: string;
+  /** Le même, en anglais. */
+  en: { nom: string; comment: string };
 }
 
 export const SUCCES: Succes[] = [
-  { id: 'premiere-victoire', icone: '🏆', nom: 'Première victoire', comment: 'Gagner une partie.' },
-  { id: 'larbin-boss', icone: '👑', nom: 'De Larbin à Boss', comment: 'Être Boss juste après avoir été Larbin.' },
-  { id: 'boss-direct', icone: '⚡', nom: 'D’entrée de jeu', comment: 'Être Boss dès la première manche.' },
-  { id: 'trois-boss', icone: '🔱', nom: 'Règne sans partage', comment: 'Être Boss trois manches de suite.' },
-  { id: 'jamais-larbin', icone: '🛡️', nom: 'Intouchable', comment: 'Gagner une partie sans jamais avoir été Larbin.' },
-  { id: 'remontada', icone: '🧗', nom: 'Remontada', comment: 'Gagner une partie commencée en Larbin.' },
-  { id: 'quatre-deux', icone: '🃏', nom: 'Carré de 2', comment: 'Recevoir les quatre 2 dans sa main.' },
-  { id: 'fini-sur-deux', icone: '🤡', nom: 'Larbin d’office', comment: 'Finir une manche sur un 2. Ça arrive aux meilleurs.' },
-  { id: 'serie-trois', icone: '🔥', nom: 'Série de trois', comment: 'Gagner trois parties d’affilée.' },
-  { id: 'en-ligne', icone: '🌍', nom: 'Premier contact', comment: 'Terminer une partie en ligne face à un autre joueur.' },
-  { id: 'didacticiel', icone: '🎓', nom: 'Bon élève', comment: 'Suivre le didacticiel jusqu’au bout.' },
-  { id: 'dix-parties', icone: '🎲', nom: 'Habitué', comment: 'Terminer dix parties.' },
-  { id: 'cinquante-parties', icone: '🏛️', nom: 'Pilier du tripot', comment: 'Terminer cinquante parties.' },
+  { id: 'premiere-victoire', icone: '🏆', nom: 'Première victoire', comment: 'Gagner une partie.',
+    en: { nom: 'First win', comment: 'Win a game.' } },
+  { id: 'larbin-boss', icone: '👑', nom: 'De Larbin à Boss', comment: 'Être Boss juste après avoir été Larbin.',
+    en: { nom: 'From Lackey to Boss', comment: 'Be Boss right after being Lackey.' } },
+  { id: 'boss-direct', icone: '⚡', nom: 'D’entrée de jeu', comment: 'Être Boss dès la première manche.',
+    en: { nom: 'Off the mark', comment: 'Be Boss in the very first round.' } },
+  { id: 'trois-boss', icone: '🔱', nom: 'Règne sans partage', comment: 'Être Boss trois manches de suite.',
+    en: { nom: 'Undisputed reign', comment: 'Be Boss three rounds in a row.' } },
+  { id: 'jamais-larbin', icone: '🛡️', nom: 'Intouchable', comment: 'Gagner une partie sans jamais avoir été Larbin.',
+    en: { nom: 'Untouchable', comment: 'Win a game without ever being Lackey.' } },
+  { id: 'remontada', icone: '🧗', nom: 'Remontada', comment: 'Gagner une partie commencée en Larbin.',
+    en: { nom: 'Comeback', comment: 'Win a game you started as Lackey.' } },
+  { id: 'quatre-deux', icone: '🃏', nom: 'Carré de 2', comment: 'Recevoir les quatre 2 dans sa main.',
+    en: { nom: 'Four of a kind', comment: 'Get all four 2s in your hand.' } },
+  { id: 'fini-sur-deux', icone: '🤡', nom: 'Larbin d’office', comment: 'Finir une manche sur un 2. Ça arrive aux meilleurs.',
+    en: { nom: 'Lackey by default', comment: 'Finish a round on a 2. It happens to the best.' } },
+  { id: 'serie-trois', icone: '🔥', nom: 'Série de trois', comment: 'Gagner trois parties d’affilée.',
+    en: { nom: 'Hat-trick', comment: 'Win three games in a row.' } },
+  { id: 'en-ligne', icone: '🌍', nom: 'Premier contact', comment: 'Terminer une partie en ligne face à un autre joueur.',
+    en: { nom: 'First contact', comment: 'Finish an online game against another player.' } },
+  { id: 'didacticiel', icone: '🎓', nom: 'Bon élève', comment: 'Suivre le didacticiel jusqu’au bout.',
+    en: { nom: 'Good student', comment: 'Complete the tutorial.' } },
+  { id: 'dix-parties', icone: '🎲', nom: 'Habitué', comment: 'Terminer dix parties.',
+    en: { nom: 'Regular', comment: 'Finish ten games.' } },
+  { id: 'cinquante-parties', icone: '🏛️', nom: 'Pilier du tripot', comment: 'Terminer cinquante parties.',
+    en: { nom: 'Pillar of the card room', comment: 'Finish fifty games.' } },
 ];
 
 const DEUX = 15;

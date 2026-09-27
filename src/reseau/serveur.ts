@@ -9,6 +9,7 @@
  */
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { networkInterfaces } from 'node:os';
 import path from 'node:path';
@@ -146,8 +147,12 @@ const serveur = http.createServer(async (req, res) => {
   }
 
   // « /regles » plutôt que « /regles.html » : la même adresse qu'en production.
-  const nu = demande.replace(/^\/+/, '');
-  const relatif = nu === '' ? 'index.html' : path.extname(nu) ? nu : `${nu}.html`;
+  // Et « /en » est un dossier : on y sert sa page d'accueil.
+  const nu = demande.replace(/^\/+/, '').replace(/\/+$/, '');
+  const relatif = nu === '' ? 'index.html'
+    : path.extname(nu) ? nu
+    : existsSync(path.join(SITE, nu, 'index.html')) ? path.join(nu, 'index.html')
+    : `${nu}.html`;
   const fichier = path.join(SITE, relatif);
 
   if (!fichier.startsWith(SITE)) {

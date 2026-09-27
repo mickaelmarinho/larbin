@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const HOTE = 'larbin.vercel.app';
 /** Les pages qui méritent d'être trouvées ; la confidentialité est en noindex. */
-const PAGES = ['/', '/regles', '/strategie', '/variantes'];
+const PAGES = ['/', '/regles', '/strategie', '/variantes', '/en', '/en/rules', '/en/strategy', '/en/variants'];
 const STATIQUE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'web', 'statique');
 
 async function cle() {

@@ -16,10 +16,11 @@ import { apply, createGame, viewFor, type PlayerView } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
 import { sortHand } from '../engine/cards.ts';
 import type { Table } from './table.ts';
+import { tr } from './langue.ts';
 
 const MOI = 'moi';
 const ORDRE = [MOI, 'gina', 'hugo', 'lila'];
-const NOMS: Record<string, string> = { moi: 'Vous', gina: 'Gina', hugo: 'Hugo', lila: 'Lila' };
+const NOMS: Record<string, string> = { moi: tr('Vous', 'You'), gina: 'Gina', hugo: 'Hugo', lila: 'Lila' };
 
 /** Le temps qu'un adversaire prend pour répondre : la table doit rester lisible. */
 const REFLEXION = 650;
@@ -54,45 +55,62 @@ interface Lecon {
 
 const LECONS: Lecon[] = [
   {
-    consigne: 'Hugo a posé un 8. Pour rester dans la série, posez une carte plus '
+    consigne: tr('Hugo a posé un 8. Pour rester dans la série, posez une carte plus '
       + 'forte : votre 9. Touchez-la, puis « Poser ».',
+    'Hugo played an 8. To stay in the trick, play a higher card: your 9. Tap it, then “Play”.'),
     mains: { moi: ['9♥', '4♠', 'R♦'], gina: ['3♥'], hugo: ['8♦', '3♣'], lila: ['3♠'] },
     pose: { joueur: 'hugo', cartes: ['8♦'] },
     ontPasse: ['gina', 'lila'],
     acquise: (vue) => !enMain(vue, '9♥'),
-    morale: () => 'On pose toujours <b>le même nombre de cartes</b>, et d’une hauteur '
+    morale: () => tr('On pose toujours <b>le même nombre de cartes</b>, et d’une hauteur '
       + '<b>strictement supérieure</b>. Quand on ne peut pas — ou qu’on ne veut pas —, on passe.',
+    'You always play <b>the same number of cards</b>, of a <b>strictly higher</b> rank. '
+      + 'When you can’t — or don’t want to — you pass.'),
   },
   {
-    consigne: 'Le tapis est libre : à vous d’ouvrir. Posez votre 7, et regardez '
+    consigne: tr('Le tapis est libre : à vous d’ouvrir. Posez votre 7, et regardez '
       + 'ce que font les autres.',
+    'The table is open: you lead. Play your 7, and watch what the others do.'),
     mains: { moi: ['7♠', 'R♦'], gina: ['9♥'], hugo: ['D♣'], lila: ['3♦'] },
     acquise: (vue) => vue.requirement === null && vue.pile.length > 0,
-    morale: () => 'Le tour est fini, et votre Roi n’a servi à rien : <b>une série ne fait '
+    morale: () => tr('Le tour est fini, et votre Roi n’a servi à rien : <b>une série ne fait '
       + 'qu’un tour de table</b>. Au Président vous auriez pu repasser ; ici, chacun ne '
       + 'parle qu’une fois. Une grosse carte se sort au bon tour, ou se garde pour la suite.',
+    'The round of the table is over, and your King was no use: <b>a trick goes around the '
+      + 'table only once</b>. In classic President you could have come back; here, everyone '
+      + 'speaks just once. A big card is played at the right moment, or kept for later.'),
   },
   {
-    consigne: 'Lila a posé un as. Une seule carte le bat : le 2. Posez-le.',
+    consigne: tr('Lila a posé un as. Une seule carte le bat : le 2. Posez-le.',
+      'Lila played an ace. Only one card beats it: the 2. Play it.'),
     mains: { moi: ['2♥', '6♣'], gina: ['3♥'], hugo: ['3♠'], lila: ['A♠', '3♦'] },
     pose: { joueur: 'lila', cartes: ['A♠'] },
     ontPasse: ['gina', 'hugo'],
     acquise: (vue) => !enMain(vue, '2♥'),
-    morale: () => 'Le <b>2 est la carte la plus forte</b> du jeu, et il <b>coupe net</b> : '
+    morale: () => tr('Le <b>2 est la carte la plus forte</b> du jeu, et il <b>coupe net</b> : '
       + 'la série s’arrête là, les autres n’ont même pas à passer. Et c’est vous qui rouvrez.',
+    'The <b>2 is the highest card</b> in the game, and it <b>cuts</b>: the trick ends right '
+      + 'there, the others don’t even get to pass. And you lead next.'),
   },
   {
-    consigne: 'Deux cartes en main, un 8 et un 2, et le tapis est libre. Attention : '
+    consigne: tr('Deux cartes en main, un 8 et un 2, et le tapis est libre. Attention : '
       + 'finir sur un 2 rend Larbin d’office. Dans quel ordre les jouer ?',
+    'Two cards in hand, an 8 and a 2, and the table is open. Careful: finishing on a 2 '
+      + 'makes you Lackey by default. In what order should you play them?'),
     mains: { moi: ['2♦', '8♠'], gina: ['3♥'], hugo: ['3♠'], lila: ['3♣'] },
     acquise: (vue) => vue.me.hand.length === 0,
     rate: (vue) => vue.me.finishedOnTwo,
     morale: (rate) => (rate
-      ? 'Vous sortez premier… et Larbin quand même, parce que votre dernière carte était '
+      ? tr('Vous sortez premier… et Larbin quand même, parce que votre dernière carte était '
         + 'un 2. Il fallait le jouer <b>d’abord</b> : il coupe la série, vous rend la main, '
-        + 'et vous sortez ensuite proprement avec le 8.'
-      : 'Exactement. Le 2 joué d’abord coupe la série et vous rend la main ; le 8 vous fait '
-        + 'sortir proprement. Gardé pour la fin, ce même 2 vous aurait rendu Larbin.'),
+        + 'et vous sortez ensuite proprement avec le 8.',
+      'You’re out first… and Lackey anyway, because your last card was a 2. You had to play '
+        + 'it <b>first</b>: it cuts the trick, gives you the lead back, and then you go out '
+        + 'cleanly with the 8.')
+      : tr('Exactement. Le 2 joué d’abord coupe la série et vous rend la main ; le 8 vous fait '
+        + 'sortir proprement. Gardé pour la fin, ce même 2 vous aurait rendu Larbin.',
+      'Exactly. The 2 played first cuts the trick and gives you the lead back; the 8 takes you '
+        + 'out cleanly. Kept for the end, that same 2 would have made you Lackey.')),
   },
 ];
 

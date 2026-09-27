@@ -12,7 +12,7 @@
 const VERSION = '__VERSION__';
 const CACHE = `larbin-${VERSION}`;
 /** Ce qu'il faut pour ouvrir le jeu hors ligne : la page porte déjà son script et son style. */
-const ESSENTIEL = ['/', '/manifest.webmanifest', '/icone-192.png', '/icone-512.png'];
+const ESSENTIEL = ['/', '/en', '/manifest.webmanifest', '/en/manifest.webmanifest', '/icone-192.png', '/icone-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ESSENTIEL)).then(() => self.skipWaiting()));
@@ -48,8 +48,12 @@ self.addEventListener('fetch', (e) => {
       .catch(async () => {
         const trouve = await caches.match(requete, { ignoreSearch: true });
         if (trouve) return trouve;
-        // Une page jamais visitée, hors ligne : on ouvre le jeu, qui sait jouer sans réseau.
-        if (requete.mode === 'navigate') return (await caches.match('/')) ?? Response.error();
+        // Une page jamais visitée, hors ligne : on ouvre le jeu, qui sait jouer sans
+        // réseau — dans la langue de l'adresse demandée.
+        if (requete.mode === 'navigate') {
+          const accueil = /^\/en(\/|$)/.test(url.pathname) ? '/en' : '/';
+          return (await caches.match(accueil)) ?? Response.error();
+        }
         return Response.error();
       }),
   );

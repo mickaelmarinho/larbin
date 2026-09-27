@@ -8,6 +8,7 @@ import { build, context } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { manifesteAnglais, pageAnglaise } from './page-anglaise.mjs';
 import path from 'node:path';
 
 const racine = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -67,10 +68,19 @@ async function assembler() {
   // du dépôt n'a rien à faire en ligne.
   await mkdir(publie, { recursive: true });
   await writeFile(path.join(publie, 'index.html'), enLigne(page), 'utf8');
+  // La même page en anglais, sous /en : le script y lit sa langue dans l'adresse.
+  await mkdir(path.join(publie, 'en'), { recursive: true });
+  await writeFile(path.join(publie, 'en', 'index.html'), pageAnglaise(enLigne(page)), 'utf8');
+  await writeFile(path.join(publie, 'en', 'manifest.webmanifest'),
+    manifesteAnglais(await readFile(src('statique/manifest.webmanifest'), 'utf8')), 'utf8');
   await writeFile(path.join(publie, 'regles.html'), regles, 'utf8');
   await writeFile(path.join(publie, 'confidentialite.html'), confidentialite, 'utf8');
   await writeFile(path.join(publie, 'strategie.html'), article(strategie), 'utf8');
   await writeFile(path.join(publie, 'variantes.html'), article(variantes), 'utf8');
+  // Les pages anglaises : même mise en page que les françaises.
+  for (const nom of ['rules', 'strategy', 'variants', 'privacy']) {
+    await writeFile(path.join(publie, 'en', `${nom}.html`), article(await readFile(src(`en/${nom}.html`), 'utf8')), 'utf8');
+  }
   // Le service worker porte l'empreinte de la page : une nouvelle version du jeu
   // en fait un nouveau, qui efface les copies de l'ancienne.
   const empreinte = createHash('sha256').update(enLigne(page)).digest('hex').slice(0, 12);

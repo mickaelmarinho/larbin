@@ -5,6 +5,7 @@
  */
 import type { LigneClassement } from './compte.ts';
 import type { Activite } from './table.ts';
+import { tr } from './langue.ts';
 
 export interface SigneDeVie {
   texte: string;
@@ -21,17 +22,17 @@ export interface SigneDeVie {
  */
 export function signeDeVie(a: Activite | null): SigneDeVie | null {
   if (!a) return null;
-  if (a.joueurs <= 0) return { texte: 'Lancez la première table', detail: '', vivant: false };
+  if (a.joueurs <= 0) return { texte: tr('Lancez la première table', 'Open the first table'), detail: '', vivant: false };
   const s = a.publiques > 1 ? 's' : '';
-  const detail = a.publiques > 0 ? `${a.publiques} table${s} ouverte${s}` : '';
-  return { texte: `${a.joueurs} en ligne`, detail, vivant: true };
+  const detail = a.publiques > 0 ? tr(`${a.publiques} table${s} ouverte${s}`, `${a.publiques} open table${s}`) : '';
+  return { texte: tr(`${a.joueurs} en ligne`, `${a.joueurs} online`), detail, vivant: true };
 }
 
 /** Le bouton du jeu en ligne invite à rejoindre ceux qui attendent déjà. */
 export function texteDuBoutonPublic(a: Activite | null): string {
-  if (a && a.enAttente > 1) return `Rejoindre ${a.enAttente} visiteurs qui attendent`;
-  if (a && a.enAttente === 1) return 'Rejoindre un visiteur qui attend';
-  return 'Jouer avec d\'autres visiteurs';
+  if (a && a.enAttente > 1) return tr(`Rejoindre ${a.enAttente} visiteurs qui attendent`, `Join ${a.enAttente} waiting players`);
+  if (a && a.enAttente === 1) return tr('Rejoindre un visiteur qui attend', 'Join a waiting player');
+  return tr('Jouer avec d\'autres visiteurs', 'Play with other visitors');
 }
 
 /**
