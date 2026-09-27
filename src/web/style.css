@@ -1157,6 +1157,12 @@ button.action.defi small {
   color: var(--creme);
 }
 
+/* Les statistiques du défi : quatre cases, sur une ligne quand il y a la place. */
+.compteurs.stats-defi { grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 12px; }
+.stats-defi div { padding: 8px 4px; text-align: center; }
+.stats-defi b { font-size: 19px; }
+.stats-defi span { display: block; font-size: 11px; line-height: 1.25; }
+
 .panneau p.ma-place {
   margin: 0 0 4px;
   text-align: center;

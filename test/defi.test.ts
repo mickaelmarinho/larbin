@@ -12,7 +12,7 @@ import { DepotMemoire } from '../src/reseau/depot.ts';
 import { jourDeParis } from '../src/web/jour.ts';
 import {
   DEFI_MANCHES, DEFI_MAXIMUM, bilanVierge, emojisDuDefi, graineDuJour, hasardDuDefi, noterLaManche, partieDuDefi,
-  rejouerLeDefi, texteDuDefi,
+  rejouerLeDefi, statsDuDefi, texteDuDefi, veille,
 } from '../src/web/defi.ts';
 
 /**
@@ -115,6 +115,27 @@ test('l’API du défi : le serveur rejoue, classe, et n’accepte qu’un score
   assert.equal(classement.corps.lignes[0].roles, partie.roles.join(','));
 
   await new Promise<void>((r) => serveur.close(() => r()));
+});
+
+test('les séries : elles courent tant qu’on n’a pas manqué un jour', () => {
+  assert.equal(veille('2026-03-01'), '2026-02-28');
+  assert.equal(veille('2027-01-01'), '2026-12-31');
+
+  const h = { '2026-09-20': 4, '2026-09-21': 6, '2026-09-22': 9, '2026-09-25': 3, '2026-09-26': 5 };
+  // Hier joué, aujourd'hui pas encore : la série tient, on peut la prolonger.
+  assert.deepEqual(statsDuDefi(h, '2026-09-27'),
+    { joues: 5, serie: 2, record: 3, moyenne: 5.4, faitAujourdhui: false });
+  // Aujourd'hui joué : elle grandit.
+  assert.equal(statsDuDefi({ ...h, '2026-09-27': 7 }, '2026-09-27').serie, 3);
+  // Un jour manqué : elle retombe à zéro, le record reste.
+  assert.deepEqual(statsDuDefi(h, '2026-09-28'), { joues: 5, serie: 0, record: 3, moyenne: 5.4, faitAujourdhui: false });
+  assert.deepEqual(statsDuDefi({}, '2026-09-28'), { joues: 0, serie: 0, record: 0, moyenne: 0, faitAujourdhui: false });
+});
+
+test('le message partagé dit la série, à partir de deux jours', () => {
+  const b = { ...bilanVierge('2026-09-27'), roles: ['boss', 'neutre', 'larbin'] as Role[], points: 4, fini: true };
+  assert.doesNotMatch(texteDuDefi(b, 1), /🔥/);
+  assert.match(texteDuDefi(b, 5), /🔥 5 jours de suite/);
 });
 
 test('chaque jour a sa donne', () => {

@@ -141,10 +141,95 @@ export const emojisDuDefi = (b: BilanDuDefi): string => b.roles.map((r) => EMOJI
 /** « 27/09 » : le jour du défi, comme on l'écrit. */
 export const jourCourt = (jour: string): string => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
 
-/** Le message qu'on envoie à ses proches : le score, les rôles, et de quoi les piquer au jeu. */
-export const texteDuDefi = (b: BilanDuDefi): string =>
+/** Le message qu'on envoie à ses proches : le score, les rôles, la série, et de quoi les piquer au jeu. */
+export const texteDuDefi = (b: BilanDuDefi, serie = 0): string =>
   `Le Larbin — défi du ${jourCourt(b.jour)} : ${b.points}/${DEFI_MAXIMUM}\n${emojisDuDefi(b)}\n`
+  + (serie >= 2 ? `🔥 ${serie} jours de suite\n` : '')
   + 'Même donne pour tout le monde. Tu fais mieux ?';
+
+/* ------------------------------------------------------------ les séries */
+
+/*
+ * Ce qui fait revenir le lendemain : la série de jours sans manquer un défi.
+ * On garde, pour chaque jour joué, les points obtenus — rien d'autre.
+ */
+
+/** Les points de chaque défi achevé, par jour (AAAA-MM-JJ). */
+export type Historique = Record<string, number>;
+
+/** Le jour d'avant (AAAA-MM-JJ), sans fuseau : on compte en dates, pas en heures. */
+export function veille(jour: string): string {
+  const [a, m, j] = jour.split('-').map(Number);
+  return new Date(Date.UTC(a, m - 1, j - 1)).toISOString().slice(0, 10);
+}
+
+export interface StatsDuDefi {
+  joues: number;
+  /** Les jours consécutifs jusqu'à aujourd'hui — ou jusqu'à hier, tant qu'on peut encore la prolonger. */
+  serie: number;
+  record: number;
+  /** Moyenne des points, arrondie au dixième. */
+  moyenne: number;
+  /** Le défi d'aujourd'hui est-il déjà fait ? */
+  faitAujourdhui: boolean;
+}
+
+export function statsDuDefi(h: Historique, aujourdhui: string): StatsDuDefi {
+  const jours = Object.keys(h).sort();
+  const faitAujourdhui = aujourdhui in h;
+
+  // La série court tant qu'aujourd'hui ou hier a été joué.
+  let serie = 0;
+  let curseur = faitAujourdhui ? aujourdhui : veille(aujourdhui);
+  while (curseur in h) {
+    serie += 1;
+    curseur = veille(curseur);
+  }
+
+  let record = 0;
+  let enCours = 0;
+  let precedent = '';
+  for (const jour of jours) {
+    enCours = precedent && veille(jour) === precedent ? enCours + 1 : 1;
+    record = Math.max(record, enCours);
+    precedent = jour;
+  }
+
+  const total = jours.reduce((s, j) => s + h[j], 0);
+  return {
+    joues: jours.length,
+    serie,
+    record,
+    moyenne: jours.length ? Math.round((total / jours.length) * 10) / 10 : 0,
+    faitAujourdhui,
+  };
+}
+
+const CLE_HISTORIQUE = 'larbin.defi.historique';
+
+export function lireHistorique(): Historique {
+  try {
+    const brut = JSON.parse(localStorage.getItem(CLE_HISTORIQUE) ?? '{}') as Record<string, unknown>;
+    const h: Historique = {};
+    for (const [jour, points] of Object.entries(brut ?? {})) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(jour) && Number.isInteger(points)) h[jour] = points as number;
+    }
+    return h;
+  } catch {
+    return {};
+  }
+}
+
+/** Ajoute un défi achevé à l'historique ; rejouer le même jour ne change rien. */
+export function noterDansLHistorique(b: BilanDuDefi): Historique {
+  const h = lireHistorique();
+  if (!b.fini || b.jour in h) return h;
+  h[b.jour] = b.points;
+  try {
+    localStorage.setItem(CLE_HISTORIQUE, JSON.stringify(h));
+  } catch { /* la série repartira de zéro, tant pis */ }
+  return h;
+}
 
 /* ------------------------------------------------------------ le disque */
 

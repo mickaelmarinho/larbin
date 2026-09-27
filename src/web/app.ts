@@ -13,7 +13,8 @@ import {
   tablesPubliques, type ResumeTable, type Table,
 } from './table.ts';
 import {
-  DEFI_MANCHES, DEFI_MAXIMUM, bilanDuJour, emojisDuDefi, texteDuDefi, type BilanDuDefi,
+  DEFI_MANCHES, DEFI_MAXIMUM, bilanDuJour, emojisDuDefi, noterDansLHistorique, statsDuDefi, texteDuDefi,
+  type BilanDuDefi,
 } from './defi.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
@@ -790,17 +791,24 @@ function voileDefi(bilan: BilanDuDefi): void {
 /** Le score du défi : les rôles en émojis, à comparer — et à envoyer. */
 function voileDefiFini(bilan: BilanDuDefi, retour: () => void): void {
   const horsLigne = location.protocol === 'file:';
+  const stats = statsDuDefi(noterDansLHistorique(bilan), bilan.jour);
   montrerVoile(`
     <h2>🗓️ Défi du ${jourCourt(bilan.jour)}</h2>
     <p class="score-defi"><b>${bilan.points}</b>/${DEFI_MAXIMUM}</p>
     <p class="roles-defi" aria-label="${bilan.roles.map((r) => TITRES[r]).join(', ')}">${emojisDuDefi(bilan)}</p>
+    <div class="compteurs stats-defi">
+      <div><b>${stats.serie >= 2 ? '🔥 ' : ''}${stats.serie}</b><span>jour${stats.serie > 1 ? 's' : ''} de suite</span></div>
+      <div><b>${stats.record}</b><span>record</span></div>
+      <div><b>${stats.joues}</b><span>défi${stats.joues > 1 ? 's' : ''} joué${stats.joues > 1 ? 's' : ''}</span></div>
+      <div><b>${stats.moyenne.toLocaleString('fr-FR')}</b><span>points en moyenne</span></div>
+    </div>
     ${horsLigne ? '' : '<div id="classement-defi"><p class="mention">On compare les scores du jour…</p></div>'}
     <p class="mention">Même donne pour tout le monde : défiez vos proches. Prochain défi à minuit.</p>
     <button class="action primaire" id="defi-partager" type="button">Partager mon score</button>
     <button class="action" id="defi-fin" type="button">Revenir à l’accueil</button>
   `);
   $('defi-partager').addEventListener('click', (e) => {
-    void partager(e.currentTarget as HTMLElement, texteDuDefi(bilan), `https://${ADRESSE_PUBLIQUE}`);
+    void partager(e.currentTarget as HTMLElement, texteDuDefi(bilan, stats.serie), `https://${ADRESSE_PUBLIQUE}`);
   });
   $('defi-fin').addEventListener('click', retour);
   if (!horsLigne) void afficherLeClassementDuDefi(bilan);
@@ -816,8 +824,12 @@ async function afficherLeClassementDuDefi(bilan: BilanDuDefi): Promise<void> {
   const classement = await classementDuDefi(bilan.jour);
   const cadre = document.getElementById('classement-defi');
   if (!cadre) return;   // le joueur est passé à autre chose
-  if (!classement || classement.total === 0) {
+  if (!classement) {
     cadre.innerHTML = '<p class="mention">Le classement du jour ne répond pas. Il sera là à la prochaine ouverture.</p>';
+    return;
+  }
+  if (classement.total === 0) {
+    cadre.innerHTML = '<p class="mention">Personne n’est encore classé aujourd’hui.</p>';
     return;
   }
   const ma = envoye.place
@@ -1268,6 +1280,9 @@ function voileAccueil(): void {
   // Rien à afficher au premier passage : l'accueil d'un inconnu doit rester net.
   const b = bilan(parcours());
   const defi = bilanDuJour();
+  // La série du défi : on la montre tant qu'elle est vivante, pour qu'on ait
+  // envie de la prolonger aujourd'hui.
+  const serieDuDefi = statsDuDefi(noterDansLHistorique(defi), defi.jour).serie;
   const moi = sessionOuverte();
 
   // Ce qui se consulte sans jouer tient sur une rangée d'icônes, en bas : les
@@ -1338,7 +1353,9 @@ function voileAccueil(): void {
         <button class="action${horsLigne ? ' primaire' : ''}" id="solo" type="button">Contre les bots</button>
         <button class="action defi" id="defi" type="button">${defi.fini
           ? `Défi du jour <small>✓ ${defi.points}/${DEFI_MAXIMUM}</small>`
-          : '🗓️ Défi du jour'}</button>
+          : serieDuDefi > 0
+            ? `Défi du jour <small title="Jours de suite">🔥 ${serieDuDefi}</small>`
+            : '🗓️ Défi du jour'}</button>
       </div>
       ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
         <span>♥ Apprendre en jouant</span>

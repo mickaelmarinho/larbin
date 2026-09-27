@@ -96,6 +96,13 @@ les invités, un par adresse et par jour (une empreinte gardée en mémoire jusq
 lendemain). Les dix meilleurs s'affichent sous le score (`GET /defi`), avec sa
 place ; les lignes s'effacent au bout d'un mois.
 
+Pour donner envie de revenir le lendemain, le navigateur garde l'historique de
+ses défis (les points de chaque jour, rien d'autre) et en tire une **série** —
+les jours de suite sans en manquer un —, un record, le nombre de défis et la
+moyenne. La série s'affiche sur le bouton de l'accueil tant qu'on peut encore la
+prolonger (« Défi du jour 🔥 4 »), sur l'écran de fin, et dans le message partagé
+(« 🔥 5 jours de suite »).
+
 Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
 dans l'encadré Solo, juste sous « Contre les bots » : une carte crème
 frappée d'un cœur, qui se remarque sans prendre la première place. Une fois les
