@@ -276,7 +276,14 @@ ligne » ou « trou du cul en ligne ». Le titre de la page et sa description le
 disent donc en toutes lettres. L'accueil étant dessiné par le script, la page
 porte aussi un court texte en clair (`#presentation` : titre, description, les
 trois règles, lien vers `/regles`) pour les moteurs de recherche et les aperçus
-de lien ; le jeu le retire dès son démarrage. Sur le site seulement, des données
+de lien ; le jeu le retire dès son démarrage.
+
+Deux pages d'articles visent les recherches que les règles ne couvrent pas :
+`/strategie` (« comment gagner au Président ») et `/variantes` (les règles maison
+— révolution, saut, suites… — et les choix du Larbin). Elles partagent la mise
+en page de `/regles` : l'assemblage injecte son `<style>` à la place de
+`/*STYLE-ARTICLE*/`. Les trois pages se renvoient les unes aux autres, et figurent
+au sitemap et dans les signalements IndexNow. Sur le site seulement, des données
 structurées (`VideoGame`, gratuit) décrivent le jeu aux moteurs.
 
 Bing et les moteurs du protocole **IndexNow** sont prévenus à chaque mise en

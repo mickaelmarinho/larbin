@@ -120,7 +120,6 @@ const serveur = http.createServer(async (req, res) => {
     return;
   }
 
-  // « /regles » plutôt que « /regles.html » : la même adresse qu'en production.
   // La liste des tables publiques : de quoi montrer que le site vit, et laisser
   // un arrivant choisir sa table. Des comptes seulement — les noms des joueurs
   // ne regardent pas les passants. On ne montre que les tables où quelqu'un est
@@ -146,6 +145,7 @@ const serveur = http.createServer(async (req, res) => {
     return;
   }
 
+  // « /regles » plutôt que « /regles.html » : la même adresse qu'en production.
   const nu = demande.replace(/^\/+/, '');
   const relatif = nu === '' ? 'index.html' : path.extname(nu) ? nu : `${nu}.html`;
   const fichier = path.join(SITE, relatif);

@@ -35,13 +35,21 @@ const optionsEsbuild = {
 };
 
 async function assembler() {
-  const [gabarit, style, regles, confidentialite, paquet] = await Promise.all([
+  const [gabarit, style, regles, confidentialite, strategie, variantes, paquet] = await Promise.all([
     readFile(src('index.html'), 'utf8'),
     readFile(src('style.css'), 'utf8'),
     readFile(src('regles.html'), 'utf8'),
     readFile(src('confidentialite.html'), 'utf8'),
+    readFile(src('strategie.html'), 'utf8'),
+    readFile(src('variantes.html'), 'utf8'),
     build(optionsEsbuild).then((r) => r.outputFiles[0].text),
   ]);
+
+  // Les pages d'articles (stratégie, variantes) portent la mise en page de celle
+  // des règles : une seule feuille de style à tenir, pas trois.
+  const styleArticle = regles.match(/<style>([\s\S]*?)<\/style>/)?.[1];
+  if (!styleArticle) throw new Error('regles.html : pas de <style> à partager');
+  const article = (html) => html.replace('/*STYLE-ARTICLE*/', () => styleArticle.trim());
 
   // On insère via une fonction de remplacement : sinon $& et compagnie dans le
   // code minifié seraient interprétés comme des motifs.
@@ -59,6 +67,8 @@ async function assembler() {
   await writeFile(path.join(publie, 'index.html'), enLigne(page), 'utf8');
   await writeFile(path.join(publie, 'regles.html'), regles, 'utf8');
   await writeFile(path.join(publie, 'confidentialite.html'), confidentialite, 'utf8');
+  await writeFile(path.join(publie, 'strategie.html'), article(strategie), 'utf8');
+  await writeFile(path.join(publie, 'variantes.html'), article(variantes), 'utf8');
   await cp(src('statique'), publie, { recursive: true });
 
   const ko = (Buffer.byteLength(seul) / 1024).toFixed(0);

@@ -6,6 +6,8 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/regles", "destination": "/regles.html" },
-    { "source": "/confidentialite", "destination": "/confidentialite.html" }
+    { "source": "/confidentialite", "destination": "/confidentialite.html" },
+    { "source": "/strategie", "destination": "/strategie.html" },
+    { "source": "/variantes", "destination": "/variantes.html" }
   ]
 }
