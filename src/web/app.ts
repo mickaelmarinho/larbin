@@ -2238,6 +2238,14 @@ const comptage = reglerLeComptage(demandes);
 compterLaVisite(jourDeParis(), demandes);
 ecouterInstallation(() => compter('installation'));
 
+// Une copie du jeu pour jouer sans réseau (voir sw.js). Après le chargement :
+// elle ne doit rien retarder, et le fichier seul n'en a pas l'usage.
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => { /* sans elle, le jeu marche en ligne */ });
+  });
+}
+
 const salonDemande = demandes.get('salon');
 if (salonDemande && location.protocol !== 'file:') {
   const nom = localStorage.getItem('larbin.nom') ?? '';

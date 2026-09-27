@@ -5,6 +5,7 @@
  *   node scripts/build.mjs [--watch]
  */
 import { build, context } from 'esbuild';
+import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -35,13 +36,14 @@ const optionsEsbuild = {
 };
 
 async function assembler() {
-  const [gabarit, style, regles, confidentialite, strategie, variantes, paquet] = await Promise.all([
+  const [gabarit, style, regles, confidentialite, strategie, variantes, travailleur, paquet] = await Promise.all([
     readFile(src('index.html'), 'utf8'),
     readFile(src('style.css'), 'utf8'),
     readFile(src('regles.html'), 'utf8'),
     readFile(src('confidentialite.html'), 'utf8'),
     readFile(src('strategie.html'), 'utf8'),
     readFile(src('variantes.html'), 'utf8'),
+    readFile(src('sw.js'), 'utf8'),
     build(optionsEsbuild).then((r) => r.outputFiles[0].text),
   ]);
 
@@ -69,6 +71,10 @@ async function assembler() {
   await writeFile(path.join(publie, 'confidentialite.html'), confidentialite, 'utf8');
   await writeFile(path.join(publie, 'strategie.html'), article(strategie), 'utf8');
   await writeFile(path.join(publie, 'variantes.html'), article(variantes), 'utf8');
+  // Le service worker porte l'empreinte de la page : une nouvelle version du jeu
+  // en fait un nouveau, qui efface les copies de l'ancienne.
+  const empreinte = createHash('sha256').update(enLigne(page)).digest('hex').slice(0, 12);
+  await writeFile(path.join(publie, 'sw.js'), travailleur.replace('__VERSION__', empreinte), 'utf8');
   await cp(src('statique'), publie, { recursive: true });
 
   const ko = (Buffer.byteLength(seul) / 1024).toFixed(0);

@@ -74,6 +74,14 @@ guise. Sous les façons de jouer, « 📣 Faire découvrir le jeu à un proche �
 la feuille de partage du téléphone (ou copie le lien sur PC). En bas, un pied
 de page mène aux règles complètes, à la confidentialité et au contact.
 
+Le jeu s'ouvre **sans réseau** : un service worker (`src/web/sw.js`) garde une
+copie de la page et des icônes, et la sert quand le réseau manque — le solo et
+le défi du jour se jouent alors normalement, et le score du défi part au
+classement à la prochaine connexion. Réseau d'abord, copie en secours : avec du
+réseau on reçoit toujours la dernière version, et chaque mise en ligne change la
+version du cache (l'empreinte de la page), ce qui efface l'ancienne copie. Le
+serveur de parties, l'API et les compteurs ne passent jamais par la copie.
+
 À partir de la deuxième partie, l'écran de fin propose d'installer le jeu sur
 l'écran d'accueil (`src/web/installation.ts`) : la fenêtre du navigateur sur
 Android et PC, le geste expliqué sur iPhone. « Plus tard » est respecté — on ne
