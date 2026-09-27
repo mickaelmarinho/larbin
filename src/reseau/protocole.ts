@@ -139,7 +139,7 @@ export function nomPropre(brut: string): string {
  * comptes créés, pour que personne ne puisse les gonfler.
  */
 export const EVENEMENTS_NAVIGATEUR = [
-  'visite', 'solo-lancee', 'solo-finie', 'defi-lance', 'defi-fini', 'didacticiel-fini', 'partage', 'installation',
+  'visite', 'visite-recherche', 'visite-partage', 'solo-lancee', 'solo-finie', 'defi-lance', 'defi-fini', 'didacticiel-fini', 'partage', 'installation',
 ] as const;
 export const EVENEMENTS = [...EVENEMENTS_NAVIGATEUR, 'en-ligne-finie', 'en-ligne-entre-humains', 'compte-cree'] as const;
 export type EvenementNavigateur = (typeof EVENEMENTS_NAVIGATEUR)[number];

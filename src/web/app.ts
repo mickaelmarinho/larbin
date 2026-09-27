@@ -35,7 +35,8 @@ import {
 import { sessionOuverte } from './session.ts';
 import { podium, signeDeVie, texteDuBoutonPublic, type SigneDeVie } from './vitrine.ts';
 import { nomPropose } from './noms.ts';
-import { compter } from './mesure.ts';
+import { compter, compterLaVisite, reglerLeComptage } from './mesure.ts';
+import { jourDeParis } from './jour.ts';
 import { classementDuDefi, emojisDeLaLigne, envoyerLeDefi } from './defi-en-ligne.ts';
 import {
   ecouterInstallation, installer as installerLeJeu, moyenDInstaller, proposerInstallation, refusGarde, refuser,
@@ -808,7 +809,8 @@ function voileDefiFini(bilan: BilanDuDefi, retour: () => void): void {
     <button class="action" id="defi-fin" type="button">Revenir à l’accueil</button>
   `);
   $('defi-partager').addEventListener('click', (e) => {
-    void partager(e.currentTarget as HTMLElement, texteDuDefi(bilan, stats.serie), `https://${ADRESSE_PUBLIQUE}`);
+    // Le lien mène droit au défi du jour, et se reconnaît aux compteurs.
+    void partager(e.currentTarget as HTMLElement, texteDuDefi(bilan, stats.serie), `https://${ADRESSE_PUBLIQUE}/?defi`);
   });
   $('defi-fin').addEventListener('click', retour);
   if (!horsLigne) void afficherLeClassementDuDefi(bilan);
@@ -955,7 +957,7 @@ function voileFinDePartie(vue: PlayerView): void {
     : `Le Larbin m'a laissé ${maPlace}e sur ${tous.length} — ${vue.me.points} points `
       + `en ${vue.round} manches. ${vainqueur.nom} a gagné. À vous de faire mieux.`;
   $('partager').addEventListener('click', (e) => {
-    void partager(e.currentTarget as HTMLElement, recit, `https://${ADRESSE_PUBLIQUE}`);
+    void partager(e.currentTarget as HTMLElement, recit, `https://${ADRESSE_PUBLIQUE}/?via=partage`);
   });
 
   $('rejouer')?.addEventListener('click', () => {
@@ -1404,7 +1406,7 @@ function voileAccueil(): void {
   $('faire-decouvrir').addEventListener('click', (e) => {
     void partager(e.currentTarget as HTMLElement,
       'Je joue au Larbin : le Président (Trou du cul) en plus nerveux, en ligne et gratuit. Une partie ?',
-      `https://${ADRESSE_PUBLIQUE}`);
+      `https://${ADRESSE_PUBLIQUE}/?via=partage`);
   });
   $('histoire').addEventListener('click', () => voileHistoire(voileAccueil));
 
@@ -2231,16 +2233,36 @@ if (sessionOuverte()) void monCompte();
 // On cherche le serveur de parties dès le premier instant : s'il dort ailleurs,
 // il se réveille pendant que le joueur entre son nom.
 void hoteDuJeu();
-compter('visite');
+const demandes = new URLSearchParams(location.search);
+const comptage = reglerLeComptage(demandes);
+compterLaVisite(jourDeParis(), demandes);
 ecouterInstallation(() => compter('installation'));
 
-const salonDemande = new URLSearchParams(location.search).get('salon');
+const salonDemande = demandes.get('salon');
 if (salonDemande && location.protocol !== 'file:') {
   const nom = localStorage.getItem('larbin.nom') ?? '';
   if (nom) installer(new TableEnLigne(nom, salonDemande));
   else voileAccueilPourRejoindre(salonDemande);
+} else if (comptage) {
+  montrerVoile(`
+    <h2>${comptage === 'retire' ? 'Appareil hors des compteurs' : 'Appareil de nouveau compté'}</h2>
+    <p>${comptage === 'retire'
+      ? 'Vos visites et vos parties sur cet appareil ne comptent plus dans les statistiques du site. Pour annuler, ouvrez l’adresse /?moi=non.'
+      : 'Vos visites et vos parties sur cet appareil comptent de nouveau dans les statistiques du site.'}</p>
+    <button class="action primaire" id="compris-moi" type="button">Compris</button>
+  `);
+  $('compris-moi').addEventListener('click', voileAccueil);
 } else {
   voileAccueil();
+  // Un lien partagé du défi mène droit au défi : celui qui reçoit « Tu fais
+  // mieux ? » n'a pas à chercher le bouton.
+  if (demandes.has('defi')) document.getElementById('defi')?.click();
+}
+
+// Les marques de nos liens ont servi : l'adresse redevient propre, et un
+// rechargement ne rejoue pas l'arrivée.
+if (['defi', 'via', 'moi'].some((cle) => demandes.has(cle))) {
+  history.replaceState(null, '', salonDemande ? `${location.pathname}?salon=${encodeURIComponent(salonDemande)}` : location.pathname);
 }
 
 /** Arrivée par un lien d'invitation : on ne demande que le nom. */

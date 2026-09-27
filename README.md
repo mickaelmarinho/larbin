@@ -307,6 +307,14 @@ finis, partages — annoncés par le navigateur (`src/web/mesure.ts`) — et, co
 par le serveur lui-même, parties en ligne finies (dont entre humains) et comptes
 créés. Rien d'autre qu'un total : ni joueur, ni appareil, ni adresse.
 
+Un **visiteur** compte une fois par navigateur et par jour ; les robots (ceux
+des moteurs de recherche exécutent le jeu pour l'indexer) et les appareils
+retirés ne comptent pas. Ouvrir une fois `/?moi` sur un appareil le retire des
+compteurs, `/?moi=non` l'y remet. Deux colonnes disent d'où viennent les
+visiteurs : d'un moteur de recherche (référent), ou d'un lien partagé — nos liens
+portent `?defi`, `?salon=…` ou `?via=partage` (`src/web/provenance.ts`). Le lien
+d'un défi partagé ouvre directement le défi.
+
 On les lit sur `https://<serveur>/stats?cle=…`, où la clé est celle de la
 variable d'environnement `STATS_CLE` du serveur. Sans cette variable, la page
 n'existe pas.

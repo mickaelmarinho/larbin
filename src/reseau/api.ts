@@ -348,7 +348,9 @@ async function compterDepuisLeNavigateur(req: IncomingMessage, res: Reponse, dep
 }
 
 const LIBELLES: Record<Evenement, string> = {
-  'visite': 'Visites',
+  'visite': 'Visiteurs',
+  'visite-recherche': 'dont par une recherche',
+  'visite-partage': 'dont par un partage',
   'solo-lancee': 'Solo lancées',
   'solo-finie': 'Solo finies',
   'defi-lance': 'Défis lancés',
@@ -394,7 +396,9 @@ thead th{font-size:12px;color:#d9a441;vertical-align:bottom;white-space:normal;m
 tfoot td{font-weight:700;border-top:2px solid #d9a441;border-bottom:none}.zero{color:#ffffff40}
 </style></head><body>
 <h1>Compteurs du Larbin</h1>
-<p>Les ${JOURS_MONTRES} derniers jours, heure de Paris. Anonymes : aucun joueur n'y est reconnaissable.</p>
+<p>Les ${JOURS_MONTRES} derniers jours, heure de Paris. Anonymes : aucun joueur n'y est reconnaissable.
+Depuis le 27 septembre, un visiteur = un navigateur par jour, robots et appareils « /?moi » exclus ;
+avant, chaque page chargée comptait.</p>
 <div class="defile"><table>
 <thead><tr><th>Jour</th>${EVENEMENTS.map((e) => `<th>${LIBELLES[e]}</th>`).join('')}</tr></thead>
 <tbody>${corps}</tbody>
