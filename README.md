@@ -79,8 +79,16 @@ l'écran d'accueil (`src/web/installation.ts`) : la fenêtre du navigateur sur
 Android et PC, le geste expliqué sur iPhone. « Plus tard » est respecté — on ne
 redemande qu'après dix parties de plus, deux fois au plus.
 
+Dans l'encadré Solo, à côté de « Contre les bots », le **défi du jour** : la
+même partie pour tout le monde — même donne, mêmes bots, même hasard —, trois
+manches, un seul essai, et un score sur 9 qu'on partage avec ses rôles en
+émojis (« 👑 🥈 🧹 »). Il compare les joueurs sans qu'ils aient à être là en même
+temps. La donne suit une graine tirée de la date de Paris, et le seul hasard des
+bots (la coupe) suit l'état de la partie : `test/defi.test.ts` rejoue un défi
+deux fois et vérifie qu'il finit à l'identique (`src/web/defi.ts`).
+
 Tant qu'on ne l'a pas suivi jusqu'au bout, le didacticiel a son propre bouton
-dans l'encadré Solo, juste sous « Jouer contre les bots » : une carte crème
+dans l'encadré Solo, juste sous « Contre les bots » : une carte crème
 frappée d'un cœur, qui se remarque sans prendre la première place. Une fois les
 quatre leçons terminées, il se retire derrière l'icône « Règles ».
 

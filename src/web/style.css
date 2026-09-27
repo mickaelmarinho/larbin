@@ -1122,6 +1122,48 @@ button.action.alerte {
 
 #faire-decouvrir { margin-top: 8px; }
 
+/* Deux boutons côte à côte : la partie libre et le défi du jour. */
+.deux {
+  display: flex;
+  gap: 8px;
+}
+
+.panneau .deux .action { flex: 1 1 0; min-width: 0; padding-inline: 6px; }
+.panneau .deux .action + .action { margin-top: 0; }
+.panneau .deux + .action { margin-top: 8px; }
+
+button.action.defi {
+  border-color: #d9a44199;
+  color: var(--creme);
+}
+
+button.action.defi small {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--laiton);
+}
+
+/* Le score du défi : gros, et les rôles en émojis, comme on les partage. */
+.panneau p.score-defi {
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: 20px;
+  color: var(--texte-pale);
+}
+
+.score-defi b {
+  font-size: 48px;
+  line-height: 1;
+  color: var(--creme);
+}
+
+.panneau p.roles-defi {
+  margin: 4px 0 12px;
+  text-align: center;
+  font-size: 30px;
+  letter-spacing: 4px;
+}
+
 /* Le pied de page : ce qu'on cherche une fois, et qu'on doit alors trouver. */
 .panneau p.pied {
   margin: 4px 0 0;

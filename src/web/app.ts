@@ -9,9 +9,12 @@ import type { Action, Card, Rank, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
 import {
-  ADRESSE_PUBLIQUE, DUREE_REACTION, TABLE_PUBLIQUE, TableEnLigne, TableSolo, activite, hoteDuJeu,
+  ADRESSE_PUBLIQUE, DUREE_REACTION, TABLE_PUBLIQUE, TableDefi, TableEnLigne, TableSolo, activite, hoteDuJeu,
   tablesPubliques, type ResumeTable, type Table,
 } from './table.ts';
+import {
+  DEFI_MANCHES, DEFI_MAXIMUM, bilanDuJour, emojisDuDefi, texteDuDefi, type BilanDuDefi,
+} from './defi.ts';
 import { THEMES, appliquerTheme, themeCourant } from './themes.ts';
 import { type Parcours, bilan, noterManche, noterPartie, parcours } from './parcours.ts';
 import { TableDidacticiel, type Morale } from './didacticiel.ts';
@@ -727,6 +730,16 @@ function voileFinDeManche(vue: PlayerView): void {
     synchroniserBientot();
   }
 
+  // Le défi du jour s'arrête à sa dernière manche : place au score.
+  if (table instanceof TableDefi && vue.me.role) {
+    const { bilan, acheve } = table.noterManche(vue.round, vue.me.role, vue.me.points);
+    if (acheve) compter('defi-fini');
+    if (bilan.fini) {
+      voileDefiFini(bilan, revenirAccueil, vue);
+      return;
+    }
+  }
+
   const verdict = vue.me.role === 'boss' ? 'Vous êtes le Boss.'
     : vue.me.role === 'larbin' ? 'Vous voilà Larbin. La prochaine manche va piquer.'
     : `Vous finissez ${TITRES[vue.me.role!]}.`;
@@ -749,6 +762,45 @@ function voileFinDeManche(vue: PlayerView): void {
     annonce = '';
     agir({ type: 'manche-suivante' });
   });
+}
+
+/** Ce que le défi du jour demande, dit avant de commencer : trois lignes, pas plus. */
+function voileDefi(bilan: BilanDuDefi): void {
+  const entame = bilan.roles.length > 0;
+  montrerVoile(`
+    <h2>🗓️ Défi du ${jourCourt(bilan.jour)}</h2>
+    <ul class="vite">
+      <li><b>La même donne pour tout le monde</b>, aujourd’hui : comparez vos scores.</li>
+      <li><b>${DEFI_MANCHES} manches</b> contre les bots. Le Boss prend 3 points, le Larbin rien :
+          ${DEFI_MAXIMUM} au mieux.</li>
+      <li><b>Un seul essai.</b> Un nouveau défi chaque jour à minuit.</li>
+    </ul>
+    <button class="action primaire" id="defi-go" type="button">${entame ? 'Reprendre le défi' : 'C’est parti'}</button>
+    <button class="action" id="defi-retour" type="button">Revenir</button>
+  `);
+  $('defi-go').addEventListener('click', () => {
+    if (!entame) compter('defi-lance');
+    cacherVoile();
+    installer(new TableDefi(bilan.jour));
+  });
+  $('defi-retour').addEventListener('click', voileAccueil);
+}
+
+/** Le score du défi : les rôles en émojis, à comparer — et à envoyer. */
+function voileDefiFini(bilan: BilanDuDefi, retour: () => void, vue?: PlayerView): void {
+  montrerVoile(`
+    <h2>🗓️ Défi du ${jourCourt(bilan.jour)}</h2>
+    <p class="score-defi"><b>${bilan.points}</b>/${DEFI_MAXIMUM}</p>
+    <p class="roles-defi" aria-label="${bilan.roles.map((r) => TITRES[r]).join(', ')}">${emojisDuDefi(bilan)}</p>
+    ${vue ? `<ul class="classement">${lignesDuClassement(vue)}</ul>` : ''}
+    <p class="mention">Même donne pour tout le monde : défiez vos proches. Prochain défi à minuit.</p>
+    <button class="action primaire" id="defi-partager" type="button">Partager mon score</button>
+    <button class="action" id="defi-fin" type="button">Revenir à l’accueil</button>
+  `);
+  $('defi-partager').addEventListener('click', (e) => {
+    void partager(e.currentTarget as HTMLElement, texteDuDefi(bilan), `https://${ADRESSE_PUBLIQUE}`);
+  });
+  $('defi-fin').addEventListener('click', retour);
 }
 
 /** Les parties solo déjà comptées : réafficher l'écran de fin ne les recompte pas. */
@@ -1185,6 +1237,7 @@ function voileAccueil(): void {
   const nomConnu = localStorage.getItem('larbin.nom') || nomPropose();
   // Rien à afficher au premier passage : l'accueil d'un inconnu doit rester net.
   const b = bilan(parcours());
+  const defi = bilanDuJour();
   const moi = sessionOuverte();
 
   // Ce qui se consulte sans jouer tient sur une rangée d'icônes, en bas : les
@@ -1251,7 +1304,12 @@ function voileAccueil(): void {
       </section>`}
     <section class="bloc">
       <h3>🤖 Solo</h3>
-      <button class="action${horsLigne ? ' primaire' : ''}" id="solo" type="button">Jouer contre les bots</button>
+      <div class="deux">
+        <button class="action${horsLigne ? ' primaire' : ''}" id="solo" type="button">Contre les bots</button>
+        <button class="action defi" id="defi" type="button">${defi.fini
+          ? `Défi du jour <small>✓ ${defi.points}/${DEFI_MAXIMUM}</small>`
+          : '🗓️ Défi du jour'}</button>
+      </div>
       ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
         <span>♥ Apprendre en jouant</span>
         <small>4 petites leçons · 2 minutes</small>
@@ -1314,6 +1372,12 @@ function voileAccueil(): void {
     cacherVoile();
     installer(new TableSolo());
   }));
+
+  $('defi').addEventListener('click', () => {
+    const bilan = bilanDuJour();
+    if (bilan.fini) voileDefiFini(bilan, voileAccueil);
+    else enPassantParLesRegles(() => voileDefi(bilan));
+  });
 
   // Tant que les leçons n'ont pas été suivies, elles passent juste après le
   // bouton de jeu : c'est ce qui manque le plus à qui découvre le jeu. Une fois
@@ -1591,6 +1655,8 @@ function voileSalon(en: TableEnLigne): void {
 
 function installer(nouvelle: Table): void {
   table = nouvelle;
+  // Le défi n'a qu'un essai : pas de « nouvelle partie » dans la barre.
+  $('recommencer').hidden = nouvelle instanceof TableDefi;
   selection = [];
   mancheAnnoncee = 0;
   poseAffichee = '';

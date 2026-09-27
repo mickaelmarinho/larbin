@@ -68,10 +68,7 @@ export interface LigneCompteur {
   n: number;
 }
 
-/** Le jour qu'il est à Paris (AAAA-MM-JJ) : c'est là que vit le jeu, et que minuit tombe. */
-export const jourDeParis = (date = new Date()): string =>
-  new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' })
-    .format(date);
+export { jourDeParis } from '../web/jour.ts';
 
 const donneesVides = (): Donnees => ({ parcours: null, succes: [] });
 

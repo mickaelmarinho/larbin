@@ -34,12 +34,14 @@ import { DEUX } from './cards.ts';
  * du même défaut, ne le pouvait pas. Corrigé, le bot remporte 75,8 % ± 1,1 des
  * parties décisives face à l'ancien, sur trois séries de 2 000 parties.
  */
-export function botAction(view: PlayerView): Action | null {
+export function botAction(view: PlayerView, hasard: () => number = Math.random): Action | null {
   // Couper, c'est un geste sans information : on tranche quelque part au milieu.
+  // C'est le seul hasard du bot ; le défi du jour le fixe, pour que la même
+  // partie se rejoue à l'identique.
   if (view.coupe) {
     const milieu = Math.floor(view.coupe.taille / 2);
     const ecart = Math.floor(view.coupe.taille / 6);
-    const position = milieu + Math.floor(Math.random() * (2 * ecart + 1)) - ecart;
+    const position = milieu + Math.floor(hasard() * (2 * ecart + 1)) - ecart;
     return {
       type: 'couper',
       player: view.me.id,

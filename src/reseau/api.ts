@@ -267,6 +267,8 @@ const LIBELLES: Record<Evenement, string> = {
   'visite': 'Visites',
   'solo-lancee': 'Solo lancées',
   'solo-finie': 'Solo finies',
+  'defi-lance': 'Défis lancés',
+  'defi-fini': 'Défis finis',
   'didacticiel-fini': 'Didacticiels finis',
   'partage': 'Partages',
   'installation': 'Installations',

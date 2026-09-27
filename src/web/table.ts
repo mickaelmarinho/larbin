@@ -15,6 +15,12 @@ import {
 import { reactionDesBots } from './humeurs.ts';
 import { avatarChoisi } from './avatars.ts';
 import { jetonDeSession } from './session.ts';
+import { TABLEE_SOLO } from './solo.ts';
+import {
+  bilanDuJour, bilanVierge, garderBilan, hasardDuDefi, lireBilan, noterLaManche, partieDuDefi, type BilanDuDefi,
+} from './defi.ts';
+import { jourDeParis } from './jour.ts';
+import type { Role } from '../engine/types.ts';
 
 /** Les réactions encore à l'écran, par joueur, avec l'instant où elles sont arrivées. */
 export type Bulles = Map<string, { reaction: Reaction; recueA: number }>;
@@ -40,11 +46,22 @@ export interface Table {
 const REFLEXION = 750;
 const CLE_SAUVEGARDE = 'larbin.partie.v1';
 
-const ADVERSAIRES = [
-  { id: 'gina', name: 'Gina' },
-  { id: 'hugo', name: 'Hugo' },
-  { id: 'lila', name: 'Lila' },
-];
+
+/**
+ * Ce qui distingue une partie solo d'une autre : où elle se garde, comment
+ * elle commence, et d'où vient le hasard des bots. La partie libre prend un
+ * mélange neuf ; le défi du jour, toujours le même.
+ */
+export interface ReglagesSolo {
+  cle: string;
+  creer(): GameState;
+  hasard?(etat: GameState): () => number;
+}
+
+const PARTIE_LIBRE: ReglagesSolo = {
+  cle: CLE_SAUVEGARDE,
+  creer: () => createGame(TABLEE_SOLO),
+};
 
 export class TableSolo implements Table {
   readonly mode = 'solo';
@@ -57,8 +74,10 @@ export class TableSolo implements Table {
   private suspendu = false;
   /** Ce que les bots ont exprimé, le temps que ça reste à l'écran. */
   private bulles: Bulles = new Map();
+  protected reglages: ReglagesSolo;
 
-  constructor() {
+  constructor(reglages: ReglagesSolo = PARTIE_LIBRE) {
+    this.reglages = reglages;
     this.etat = this.relire() ?? this.neuve();
   }
 
@@ -131,7 +150,7 @@ export class TableSolo implements Table {
     this.ecouteurs = [];
     if (this.etat.phase !== 'fin-de-partie') return;
     try {
-      localStorage.removeItem(CLE_SAUVEGARDE);
+      localStorage.removeItem(this.reglages.cle);
     } catch { /* elle sera simplement reprise, avec son panneau de fin */ }
   }
 
@@ -141,10 +160,7 @@ export class TableSolo implements Table {
   }
 
   private neuve(): GameState {
-    return createGame([
-      { id: this.moi, name: 'Vous' },
-      ...ADVERSAIRES.map((a) => ({ ...a, isBot: true })),
-    ]);
+    return this.reglages.creer();
   }
 
   private prevenir(): void {
@@ -162,14 +178,14 @@ export class TableSolo implements Table {
     if (acteur === this.moi) return;
 
     this.minuteur = setTimeout(() => {
-      const coup = botAction(viewFor(this.etat, acteur));
+      const coup = botAction(viewFor(this.etat, acteur), this.reglages.hasard?.(this.etat));
       if (coup) this.envoyer(coup);
     }, REFLEXION);
   }
 
   private sauver(): void {
     try {
-      localStorage.setItem(CLE_SAUVEGARDE, JSON.stringify(this.etat));
+      localStorage.setItem(this.reglages.cle, JSON.stringify(this.etat));
     } catch {
       // Navigation privée ou stockage plein : la partie continue quand même.
     }
@@ -178,7 +194,7 @@ export class TableSolo implements Table {
   /** Relit la partie en cours, en refusant tout ce qui n'a pas la forme attendue. */
   private relire(): GameState | null {
     try {
-      const brut = localStorage.getItem(CLE_SAUVEGARDE);
+      const brut = localStorage.getItem(this.reglages.cle);
       if (!brut) return null;
       const s = JSON.parse(brut) as GameState;
       const valide = Array.isArray(s.players)
@@ -191,6 +207,42 @@ export class TableSolo implements Table {
     } catch {
       return null;
     }
+  }
+}
+
+/* ------------------------------------------------------- le défi du jour */
+
+const CLE_PARTIE_DEFI = 'larbin.defi.partie';
+
+/** Un nouveau jour efface la partie d'hier : on ne reprend jamais un défi périmé. */
+function reglagesDuDefi(jour: string): ReglagesSolo {
+  if (lireBilan()?.jour !== jour) {
+    try {
+      localStorage.removeItem(CLE_PARTIE_DEFI);
+    } catch { /* rien à effacer */ }
+    garderBilan(bilanVierge(jour));
+  }
+  return { cle: CLE_PARTIE_DEFI, creer: () => partieDuDefi(jour), hasard: hasardDuDefi };
+}
+
+/** Une partie solo dont la donne et le hasard sont ceux du jour, pour tout le monde (voir defi.ts). */
+export class TableDefi extends TableSolo {
+  readonly jour: string;
+
+  constructor(jour = jourDeParis()) {
+    super(reglagesDuDefi(jour));
+    this.jour = jour;
+  }
+
+  /** Un seul essai par jour. */
+  override recommencer(): void {}
+
+  /** Note la manche ; renvoie le bilan, et s'il vient tout juste de s'achever. */
+  noterManche(manche: number, role: Role, points: number): { bilan: BilanDuDefi; acheve: boolean } {
+    const avant = bilanDuJour(this.jour);
+    const bilan = noterLaManche(avant, manche, role, points);
+    if (bilan !== avant) garderBilan(bilan);
+    return { bilan, acheve: bilan.fini && !avant.fini };
   }
 }
 
