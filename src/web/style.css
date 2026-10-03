@@ -1781,3 +1781,27 @@ button.lien:hover { color: var(--texte); }
   color: var(--texte-pale);
   font-style: italic;
 }
+
+/* Les fenêtres larges mais basses — téléphone couché, jeu logé dans le cadre
+   d'un portail : les cartes se règlent sur la hauteur, sans quoi la consigne du
+   tapis passe sous la ligne du joueur. */
+@media (max-height: 560px) and (min-width: 560px) {
+  :root { --carte-l: clamp(40px, 12.5vh, 60px); }
+  #table { gap: 4px; padding-top: 6px; padding-bottom: 6px; }
+  #tapis { gap: 4px; }
+  #moi { gap: 4px; }
+  #ma-main { padding-top: 12px; }
+}
+
+/* Chez un portail de jeux (voir portail.ts) : ni compte, ni partage, ni lien
+   vers le site — le portail les interdit, et les siens en tiennent lieu. */
+body.portail #compte,
+body.portail #classement,
+body.portail #faire-decouvrir,
+body.portail #defi-partager,
+body.portail #partager,
+body.portail #installer,
+body.portail .hors-portail { display: none !important; }
+/* Le doigt qui glisse sur les cartes ne doit rien surligner dans le cadre. */
+body.portail { -webkit-user-select: none; user-select: none; }
+body.portail input { -webkit-user-select: text; user-select: text; }

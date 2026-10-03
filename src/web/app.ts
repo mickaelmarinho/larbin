@@ -50,6 +50,7 @@ import {
 } from './musique.ts';
 
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
+import { SUR_PORTAIL } from './portail.ts';
 import { ROLES_EN, cartesEnAnglais, ligneEnAnglais } from './journal.ts';
 import { messageDuServeur } from './messages.ts';
 
@@ -100,6 +101,9 @@ const TITRES: Record<Role, string> = enAnglais ? ROLES_EN : {
  */
 const lienDuSite = (marque: string) => `https://${ADRESSE_PUBLIQUE}${enAnglais ? '/en?' : '/?'}${marque}`;
 /** Les règles complètes, dans la langue de la page. */
+/** Les portails de jeux s'adressent à un public dès 12 ans : on y tait le nom le plus vert du jeu. */
+const GROS_MOT_FR = SUR_PORTAIL ? '' : ' — ou Trou du cul —';
+const GROS_MOT_EN = SUR_PORTAIL ? '' : ' or Asshole';
 const LIEN_REGLES = `https://${ADRESSE_PUBLIQUE}${tr('/regles', '/en/rules')}`;
 
 /** « Défi du 27 sept. » — « Challenge of 27 Sep ». */
@@ -914,7 +918,7 @@ function voileFinDePartie(vue: PlayerView): void {
   // Le jeu plaît assez pour qu'on y revienne : c'est le moment de proposer
   // l'icône sur l'écran d'accueil.
   const moyen = moyenDInstaller();
-  const proposer = moyen !== null && proposerInstallation(b.parties, refusGarde());
+  const proposer = !SUR_PORTAIL && moyen !== null && proposerInstallation(b.parties, refusGarde());
 
   montrerVoile(`
     <h2>${tr('Partie terminée', 'Game over')}</h2>
@@ -1074,8 +1078,8 @@ function voileBienvenue(suite: () => void, libelle = tr('Revenir', 'Back')): voi
           <b>Larbin</b> — qui lui donnera ses deux meilleures cartes.</li>
     </ul>
     <p class="mention">Un piège à connaître : <b>finir sur un 2 rend Larbin
-       d’office</b>. Pour le détail,
-       <a href="${LIEN_REGLES}" target="_blank" rel="noopener">toutes les règles</a>.</p>`, `
+       d’office</b>. <span class="hors-portail">Pour le détail,
+       <a href="${LIEN_REGLES}" target="_blank" rel="noopener">toutes les règles</a>.</span></p>`, `
     <h2>How to play</h2>
     <p>Get rid of all your cards before the others.</p>
     <ul class="vite">
@@ -1090,8 +1094,8 @@ function voileBienvenue(suite: () => void, libelle = tr('Revenir', 'Back')): voi
           one <b>Lackey</b> — who must hand over their two best cards.</li>
     </ul>
     <p class="mention">One trap to know: <b>finishing on a 2 makes you Lackey
-       by default</b>. For the details,
-       <a href="${LIEN_REGLES}" target="_blank" rel="noopener">the full rules</a>.</p>`)}
+       by default</b>. <span class="hors-portail">For the details,
+       <a href="${LIEN_REGLES}" target="_blank" rel="noopener">the full rules</a>.</span></p>`)}
     <button class="action primaire" id="compris" type="button">${libelle}</button>
     <button class="action" id="apprendre" type="button">${tr('Apprendre en jouant — quatre leçons', 'Learn by playing — four lessons')}</button>
   `);
@@ -1130,12 +1134,12 @@ function voileHistoire(retour: () => void): void {
        reversal</b>: the last serves the first, and everything is replayed in the
        next round. The Japanese names say it better than ours.</p>
     <p>The game reached the West in the second half of the 20th century and took on
-       table names — President, Scum, Asshole, and in France Trou du cul or Larbin
+       table names — President, Scum${SUR_PORTAIL ? '' : ', Asshole'}, and in France ${SUR_PORTAIL ? '' : 'Trou du cul or '}Larbin
        (“the lackey”) — each with its house rules, passed on by word of mouth and
        never written down.</p>
     <p>These are ours: a trick goes around only once, the 2 cuts, cards are not
        shuffled between rounds, and the queen of hearts opens the very first game.</p>
-    <p class="mention"><a href="${LIEN_REGLES}" target="_blank" rel="noopener">The full rules</a>
+    <p class="mention hors-portail"><a href="${LIEN_REGLES}" target="_blank" rel="noopener">The full rules</a>
        — classic President and our variant.</p>
     <button class="action primaire" id="fermer-histoire" type="button">Back</button>
   ` : `
@@ -1149,13 +1153,13 @@ function voileHistoire(retour: () => void): void {
        l'<b>inversion sociale</b> : le dernier sert le premier, et tout se rejoue
        à la manche suivante. Les noms japonais le disent mieux que les nôtres.</p>
     <p>Le jeu gagne l'Occident dans la seconde moitié du XX<sup>e</sup> siècle et
-       prend chez nous des noms de table — Président, Trou du cul, Larbin —
+       prend chez nous des noms de table — Président, ${SUR_PORTAIL ? '' : 'Trou du cul, '}Larbin —
        chacun avec ses règles maison, transmises de bouche à oreille sans jamais
        être écrites.</p>
     <p>Celles-ci sont les vôtres : une série ne fait qu'un tour, le 2 coupe net,
        on ne mélange pas entre deux manches, et c'est la dame de cœur qui ouvre
        la toute première partie.</p>
-    <p class="mention"><a href="${LIEN_REGLES}" target="_blank"
+    <p class="mention hors-portail"><a href="${LIEN_REGLES}" target="_blank"
        rel="noopener">Les règles, en entier</a> — celles du Président comme celles
        d'ici.</p>
     <button class="action primaire" id="fermer-histoire" type="button">Revenir</button>
@@ -1357,11 +1361,11 @@ function voileAccueil(): void {
     <div class="affiche">${tr(`
       <p class="accroche"><b>Le Président, en plus nerveux.</b>
         <span class="court">Une série ne fait qu’un tour de table. Sur téléphone ou PC.</span>
-        <span class="long">Le jeu de cartes du Président — ou Trou du cul — en ligne et gratuit,
+        <span class="long">Le jeu de cartes du Président${GROS_MOT_FR} en ligne et gratuit,
           sur téléphone ou PC.</span></p>`, `
       <p class="accroche"><b>President, but faster.</b>
         <span class="court">A trick goes around the table only once. On phone or PC.</span>
-        <span class="long">The President card game — also known as Scum or Asshole — online and free,
+        <span class="long">The President card game — also known as Scum${GROS_MOT_EN} — online and free,
           on phone or PC.</span></p>`)}
       ${EVENTAIL}
     </div>
@@ -1435,10 +1439,10 @@ function voileAccueil(): void {
       ${raccourci('histoire', '📜', tr('Histoire', 'History'), tr('D’où vient ce jeu ?', 'Where does this game come from?'))}
     </nav>
     <p class="pied">
-      <a href="${LIEN_REGLES}" target="_blank" rel="noopener">${tr('Toutes les règles', 'Full rules')}</a>
-      · <a href="${lienConfidentialite()}" target="_blank" rel="noopener">${tr('Confidentialité', 'Privacy')}</a>
-      · <a href="mailto:mickagames1@outlook.fr">Contact</a>
-      · <a href="${horsLigne ? 'https://' + ADRESSE_PUBLIQUE : ''}${tr('/en', '/')}" hreflang="${tr('en', 'fr')}" lang="${tr('en', 'fr')}">${tr('English', 'Français')}</a>
+      <span class="hors-portail"><a href="${LIEN_REGLES}" target="_blank" rel="noopener">${tr('Toutes les règles', 'Full rules')}</a>
+      · </span><a href="${lienConfidentialite()}" target="_blank" rel="noopener">${tr('Confidentialité', 'Privacy')}</a>
+      <span class="hors-portail">· <a href="mailto:mickagames1@outlook.fr">Contact</a>
+      · <a href="${horsLigne ? 'https://' + ADRESSE_PUBLIQUE : ''}${tr('/en', '/')}" hreflang="${tr('en', 'fr')}" lang="${tr('en', 'fr')}">${tr('English', 'Français')}</a></span>
     </p>
     </div>
   `, 'accueil');
@@ -1729,8 +1733,11 @@ function voileSalon(en: TableEnLigne): void {
   const erreur = en.erreur();
   montrerVoile(`
     <h2>${tr('Salon', 'Room')} ${salon.code}</h2>
-    <p>${tr('Partagez ce lien, ou dictez le code :', 'Share this link, or read out the code:')} <b>${salon.code}</b>.</p>
-    <div class="rejoindre">
+    <p>${SUR_PORTAIL
+    // Chez un portail, la page n'a pas d'adresse à nous : seul le code voyage.
+    ? tr('Donnez ce code à vos amis — ils le tapent sous « Entre amis » :', 'Give this code to your friends — they type it under “With friends”:')
+    : tr('Partagez ce lien, ou dictez le code :', 'Share this link, or read out the code:')} <b>${salon.code}</b>.</p>
+    <div class="rejoindre${SUR_PORTAIL ? ' hors-portail' : ''}">
       <input id="lien" type="text" readonly value="${lien}">
       <button class="action" id="copier" type="button">${navigator.share ? tr('Envoyer', 'Send') : tr('Copier', 'Copy')}</button>
     </div>
@@ -2026,8 +2033,8 @@ function voileAvatar(retour: () => void): void {
 /* ------------------------------------------------------------- comptes */
 
 const lienConfidentialite = () => {
-  const page = tr('/confidentialite', '/en/privacy');
-  return location.protocol === 'file:' ? `https://${ADRESSE_PUBLIQUE}${page}` : page;
+  const page = enAnglais ? '/en/privacy' : '/confidentialite';
+  return location.protocol === 'file:' || SUR_PORTAIL ? `https://${ADRESSE_PUBLIQUE}${page}` : page;
 };
 
 /** Le panneau peut avoir été remplacé pendant qu'on attendait le serveur. */
@@ -2326,6 +2333,8 @@ if (enAnglais) {
   $('passer').textContent = 'Pass';
   $('poser').textContent = 'Play';
 }
+// Chez un portail, la page ne sait sa langue qu'ici : on la dit aux lecteurs d'écran.
+if (SUR_PORTAIL) document.documentElement.lang = enAnglais ? 'en' : 'fr';
 appliquerTheme(themeCourant());
 afficherClochette();
 ouvrirAuPremierGeste();
@@ -2343,7 +2352,7 @@ ecouterInstallation(() => compter('installation'));
 
 // Une copie du jeu pour jouer sans réseau (voir sw.js). Après le chargement :
 // elle ne doit rien retarder, et le fichier seul n'en a pas l'usage.
-if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+if ('serviceWorker' in navigator && location.protocol !== 'file:' && !SUR_PORTAIL) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => { /* sans elle, le jeu marche en ligne */ });
   });

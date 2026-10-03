@@ -82,3 +82,22 @@ test('aucune annonce d’une vraie partie ne reste en français', () => {
     .filter((l) => /\b(pose|passe|manche|série|coupe|échange|remporte|fini|termine)\b/.test(l));
   assert.deepEqual(restees, []);
 });
+
+test('chez un portail, la langue suit le navigateur, et l’anglais sert les autres', async () => {
+  const { langueDuNavigateur } = await import('../src/web/portail.ts');
+  assert.equal(langueDuNavigateur('fr-FR'), 'fr');
+  assert.equal(langueDuNavigateur('fr'), 'fr');
+  assert.equal(langueDuNavigateur('en-US'), 'en');
+  assert.equal(langueDuNavigateur('de-DE'), 'en');
+  assert.equal(langueDuNavigateur(undefined), 'en');
+});
+
+test('la page du portail : marquée, en anglais, sans lien vers le site', async () => {
+  const { pagePortail } = await import('../scripts/page-portail.mjs');
+  const gabarit = readFileSync('src/web/index.html', 'utf8').replace(/<!--EN-LIGNE[\s\S]*?EN-LIGNE-->\n?/, '');
+  const page = pagePortail(gabarit);
+  assert.match(page, /<html lang="en">/);
+  assert.match(page, /<body class="portail">/);
+  assert.match(page, /window\.LARBIN_PORTAIL = true;<\/script>\s*<script>\/\*SCRIPT\*\//, 'la marque précède le script du jeu');
+  assert.doesNotMatch(page, /href="\/|larbin\.vercel\.app|Trou du cul|Asshole/);
+});

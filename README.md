@@ -297,6 +297,15 @@ française à l'assemblage (`scripts/page-anglaise.mjs` : titre, description,
 présentation), et les pages se déclarent l'une l'autre par `hreflang`. En
 anglais, les rôles s'appellent Boss, Deputy, Neutral, Underling et Lackey.
 
+### Chez un portail de jeux
+
+`npm run build` fabrique aussi `portail/index.html` : le jeu en une page, prêt
+à être déposé chez un portail comme CrazyGames — anglais par défaut, sans compte
+ni lien vers le site, comme ces portails l'exigent. Le script s'y reconnaît à
+une marque posée dans la page (`src/web/portail.ts`). Ce qui change, ce que le
+portail demande et la marche à suivre pour déposer le jeu : voir
+[PORTAIL.md](PORTAIL.md).
+
 ### Être trouvé
 
 Personne ne cherche « Le Larbin » : on cherche « président jeu de cartes en

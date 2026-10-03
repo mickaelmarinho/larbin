@@ -22,7 +22,7 @@ Une ligne par retour, la plus récente en haut du tableau :
 
 | Date | Qui | Appareil | Ce qu'il a dit | Gêne | Suite |
 |------|-----|----------|----------------|------|-------|
-|      |     |          |                |      |       |
+| 3 oct. 2026 | des proches (partie d'essai, fin sept.) | non précisé | « Rien à signaler de particulier » | aucune | rien à corriger ; on n'attend pas d'autres retours pour avancer |
 
 ## Ce qui revient
 

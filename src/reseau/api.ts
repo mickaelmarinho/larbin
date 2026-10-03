@@ -351,6 +351,7 @@ const LIBELLES: Record<Evenement, string> = {
   'visite': 'Visiteurs',
   'visite-recherche': 'dont par une recherche',
   'visite-partage': 'dont par un partage',
+  'visite-portail': 'dont chez un portail',
   'solo-lancee': 'Solo lancées',
   'solo-finie': 'Solo finies',
   'defi-lance': 'Défis lancés',

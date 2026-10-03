@@ -9,6 +9,7 @@
  */
 import type { EvenementNavigateur } from '../reseau/protocole.ts';
 import { estUnRobot, provenance } from './provenance.ts';
+import { SUR_PORTAIL } from './portail.ts';
 import { hoteDuJeu } from './table.ts';
 
 const CLE_PAS_COMPTER = 'larbin.pas-compter';
@@ -54,6 +55,11 @@ export function compterLaVisite(jour: string, params: URLSearchParams): void {
     localStorage.setItem(CLE_VISITE, jour);
   } catch { /* sans mémoire, on compte à chaque fois : tant pis */ }
   compter('visite');
+  // Chez un portail, c'est lui qui amène le joueur : ni recherche, ni partage.
+  if (SUR_PORTAIL) {
+    compter('visite-portail');
+    return;
+  }
   const origine = provenance(document.referrer, params);
   if (origine !== 'autre') compter(origine === 'recherche' ? 'visite-recherche' : 'visite-partage');
 }

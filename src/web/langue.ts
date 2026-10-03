@@ -10,12 +10,17 @@
  * corrige les deux d'un seul regard, et aucun texte ne peut manquer dans l'une.
  */
 
+import { SUR_PORTAIL, langueDuNavigateur } from './portail.ts';
+
 export type Langue = 'fr' | 'en';
 
 /** La langue d'une adresse : l'anglais sous /en, le français partout ailleurs. */
 export const langueDe = (chemin: string): Langue => (/^\/en(\/|$)/.test(chemin) ? 'en' : 'fr');
 
-export const LANGUE: Langue = typeof location === 'undefined' ? 'fr' : langueDe(location.pathname);
+export const LANGUE: Langue = typeof location === 'undefined' ? 'fr'
+  // Chez un portail, ?lang=fr ou ?lang=en force la langue : c'est ce qui permet de relire les deux.
+  : SUR_PORTAIL ? langueDuNavigateur(new URLSearchParams(location.search).get('lang') ?? navigator.language)
+    : langueDe(location.pathname);
 
 export const enAnglais = LANGUE === 'en';
 
@@ -23,7 +28,7 @@ export const enAnglais = LANGUE === 'en';
 export const tr = (fr: string, en: string): string => (enAnglais ? en : fr);
 
 /** Le préfixe des adresses du site dans cette langue : '' ou '/en'. */
-export const PREFIXE = enAnglais ? '/en' : '';
+export const PREFIXE = enAnglais && !SUR_PORTAIL ? '/en' : '';
 
 /** « 1 partie », « 3 parties » — et leurs équivalents anglais. */
 export const pluriel = (n: number, fr: [string, string], en: [string, string]): string =>

@@ -9,12 +9,14 @@ import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { manifesteAnglais, pageAnglaise } from './page-anglaise.mjs';
+import { pagePortail } from './page-portail.mjs';
 import path from 'node:path';
 
 const racine = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const src = (p) => path.join(racine, 'src', 'web', p);
 const sortie = path.join(racine, 'Larbin.html');
 const publie = path.join(racine, 'public');
+const portail = path.join(racine, 'portail');
 
 /**
  * Le fichier unique et le site ne veulent pas le même en-tête : l'un se promène
@@ -62,6 +64,13 @@ async function assembler() {
 
   const seul = horsLigne(page);
   await writeFile(sortie, seul, 'utf8');
+
+  // Le dossier à déposer chez un portail de jeux : une seule page, autonome.
+  // La marque se pose sur le gabarit, avant d'y verser le style et le script.
+  await mkdir(portail, { recursive: true });
+  await writeFile(path.join(portail, 'index.html'), pagePortail(horsLigne(gabarit))
+    .replace('/*STYLE*/', () => style.trim())
+    .replace('/*SCRIPT*/', () => paquet.trim()), 'utf8');
 
   // Le dossier publié : la page du jeu, celle des règles, et les fichiers que
   // navigateurs et moteurs de recherche viennent chercher à la racine. Le reste
