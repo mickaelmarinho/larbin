@@ -101,3 +101,13 @@ test('la page du portail : marquée, en anglais, sans lien vers le site', async 
   assert.match(page, /window\.LARBIN_PORTAIL = true;<\/script>\s*<script>\/\*SCRIPT\*\//, 'la marque précède le script du jeu');
   assert.doesNotMatch(page, /href="\/|larbin\.vercel\.app|Trou du cul|Asshole/);
 });
+
+test('une invitation du portail ne mène qu’à un code de salon bien formé', async () => {
+  const { codeDeLInvitation } = await import('../src/web/crazygames.ts');
+  assert.equal(codeDeLInvitation({ salon: 'abcd' }), 'ABCD');
+  assert.equal(codeDeLInvitation({ salon: ' Q7ZX ' }), 'Q7ZX');
+  assert.equal(codeDeLInvitation({ salon: 'ABCDE' }), null);
+  assert.equal(codeDeLInvitation({ salon: '<b>x' }), null);
+  assert.equal(codeDeLInvitation({ autre: 'ABCD' }), null);
+  assert.equal(codeDeLInvitation(null), null);
+});

@@ -18,8 +18,8 @@ Le jeu est le même. Seul ce que les portails interdisent disparaît :
   connexions maison. On joue sous un nom, comme un visiteur.
 - **Pas de lien vers notre site** (règles, contact, partage, autre langue).
   Seul reste le lien « Confidentialité », que les portails autorisent.
-- **Salon entre amis :** on donne le **code** à quatre lettres, plus de lien
-  d'invitation — la page n'a pas d'adresse à nous.
+- **Salon entre amis :** le lien d'invitation est celui que fabrique le portail
+  (son module, voir plus bas) ; le code à quatre lettres marche toujours.
 - **Pas d'installation** sur l'écran d'accueil, pas de copie hors ligne.
 - Le nom « Trou du cul » (et *Asshole*) n'apparaît pas : public dès 12 ans.
 - Les fenêtres larges et basses des portails sont lisibles (cartes réglées sur
@@ -32,6 +32,31 @@ larbin.vercel.app peuvent s'asseoir à la même table.
 
 Les visites venues d'un portail se lisent dans les compteurs, colonne
 « dont chez un portail ».
+
+## Le module de CrazyGames
+
+Leur formulaire de dépôt le dit sans détour : un jeu multijoueur n'est accepté
+que s'il passe par leur module pour les invitations. La page du portail charge
+donc leur bibliothèque (), et lui parle :
+
+- **début et fin de partie** ( / ) ;
+- **le salon privé** où l'on est assis, et s'il reste une place
+  (, ) — c'est ce qui permet à un ami de nous
+  rejoindre depuis le portail ;
+- **le lien d'invitation** du salon (), affiché à la place du nôtre ;
+- **l'arrivée par invitation** (, et l'écoute des invitations en
+  cours de jeu) : on s'assoit directement dans le salon de l'ami ;
+- **la partie entre amis immédiate** () : le jeu ouvre un
+  salon dès l'arrivée.
+
+Si la bibliothèque manque ou refuse de démarrer, le jeu s'en passe : il reste
+le code à dicter. Vérifié le 4 octobre 2026 avec leur module en mode d'essai
+local (création d'un salon, lien, arrivée par invitation, départ, début de
+partie). **Non vérifié :** la partie entre amis immédiate, que leur mode
+d'essai ne permet pas de déclencher, et tout ce qui ne se voit que chez eux.
+
+Pas encore fait, et demandé seulement au second palier : couper le son à leur
+demande, afficher les pseudos CrazyGames, leur publicité.
 
 ## Ce que CrazyGames demande (lu le 3 octobre 2026)
 
@@ -110,6 +135,16 @@ Créer un compte et publier en son nom ne peut pas se déléguer.
 5. Envoyer, puis attendre leur relecture (quelques jours à quelques semaines).
 
 S'ils demandent une correction, me transmettre leur message tel quel.
+
+### Les réponses du formulaire de dépôt
+
+- **Palier :** Basic.
+- **Game name :** Le Larbin. **Game engine :** HTML5.
+- **Does your game save progress? :** « Yes, using LocalStorage ».
+- **The game supports mobile devices :** oui. **Mobile orientation :** BOTH.
+- **The game is an online multiplayer game :** oui.
+  **« Online with Friends » Lobby Size :** Min 2, Max 6.
+- **Muting audio through SDK :** non (pas encore).
 
 ### Les textes à coller
 

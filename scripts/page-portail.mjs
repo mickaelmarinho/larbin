@@ -19,7 +19,9 @@ const REMPLACEMENTS = [
     '<meta name="description" content="The President card game, but faster: a trick goes around the table only once. Against bots, with friends or with other players.">'],
   [/<main id="presentation">[\s\S]*?<\/main>/, PRESENTATION],
   ['<body>', '<body class="portail">'],
-  ['<script>/*SCRIPT*/', '<script>window.LARBIN_PORTAIL = true;</script>\n<script>/*SCRIPT*/'],
+  // La bibliothèque du portail d'abord : le jeu la trouve prête, ou s'en passe.
+  ['<script>/*SCRIPT*/', '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>\n'
+    + '<script>window.LARBIN_PORTAIL = true;</script>\n<script>/*SCRIPT*/'],
 ];
 
 /** `gabarit` : le fichier unique avant l'insertion du script (qui ne doit pas être fouillé). */

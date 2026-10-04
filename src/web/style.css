@@ -1805,3 +1805,4 @@ body.portail .hors-portail { display: none !important; }
 /* Le doigt qui glisse sur les cartes ne doit rien surligner dans le cadre. */
 body.portail { -webkit-user-select: none; user-select: none; }
 body.portail input { -webkit-user-select: text; user-select: text; }
+.rejoindre[hidden] { display: none; }

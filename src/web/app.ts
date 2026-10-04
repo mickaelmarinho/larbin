@@ -51,6 +51,9 @@ import {
 
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
 import { SUR_PORTAIL } from './portail.ts';
+import {
+  direLeSalon, direSiOnJoue, ecouterLesInvitations, invitationRecue, lienDInvitation, multijoueurImmediat, portailPret,
+} from './crazygames.ts';
 import { ROLES_EN, cartesEnAnglais, ligneEnAnglais } from './journal.ts';
 import { messageDuServeur } from './messages.ts';
 
@@ -455,8 +458,24 @@ function surChangement(): void {
       annoncerSucces(adopterSucces(verifies.map((id) => ({ id, date: new Date().toISOString() }))));
     }
   }
+  direAuPortail();
   rendre();
   boucle();
+}
+
+/**
+ * Chez un portail, on lui dit où l'on en est : si une partie se joue, et dans
+ * quel salon privé on est assis — c'est ce qui permet à un ami de nous y
+ * rejoindre depuis le portail. Muet partout ailleurs.
+ */
+function direAuPortail(): void {
+  if (!SUR_PORTAIL) return;
+  const phase = table?.vue()?.phase;
+  direSiOnJoue(phase === 'jeu' || phase === 'coupe');
+  const salon = table instanceof TableEnLigne ? table.salon() : null;
+  direLeSalon(salon && !salon.publique
+    ? { code: salon.code, joignable: !salon.commencee && salon.sieges.length < salon.taille }
+    : null);
 }
 
 /** Compare la table à ce qu'elle était, et fait entendre ce qui a changé. */
@@ -1331,6 +1350,7 @@ const EVENTAIL = `<div class="eventail" aria-hidden="true">${
 
 function voileAccueil(): void {
   const horsLigne = location.protocol === 'file:';
+  direAuPortail();
   // Un nom tiré au sort attend dans le champ : on peut jouer sans rien taper.
   const nomConnu = localStorage.getItem('larbin.nom') || nomPropose();
   // Rien à afficher au premier passage : l'accueil d'un inconnu doit rester net.
@@ -1680,9 +1700,7 @@ function voileTablePublique(
   $('maintenant').addEventListener('click', () => en.demarrer());
 
   $('quitter').addEventListener('click', () => {
-    en.quitter();
-    table = null;
-    location.href = location.pathname;
+    revenirAccueil();
   });
 
   // Le compte à rebours se redessine chaque seconde ; boucle() annule ce rappel
@@ -1700,9 +1718,7 @@ function voileSalon(en: TableEnLigne): void {
       montrerVoile(`<h2>${tr('Impossible d\'entrer', 'Could not join')}</h2><p>${messageDuServeur(refus)}</p>
         <button class="action primaire" id="retour" type="button">${tr('Revenir à l\'accueil', 'Back to home')}</button>`);
       $('retour').addEventListener('click', () => {
-        en.quitter();
-        table = null;
-        location.href = location.pathname;
+        revenirAccueil();
       });
       return;
     }
@@ -1721,7 +1737,11 @@ function voileSalon(en: TableEnLigne): void {
   if (salon.publique) return voileTablePublique(en, salon);
 
   const jeSuisHote = salon.sieges.find((s) => s.id === en.moi)?.hote ?? false;
-  const lien = `${location.origin}${enAnglais ? '/en?' : '/?'}salon=${salon.code}`;
+  // Chez un portail, la page n'a pas d'adresse à nous : le lien d'invitation
+  // est celui qu'il fabrique. S'il n'en donne pas, seul le code voyage.
+  const lien = SUR_PORTAIL ? lienDInvitation(salon.code) ?? ''
+    : `${location.origin}${enAnglais ? '/en?' : '/?'}salon=${salon.code}`;
+  const sansLien = lien === '';
   const manque = salon.minJoueurs - salon.sieges.length;
 
   const sieges = salon.sieges.map((s) => `<li>
@@ -1733,13 +1753,12 @@ function voileSalon(en: TableEnLigne): void {
   const erreur = en.erreur();
   montrerVoile(`
     <h2>${tr('Salon', 'Room')} ${salon.code}</h2>
-    <p>${SUR_PORTAIL
-    // Chez un portail, la page n'a pas d'adresse à nous : seul le code voyage.
+    <p>${sansLien
     ? tr('Donnez ce code à vos amis — ils le tapent sous « Entre amis » :', 'Give this code to your friends — they type it under “With friends”:')
     : tr('Partagez ce lien, ou dictez le code :', 'Share this link, or read out the code:')} <b>${salon.code}</b>.</p>
-    <div class="rejoindre${SUR_PORTAIL ? ' hors-portail' : ''}">
+    <div class="rejoindre"${sansLien ? ' hidden' : ''}>
       <input id="lien" type="text" readonly value="${lien}">
-      <button class="action" id="copier" type="button">${navigator.share ? tr('Envoyer', 'Send') : tr('Copier', 'Copy')}</button>
+      <button class="action" id="copier" type="button">${navigator.share && !SUR_PORTAIL ? tr('Envoyer', 'Send') : tr('Copier', 'Copy')}</button>
     </div>
     <ul class="classement">${sieges}</ul>
     ${erreur ? `<p class="mention alerte">${messageDuServeur(erreur)}</p>` : ''}
@@ -1758,7 +1777,8 @@ function voileSalon(en: TableEnLigne): void {
   brancherInterrupteurSons();
 
   $('copier').addEventListener('click', async () => {
-    if (navigator.share) {
+    // Dans le cadre d'un portail, la feuille de partage du téléphone est refusée : on copie.
+    if (navigator.share && !SUR_PORTAIL) {
       await partager($('copier'), tr(`Une partie de Larbin ? Le code du salon est ${salon.code}.`,
         `Fancy a game of Le Larbin? The room code is ${salon.code}.`), lien);
       return;
@@ -1771,9 +1791,7 @@ function voileSalon(en: TableEnLigne): void {
     }
   });
   $('quitter').addEventListener('click', () => {
-    en.quitter();
-    table = null;
-    location.href = location.pathname;
+    revenirAccueil();
   });
   $('bot')?.addEventListener('click', () => en.ajouterBot());
   $('lancer')?.addEventListener('click', () => en.demarrer());
@@ -1881,7 +1899,9 @@ function voileTapis(retour: () => void): void {
  * reprendra au prochain « Jouer contre les bots » ; une partie finie, non.
  */
 function revenirAccueil(): void {
-  if (table instanceof TableEnLigne) {
+  // Sur le site, on recharge : l'adresse perd son ?salon. Chez un portail, la
+  // page doit garder la sienne — c'est par elle que son module se reconnaît.
+  if (table instanceof TableEnLigne && !SUR_PORTAIL) {
     table.quitter();
     table = null;
     location.href = location.pathname;
@@ -2358,7 +2378,8 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:' && !SUR_PORTAI
   });
 }
 
-const salonDemande = demandes.get('salon');
+// Chez un portail, les invitations arrivent par son module (voir plus bas), pas par l'adresse.
+const salonDemande = SUR_PORTAIL ? null : demandes.get('salon');
 if (salonDemande && location.protocol !== 'file:') {
   const nom = localStorage.getItem('larbin.nom') ?? '';
   if (nom) installer(new TableEnLigne(nom, salonDemande));
@@ -2386,6 +2407,39 @@ if (salonDemande && location.protocol !== 'file:') {
 // rechargement ne rejoue pas l'arrivée.
 if (['defi', 'via', 'moi'].some((cle) => demandes.has(cle))) {
   history.replaceState(null, '', salonDemande ? `${location.pathname}?salon=${encodeURIComponent(salonDemande)}` : location.pathname);
+}
+
+// Chez un portail, les invitations passent par lui : un ami nous appelle dans
+// son salon, ou le joueur a demandé une partie entre amis sur-le-champ.
+if (SUR_PORTAIL) {
+  /** S'assoit dans le salon `code` — ou en ouvre un, si le code est vide. */
+  const allerAuSalon = (code: string) => {
+    if (table instanceof TableEnLigne && code !== '' && table.salon()?.code === code) return;
+    table?.quitter?.();
+    let nom = '';
+    try {
+      nom = localStorage.getItem('larbin.nom') ?? '';
+    } catch { /* un nom tiré au sort fera l'affaire */ }
+    installer(new TableEnLigne(nom || nomPropose(), code));
+  };
+  void portailPret().then((pret) => {
+    if (!pret) return;
+    ecouterLesInvitations(allerAuSalon);
+    // Le joueur a pu ouvrir un salon avant que le module réponde : on le redessine, avec son lien.
+    if (table) surChangement();
+    // Quitter une table recharge la page, et l'invitation est toujours là : on
+    // ne la suit qu'à la première arrivée, pas à chaque retour à l'accueil.
+    const CLE_ARRIVEE = 'larbin.portail-arrivee';
+    let dejaArrive = false;
+    try {
+      dejaArrive = sessionStorage.getItem(CLE_ARRIVEE) === 'oui';
+      sessionStorage.setItem(CLE_ARRIVEE, 'oui');
+    } catch { /* sans mémoire, on suit l'invitation à chaque fois */ }
+    if (dejaArrive || table !== null) return;
+    const invitation = invitationRecue();
+    if (invitation) allerAuSalon(invitation);
+    else if (multijoueurImmediat()) allerAuSalon('');
+  });
 }
 
 /** Arrivée par un lien d'invitation : on ne demande que le nom. */
