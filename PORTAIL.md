@@ -43,6 +43,22 @@ Deux paliers :
   deux parties, compte CrazyGames). C'est là que le partage des revenus
   commence. On n'y travaillera que si le Basic Launch amène du monde.
 
+Ce que leur documentation dit, lu les 3 et 4 octobre 2026 sur
+docs.crazygames.com (pages *Requirements* et *FAQ*) — rien ici n'est supposé :
+
+- **Pas d'exclusivité.** « You can publish on CrazyGames even if your game is
+  already live on other platforms », et publier ailleurs ne retire pas le droit
+  au partage des revenus.
+- **Basic Launch :** publicité désactivée, jeu montré à une petite part des
+  joueurs, module facultatif. **Full Launch :** après de bons résultats, la
+  publicité est activée, le module devient obligatoire.
+- **Paiement :** chaque mois, une fois le solde à 100 € au moins.
+
+**Ce que je n'ai pas trouvé**, et qu'il faudra lire dans leurs conditions au
+moment de créer le compte, avant d'accepter quoi que ce soit : la part des
+revenus reversée, les informations fiscales ou bancaires demandées, la durée
+d'engagement et la façon de retirer le jeu.
+
 Leurs conditions pour le premier palier, et où nous en sommes :
 
 | Condition | Chez nous |
@@ -59,6 +75,26 @@ Leurs conditions pour le premier palier, et où nous en sommes :
 
 Ce qu'on ne sait pas d'avance : leur relecture juge aussi la qualité et
 l'originalité du jeu, et peut refuser. On le saura en essayant.
+
+## Si le portail envoie beaucoup de monde
+
+- **Contre les bots, le défi du jour, les leçons :** tout se joue dans le
+  navigateur du joueur. Le serveur peut être saturé ou éteint, ces modes
+  marchent quand même (seul le classement du défi a besoin de lui).
+- **En ligne :** le serveur (Northflank, offre gratuite : 0,2 processeur
+  partagé, 512 Mo) refuse d'ouvrir plus de **300 tables** à la fois, soit
+  1 200 joueurs assis. Au-delà, le joueur lit « Trop de tables ouvertes.
+  Réessayez dans un moment. » et peut jouer contre les bots en attendant.
+- **Ce qui a été mesuré** (26 sept. 2026) : 250 tables, soit 1 000 joueurs
+  simulés, tiennent en 11 % d'un cœur et 204 Mo — **sur un PC**. La mémoire du
+  serveur suffit donc ; son processeur, plus petit et partagé, n'a pas été
+  poussé jusque-là. La limite réelle est sans doute sous les 300 tables : le
+  jeu ralentirait avant de refuser.
+- **Ce que je n'ai pas vérifié :** les quotas de l'offre gratuite de
+  Northflank (trafic mensuel, mise en veille). À relire avant un Full Launch.
+- Le Basic Launch ne montre le jeu qu'à une petite part des joueurs du
+  portail : la vague de centaines de joueurs d'un coup n'arrive qu'au palier
+  suivant, et on aura les compteurs pour la voir venir.
 
 ## Déposer le jeu — c'est Mickaël qui le fait
 

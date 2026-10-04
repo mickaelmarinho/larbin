@@ -123,5 +123,12 @@ gratuits** : on ajoute, on ne retire rien.
    passage en Pro payé par les premiers revenus, comme le nom de domaine.
 5. **La pub sur notre site :** non, sauf changement d'échelle.
 
+**Condition du palier payant chez un portail** (ajout du 4 oct. 2026) : le
+jour où la version portail rapporte de l'argent (Full Launch, voir
+), le projet devient commercial. La page du portail est hébergée
+par le portail, mais notre site reste sur Vercel gratuit et le serveur de jeu
+sur Northflank gratuit : avant d'encaisser, relire leurs conditions et passer
+aux offres payantes si elles l'exigent, financées par ces revenus.
+
 **Règle constante :** jamais de pay-to-win, jamais de pub pendant une manche,
 et rien de ce qui est gratuit aujourd'hui ne devient payant.
