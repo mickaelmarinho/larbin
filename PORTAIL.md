@@ -173,6 +173,37 @@ president, 2 player / with friends, strategy.
 > skip the trick. To play several cards of the same rank, select them all
 > before pressing Play.
 
-**Images :** le portail demande des vignettes à ses dimensions (elles sont
-indiquées sur la page de dépôt). Me donner les tailles : je les prépare à
-partir de l'image de partage du site.
+### Les couvertures et les vidéos
+
+Leurs règles (lues le 4 octobre 2026) : sur une couverture, **aucun texte
+autre que le titre du jeu**, et rien d'important dans le coin haut gauche, que
+leurs étiquettes recouvrent. Les vidéos durent 15 à 20 secondes, sans curseur
+ni texte ajouté, et commencent par la couverture.
+
+- **Couvertures** — 1920×1080, 800×1200 et 800×800 — tirées de
+  `scripts/portail/couverture.html`, ouverte dans Chrome sans écran avec
+  `?f=large`, `?f=haut` ou `?f=carre` et l'option `--screenshot`.
+- **Vidéos** — 1920×1080 et 1080×1620 — `scripts/portail/filmer.mjs` filme une
+  partie contre les bots, jouée toute seule, image par image ; `ffmpeg` colle
+  la couverture devant et assemble le tout en MP4.
+
+Les fichiers produits restent dans `portail/images/` et `portail/videos/`, hors
+du dépôt.
+
+## Où on en est
+
+**4 octobre 2026 : le jeu est déposé, palier Basic, en attente de relecture**
+(« Awaiting review »). Leur page de test a confirmé, chez eux : le signal de
+début de partie, le salon, l'écoute des invitations, le lien d'invitation, leur
+bouton « Inviter des amis » et la partie entre amis immédiate. Reste non
+vérifié : l'arrivée d'un second joueur par le lien, essayée seulement avec
+leur module en mode local.
+
+Deux défauts trouvés et corrigés pendant le dépôt : le jeu restait à l'accueil
+quand le portail demandait une partie immédiate après un redémarrage, et il
+cherchait `/sante` chez leur hébergeur, ce que leur outil signalait comme un
+fichier manquant.
+
+Pour une nouvelle version : « My Games », « Submit new version », et déposer
+`portail/index.html` (le fichier seul, pas le zip). Le bouton « Remove game »
+retire le jeu.
