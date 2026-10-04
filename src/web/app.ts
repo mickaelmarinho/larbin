@@ -2427,15 +2427,10 @@ if (SUR_PORTAIL) {
     ecouterLesInvitations(allerAuSalon);
     // Le joueur a pu ouvrir un salon avant que le module réponde : on le redessine, avec son lien.
     if (table) surChangement();
-    // Quitter une table recharge la page, et l'invitation est toujours là : on
-    // ne la suit qu'à la première arrivée, pas à chaque retour à l'accueil.
-    const CLE_ARRIVEE = 'larbin.portail-arrivee';
-    let dejaArrive = false;
-    try {
-      dejaArrive = sessionStorage.getItem(CLE_ARRIVEE) === 'oui';
-      sessionStorage.setItem(CLE_ARRIVEE, 'oui');
-    } catch { /* sans mémoire, on suit l'invitation à chaque fois */ }
-    if (dejaArrive || table !== null) return;
+    // Chez un portail, quitter une table ne recharge pas la page (voir
+    // revenirAccueil) : l'invitation ne se suit donc qu'à l'arrivée, et un
+    // redémarrage demandé par le portail la suit de nouveau, comme il l'attend.
+    if (table !== null) return;
     const invitation = invitationRecue();
     if (invitation) allerAuSalon(invitation);
     else if (multijoueurImmediat()) allerAuSalon('');
