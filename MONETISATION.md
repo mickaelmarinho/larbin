@@ -124,8 +124,8 @@ gratuits** : on ajoute, on ne retire rien.
 5. **La pub sur notre site :** non, sauf changement d'échelle.
 
 **Condition du palier payant chez un portail** (ajout du 4 oct. 2026) : le
-jour où la version portail rapporte de l'argent (Full Launch, voir
-), le projet devient commercial. La page du portail est hébergée
+jour où la version portail rapporte de l'argent (Full Launch, voir `PORTAIL.md`),
+le projet devient commercial. La page du portail est hébergée
 par le portail, mais notre site reste sur Vercel gratuit et le serveur de jeu
 sur Northflank gratuit : avant d'encaisser, relire leurs conditions et passer
 aux offres payantes si elles l'exigent, financées par ces revenus.
