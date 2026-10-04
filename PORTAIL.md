@@ -37,16 +37,17 @@ Les visites venues d'un portail se lisent dans les compteurs, colonne
 
 Leur formulaire de dépôt le dit sans détour : un jeu multijoueur n'est accepté
 que s'il passe par leur module pour les invitations. La page du portail charge
-donc leur bibliothèque (), et lui parle :
+donc leur bibliothèque (`crazygames-sdk-v3.js`), et `src/web/crazygames.ts`
+lui parle :
 
-- **début et fin de partie** ( / ) ;
+- **début et fin de partie** (`gameplayStart` / `gameplayStop`) ;
 - **le salon privé** où l'on est assis, et s'il reste une place
-  (, ) — c'est ce qui permet à un ami de nous
+  (`updateRoom`, `leftRoom`) — c'est ce qui permet à un ami de nous
   rejoindre depuis le portail ;
-- **le lien d'invitation** du salon (), affiché à la place du nôtre ;
-- **l'arrivée par invitation** (, et l'écoute des invitations en
+- **le lien d'invitation** du salon (`inviteLink`), affiché à la place du nôtre ;
+- **l'arrivée par invitation** (`inviteParams`, et l'écoute des invitations en
   cours de jeu) : on s'assoit directement dans le salon de l'ami ;
-- **la partie entre amis immédiate** () : le jeu ouvre un
+- **la partie entre amis immédiate** (`isInstantMultiplayer`) : le jeu ouvre un
   salon dès l'arrivée.
 
 Si la bibliothèque manque ou refuse de démarrer, le jeu s'en passe : il reste
