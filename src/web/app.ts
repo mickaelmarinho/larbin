@@ -653,12 +653,20 @@ function boucle(): void {
 
 /* ------------------------------------------------------------- les voiles */
 
+/** Ce que le voile affiche en ce moment : de quoi reconnaître un écran qui vient d'arriver. */
+let voileAffiche = '';
+
 function montrerVoile(html: string, classe = ''): void {
-  $('voile').innerHTML = `<div class="panneau${classe ? ` ${classe}` : ''}">${html}</div>`;
+  // « neuf » : l'écran vient d'apparaître. Ses animations d'entrée ne jouent
+  // qu'alors — pas à chaque fois que la table le redessine à l'identique.
+  const neuf = html !== voileAffiche;
+  voileAffiche = html;
+  $('voile').innerHTML = `<div class="panneau${classe ? ` ${classe}` : ''}${neuf ? ' neuf' : ''}">${html}</div>`;
   $('voile').hidden = false;
 }
 
 function cacherVoile(): void {
+  voileAffiche = '';
   $('voile').hidden = true;
   $('voile').innerHTML = '';
 }
@@ -761,14 +769,24 @@ function lignesDuClassement(vue: PlayerView): string {
   return vue.classement.map((id, i) => {
     const p = joueur(vue, id);
     const deux = p.finishedOnTwo ? ` <span class="sur-un-deux">${tr('fini sur un 2', 'finished on a 2')}</span>` : '';
-    return `<li>
+    return `<li class="${id === vue.me.id ? 'moi' : ''}" style="--rang:${i}">
       <span class="place">${rang(i + 1)}</span>
-      <span><span class="avatar">${avatarDe(id)}</span>${p.nom}${deux}</span>
-      <span class="gain">+${n - 1 - i} → ${p.points}</span>
+      <span class="qui"><span class="medaillon">${avatarDe(id)}</span>${p.nom}${deux}</span>
+      <span class="gain"><b>+${n - 1 - i}</b> → ${p.points}</span>
       <span class="role ${p.role}">${TITRES[p.role!]}</span>
     </li>`;
   }).join('');
 }
+
+/**
+ * Ce qu'on a gagné à cette manche, en un dessin : la couronne du Boss, celle,
+ * plus modeste, du Sous-Boss, et pour le Larbin la carte la plus basse du jeu.
+ */
+const EMBLEMES_DE_ROLE: Partial<Record<Role, string>> = {
+  boss: '<svg viewBox="0 0 64 44" aria-hidden="true"><path d="M6 40V12l14 12L32 4l12 20 14-12v28z"/><circle cx="6" cy="10" r="3"/><circle cx="32" cy="3" r="3"/><circle cx="58" cy="10" r="3"/></svg>',
+  'sous-boss': '<svg viewBox="0 0 64 44" aria-hidden="true"><path d="M10 40V18l10 8 12-16 12 16 10-8v22z"/></svg>',
+  larbin: '<svg viewBox="0 0 64 44" aria-hidden="true"><rect x="20" y="3" width="24" height="38" rx="4"/><text x="32" y="29" text-anchor="middle">3</text></svg>',
+};
 
 function voileFinDeManche(vue: PlayerView): void {
   if (vue.me.role) {
@@ -802,9 +820,10 @@ function voileFinDeManche(vue: PlayerView): void {
   )}`;
 
   montrerVoile(`
+    <div class="blason-de-fin ${vue.me.role}">${EMBLEMES_DE_ROLE[vue.me.role!] ?? ''}</div>
     <h2>${tr(`Fin de la manche ${vue.round}`, `End of round ${vue.round}`)}</h2>
     <p>${verdict}${course}</p>
-    <ul class="classement">${lignesDuClassement(vue)}</ul>
+    <ul class="classement entree">${lignesDuClassement(vue)}</ul>
     <button class="action primaire" id="suivante" type="button">${tr('Manche suivante', 'Next round')}</button>
   `);
   $('suivante').addEventListener('click', () => {
@@ -818,7 +837,7 @@ function voileFinDeManche(vue: PlayerView): void {
 function voileDefi(bilan: BilanDuDefi): void {
   const entame = bilan.roles.length > 0;
   montrerVoile(`
-    <h2>🗓️ ${titreDuDefi(bilan.jour)}</h2>
+    <h2 class="avec-icone">${icone('calendrier')} ${titreDuDefi(bilan.jour)}</h2>
     <ul class="vite">${tr(`
       <li><b>La même donne pour tout le monde</b>, aujourd’hui : comparez vos scores.</li>
       <li><b>${DEFI_MANCHES} manches</b> contre les bots. Le Boss prend 3 points, le Larbin rien :
@@ -847,7 +866,7 @@ function voileDefiFini(bilan: BilanDuDefi, retour: () => void): void {
   const stats = statsDuDefi(noterDansLHistorique(bilan), bilan.jour);
   const s = (n: number) => (n > 1 ? 's' : '');
   montrerVoile(`
-    <h2>🗓️ ${titreDuDefi(bilan.jour)}</h2>
+    <h2 class="avec-icone">${icone('calendrier')} ${titreDuDefi(bilan.jour)}</h2>
     <p class="score-defi"><b>${bilan.points}</b>/${DEFI_MAXIMUM}</p>
     <p class="roles-defi" aria-label="${bilan.roles.map((r) => TITRES[r]).join(', ')}">${emojisDuDefi(bilan)}</p>
     <div class="compteurs stats-defi">
@@ -903,6 +922,10 @@ async function afficherLeClassementDuDefi(bilan: BilanDuDefi): Promise<void> {
     </li>`).join('')}</ol>`;
 }
 
+/** La pluie de confettis d'une victoire : quelques dizaines de papiers aux couleurs du jeu. */
+const CONFETTIS = `<div class="confettis" aria-hidden="true">${Array.from({ length: 36 }, (_, i) =>
+  `<i style="--x:${(i * 37) % 100};--d:${(i * 53) % 17};--c:${i % 4}"></i>`).join('')}</div>`;
+
 /** Les parties solo déjà comptées : réafficher l'écran de fin ne les recompte pas. */
 const partiesComptees = new Set<string>();
 
@@ -918,11 +941,12 @@ function voileFinDePartie(vue: PlayerView): void {
     : tr(`${vainqueur.nom} remporte la partie avec ${vainqueur.points} points. Vous en avez ${vue.me.points}.`,
       `${vainqueur.nom} wins the game with ${vainqueur.points} points. You have ${vue.me.points}.`);
 
-  const lignes = tous.map((p, i) => `<li>
+  const lignes = tous.map((p, i) => `<li class="${p.id === vue.me.id ? 'moi' : ''}${i === 0 ? ' premier' : ''}" style="--rang:${i}">
       <span class="place">${rang(i + 1)}</span>
-      <span><span class="avatar">${avatarDe(p.id)}</span>${p.nom}</span>
-      <span class="gain">${p.points} pt${p.points > 1 ? 's' : ''}</span>
+      <span class="qui"><span class="medaillon">${avatarDe(p.id)}</span>${p.nom}</span>
+      <span class="gain"><b>${p.points}</b> pt${p.points > 1 ? 's' : ''}</span>
     </li>`).join('');
+  const gagne = vainqueur.id === vue.me.id;
 
   // Remettre les scores à zéro engage toute la table : en ligne, c'est à l'hôte.
   const enLigne = table instanceof TableEnLigne ? table : null;
@@ -968,9 +992,11 @@ function voileFinDePartie(vue: PlayerView): void {
   const proposer = !SUR_PORTAIL && moyen !== null && proposerInstallation(b.parties, refusGarde());
 
   montrerVoile(`
-    <h2>${tr('Partie terminée', 'Game over')}</h2>
+    ${gagne ? CONFETTIS : ''}
+    <div class="blason-de-fin ${gagne ? 'boss victoire' : 'neutre'}">${gagne ? EMBLEMES_DE_ROLE.boss : `<span class="medaillon grand">${avatarDe(vainqueur.id)}</span>`}</div>
+    <h2>${gagne ? tr('Victoire !', 'You win!') : tr('Partie terminée', 'Game over')}</h2>
     <p>${verdict}</p>
-    <ul class="classement">${lignes}</ul>
+    <ul class="classement entree">${lignes}</ul>
     <p class="trace">${trace} <button class="lien" id="parcours-fin" type="button">${tr('Votre parcours', 'Your record')}</button></p>
     ${proposer ? `<div class="installer" id="installer">
       <p>📲 ${tr('<b>Le Larbin sur votre écran d’accueil</b>, comme une appli : on le retrouve d’un geste.',
@@ -1391,9 +1417,9 @@ function voileAccueil(): void {
 
   // Ce qui se consulte sans jouer tient sur une rangée d'icônes, en bas : les
   // trois façons de jouer gardent toute la place.
-  const raccourci = (id: string, icone: string, texte: string, titre = texte) =>
+  const raccourci = (id: string, dessin: string, texte: string, titre = texte) =>
     `<button class="raccourci" id="${id}" type="button" title="${attribut(titre)}">
-      <span aria-hidden="true">${icone}</span>${texte}
+      <span class="jeton" aria-hidden="true">${dessin}</span>${texte}
     </button>`;
 
   // Sur PC, la vitrine et les raccourcis prennent la colonne de gauche, le jeu
@@ -1404,7 +1430,7 @@ function voileAccueil(): void {
       ${EMBLEME}
       <h1>Le Larbin</h1>
       <button class="reglage" id="tapis-accueil" type="button" title="${tr('Tapis et musique', 'Table and music')}"
-              aria-label="${tr('Tapis et musique', 'Table and music')}">🎨</button>
+              aria-label="${tr('Tapis et musique', 'Table and music')}">${icone('palette')}</button>
     </div>
     <div class="affiche">${tr(`
       <p class="accroche"><b>Le Président, en plus nerveux.</b>
@@ -1438,19 +1464,19 @@ function voileAccueil(): void {
     : `<input id="nom" type="text" maxlength="14" placeholder="${tr('Votre prénom', 'Your name')}" aria-label="${tr('Votre nom', 'Your name')}"
               value="${attribut(nomConnu)}">`}
       ${horsLigne ? '' : `<button class="compte-choix" id="compte" type="button"
-              title="${moi ? tr('Mon compte', 'My account') : tr('Créer un compte ou se connecter', 'Create an account or sign in')}">🔑<span> ${tr('Compte', 'Account')}</span></button>`}
+              title="${moi ? tr('Mon compte', 'My account') : tr('Créer un compte ou se connecter', 'Create an account or sign in')}">${icone('cle')}<span> ${tr('Compte', 'Account')}</span></button>`}
     </div>
     ${horsLigne ? `<p class="mention">${tr(`Ce fichier joue en solo, hors ligne.
        Pour une partie à plusieurs, ouvrez`, 'This file plays solo, offline. To play with others, open')}
        <a href="https://${ADRESSE_PUBLIQUE}${PREFIXE}" target="_blank" rel="noopener">${ADRESSE_PUBLIQUE}${PREFIXE}</a>
        ${tr('— ou lancez <b>Serveur.cmd</b> pour jouer sur votre wifi.', '— or run <b>Serveur.cmd</b> to play over your Wi-Fi.')}</p>` : `
       <section class="bloc">
-        <h3>🌍 ${tr('En ligne', 'Online')} <span id="vie">${htmlDeVie(signeDeVie(derniereActivite))}</span></h3>
+        <h3>${icone('globe')} ${tr('En ligne', 'Online')} <span id="vie">${htmlDeVie(signeDeVie(derniereActivite))}</span></h3>
         <button class="action primaire" id="publique" type="button">${texteDuBoutonPublic(derniereActivite)}</button>
         <div id="podium">${htmlDuPodium(dernierPodium)}</div>
       </section>
       <section class="bloc">
-        <h3>👥 ${tr('Entre amis', 'With friends')}</h3>
+        <h3>${icone('amis')} ${tr('Entre amis', 'With friends')}</h3>
         <button class="action" id="creer" type="button">${tr('Créer un salon', 'Create a room')}</button>
         <div class="rejoindre">
           <input id="code" type="text" maxlength="4" placeholder="CODE" aria-label="${tr('Code du salon', 'Room code')}"
@@ -1459,32 +1485,32 @@ function voileAccueil(): void {
         </div>
       </section>`}
     <section class="bloc">
-      <h3>🤖 Solo</h3>
+      <h3>${icone('robot')} Solo</h3>
       <div class="deux">
         <button class="action${horsLigne ? ' primaire' : ''}" id="solo" type="button">${tr('Contre les bots', 'Against bots')}</button>
         <button class="action defi" id="defi" type="button">${defi.fini
           ? `${tr('Défi du jour', 'Daily challenge')} <small>✓ ${defi.points}/${DEFI_MAXIMUM}</small>`
           : serieDuDefi > 0
             ? `${tr('Défi du jour', 'Daily challenge')} <small title="${tr('Jours de suite', 'Days in a row')}">🔥 ${serieDuDefi}</small>`
-            : `🗓️ ${tr('Défi du jour', 'Daily challenge')}`}</button>
+            : `${icone('calendrier')} ${tr('Défi du jour', 'Daily challenge')}`}</button>
       </div>
       ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
         <span>♥ ${tr('Apprendre en jouant', 'Learn by playing')}</span>
         <small>${tr('4 petites leçons · 2 minutes', '4 short lessons · 2 minutes')}</small>
       </button>`}
     </section>
-    <button class="lien" id="faire-decouvrir" type="button">📣 ${tr('Faire découvrir le jeu à un proche', 'Share the game with a friend')}</button>
+    <button class="lien" id="faire-decouvrir" type="button">${icone('porte-voix')} ${tr('Faire découvrir le jeu à un proche', 'Share the game with a friend')}</button>
     </div>
     <div class="bas">
     <nav class="raccourcis">
-      ${raccourci('succes', '🏆', tr('Succès', 'Awards'),
+      ${raccourci('succes', icone('trophee'), tr('Succès', 'Awards'),
         `${tr('Vos succès', 'Your achievements')} — ${nombreDeSucces()} ${tr('sur', 'of')} ${SUCCES.length}`)}
-      ${horsLigne ? '' : raccourci('classement', '🏅', tr('Classement', 'Ranking'))}
-      ${b.parties > 0 ? raccourci('parcours', '📊', tr('Parcours', 'Record'),
+      ${horsLigne ? '' : raccourci('classement', icone('medaille'), tr('Classement', 'Ranking'))}
+      ${b.parties > 0 ? raccourci('parcours', icone('parcours'), tr('Parcours', 'Record'),
         tr(`Votre parcours — ${pluriel(b.victoires, ['victoire', 'victoires'], ['win', 'wins'])} en ${pluriel(b.parties, ['partie', 'parties'], ['game', 'games'])}`,
           `Your record — ${pluriel(b.victoires, ['victoire', 'victoires'], ['win', 'wins'])} in ${pluriel(b.parties, ['partie', 'parties'], ['game', 'games'])}`)) : ''}
-      ${raccourci('regles', '📖', tr('Règles', 'Rules'), tr('Comment on joue ?', 'How to play?'))}
-      ${raccourci('histoire', '📜', tr('Histoire', 'History'), tr('D’où vient ce jeu ?', 'Where does this game come from?'))}
+      ${raccourci('regles', icone('livre'), tr('Règles', 'Rules'), tr('Comment on joue ?', 'How to play?'))}
+      ${raccourci('histoire', icone('parchemin'), tr('Histoire', 'History'), tr('D’où vient ce jeu ?', 'Where does this game come from?'))}
     </nav>
     <p class="pied">
       <span class="hors-portail"><a href="${LIEN_REGLES}" target="_blank" rel="noopener">${tr('Toutes les règles', 'Full rules')}</a>

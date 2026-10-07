@@ -1852,7 +1852,7 @@ body.portail input { -webkit-user-select: text; user-select: text; }
 /* ------------------------------------------------ la table, habillée */
 
 /* Les pictogrammes de la barre (icones.ts) : au trait, de la couleur du texte. */
-.icone {
+.picto {
   width: 17px;
   height: 17px;
   fill: none;
@@ -1939,4 +1939,135 @@ body.portail input { -webkit-user-select: text; user-select: text; }
   }
   .joueur .medaillon { grid-row: 1 / span 2; width: 34px; height: 34px; font-size: 19px; }
   .joueur .role, .joueur .etat { grid-column: 1 / -1; justify-self: center; }
+}
+
+/* --------------------------------- l'accueil et les écrans de fin, habillés */
+
+/* Un pictogramme au fil du texte : dans un titre, un bouton, un lien. */
+.panneau h2 .picto, .panneau h3 .picto, .action .picto, .lien .picto, .compte-choix .picto {
+  display: inline-block;
+  vertical-align: -3px;
+  margin: 0 5px 0 0;
+}
+.panneau h3 .picto { width: 15px; height: 15px; vertical-align: -2.5px; color: var(--laiton); }
+.panneau h2.avec-icone .picto { width: 20px; height: 20px; color: var(--laiton); }
+.compte-choix .picto { color: var(--laiton); margin-right: 2px; }
+.reglage { color: var(--texte); }
+.reglage .picto { width: 21px; height: 21px; }
+
+/* Les raccourcis du bas : chacun dans son jeton, comme les médaillons de la table. */
+.raccourci .jeton {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 3px;
+  border-radius: 50%;
+  color: var(--laiton);
+  background: radial-gradient(circle at 35% 28%, #ffffff26, #00000038 72%);
+  box-shadow: 0 0 0 1.5px var(--laiton-sombre), 0 2px 5px #0006, inset 0 1px 1px #ffffff33;
+  transition: transform .15s, color .15s;
+}
+.raccourci .jeton .picto { width: 21px; height: 21px; }
+.raccourci:hover { background: none; }
+.raccourci:hover .jeton { transform: translateY(-2px); color: #f0c669; }
+.raccourci:active .jeton { transform: scale(.94); }
+
+/* Derrière l'accueil, les quatre couleurs en filigrane sur le feutre. */
+#voile:has(.accueil) {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='%23fff' fill-opacity='.035' font-size='30' text-anchor='middle'%3E%3Ctext x='30' y='40'%3E%E2%99%A0%3C/text%3E%3Ctext x='90' y='40'%3E%E2%99%A5%3C/text%3E%3Ctext x='30' y='100'%3E%E2%99%A6%3C/text%3E%3Ctext x='90' y='100'%3E%E2%99%A3%3C/text%3E%3C/svg%3E"),
+    var(--voile);
+}
+
+/* L'arrivée sur l'accueil : le panneau se pose, l'éventail s'ouvre. Seulement
+   la première fois qu'un écran s'affiche (« neuf »), pas à chaque retouche. */
+.panneau.accueil.neuf { animation: se-poser .32s cubic-bezier(.2, .8, .3, 1) both; }
+.panneau.accueil.neuf .eventail .carte { animation: ouvrir-eventail .5s cubic-bezier(.2, .8, .3, 1.15) .12s backwards; }
+@keyframes se-poser {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+}
+@keyframes ouvrir-eventail {
+  from { transform: rotate(0deg) translateY(6px); }
+}
+
+/* Le classement d'une fin de manche ou de partie. */
+.classement .qui { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+.classement .medaillon { width: 30px; height: 30px; font-size: 17px; }
+.classement .gain b { color: var(--texte); font-size: 14px; }
+.classement li.moi {
+  background: linear-gradient(90deg, #d9a44126, #d9a4410a);
+  border-radius: 10px;
+  border-bottom-color: transparent;
+  box-shadow: inset 0 0 0 1px #d9a44140;
+  padding-inline: 8px;
+}
+.classement li.premier .medaillon { box-shadow: 0 0 0 2px var(--laiton), 0 0 12px #d9a44188, inset 0 1px 1px #ffffff40; }
+.neuf .classement.entree li { animation: ligne-entre .34s cubic-bezier(.2, .8, .3, 1) calc(.12s + var(--rang, 0) * .08s) backwards; }
+@keyframes ligne-entre {
+  from { opacity: 0; transform: translateX(-14px); }
+}
+
+/* Au-dessus du titre, ce qu'on vient de gagner : couronne, ou carte du Larbin. */
+.blason-de-fin {
+  display: grid;
+  place-items: center;
+  height: 58px;
+  margin: 0 0 6px;
+}
+.blason-de-fin:empty { display: none; }
+.blason-de-fin svg { height: 46px; fill: var(--laiton); filter: drop-shadow(0 3px 6px #0008); }
+.blason-de-fin.sous-boss svg { height: 38px; fill: #cbd8c8; }
+.blason-de-fin.larbin svg { fill: var(--creme); }
+.blason-de-fin.larbin text { fill: #1b211f; font-size: 22px; font-weight: 800; }
+.blason-de-fin .medaillon.grand { width: 54px; height: 54px; font-size: 30px; }
+.neuf .blason-de-fin > * { animation: blason-tombe .5s cubic-bezier(.2, .9, .3, 1.35) backwards; }
+.neuf .blason-de-fin.victoire > * { animation: blason-tombe .6s cubic-bezier(.2, .9, .3, 1.35) backwards, briller 2.4s ease-in-out .6s infinite; }
+.blason-de-fin.victoire svg { height: 56px; }
+@keyframes blason-tombe {
+  from { opacity: 0; transform: translateY(-22px) scale(.6) rotate(-8deg); }
+}
+@keyframes briller {
+  50% { filter: drop-shadow(0 3px 6px #0008) drop-shadow(0 0 14px #f0c669cc); }
+}
+
+/* La victoire : une pluie de confettis aux couleurs du jeu, une seule fois. */
+.confettis {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 11;
+}
+.confettis i {
+  position: absolute;
+  top: -14px;
+  left: calc(var(--x) * 1%);
+  width: 8px;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--laiton);
+  opacity: 0;
+}
+.confettis i:nth-child(4n+1) { background: var(--rouge-embleme); }
+.confettis i:nth-child(4n+2) { background: var(--creme); }
+.confettis i:nth-child(4n+3) { background: #7fc9a6; width: 6px; height: 6px; border-radius: 50%; }
+.neuf .confettis i { animation: confetti calc(2.2s + var(--d) * .09s) cubic-bezier(.3, .6, .6, 1) calc(var(--d) * .06s) both; }
+@keyframes confetti {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(105vh) translateX(calc((var(--d) - 8) * 6px)) rotate(calc(var(--d) * 70deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panneau.accueil.neuf, .panneau.accueil.neuf .eventail .carte, .neuf .classement.entree li,
+  .neuf .blason-de-fin > *, .neuf .confettis i { animation: none; }
+  .confettis { display: none; }
+}
+
+/* Sur téléphone, les jetons des raccourcis se font plus petits : tout l'accueil tient à l'écran. */
+@media (max-width: 899px) {
+  .raccourci .jeton { width: 34px; height: 34px; margin-bottom: 2px; }
+  .raccourci .jeton .picto { width: 18px; height: 18px; }
+  .raccourci { padding-block: 3px; }
 }
