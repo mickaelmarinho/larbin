@@ -52,6 +52,7 @@ import {
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
 import { SUR_PORTAIL } from './portail.ts';
 import { dessinDeCarte } from './cartes.ts';
+import { emporter, enMouvement, placesDesCartes, poser, replacerLaMain } from './mouvements.ts';
 import {
   direLeSalon, direSiOnJoue, ecouterLesInvitations, invitationRecue, lienDInvitation, multijoueurImmediat, portailPret,
 } from './crazygames.ts';
@@ -251,7 +252,7 @@ function rendreAdversaires(vue: PlayerView): void {
       o.count === 0 ? 'sorti' : '',
       o.connecte ? '' : 'absent',
     ].join(' ');
-    return `<div class="joueur ${classes}">
+    return `<div class="joueur ${classes}" data-joueur="${o.id}">
       <div class="dos-pile">
         ${'<div class="dos"></div>'.repeat(dos)}
         ${o.count > 0 ? `<span class="compte">${o.count}</span>` : ''}
@@ -285,13 +286,34 @@ function dernierCoup(vue: PlayerView): string {
 /** Une ligne du moteur, dite au joueur : conjuguée en français, traduite en anglais. */
 const dansLaLangue = (ligne: string, moi: string) => (enAnglais ? ligneEnAnglais(ligne, moi) : franciser(ligne, moi));
 
+/** D'où part — et où revient — ce qui se joue : la main du joueur, ou le paquet d'un adversaire. */
+function placeDuJoueur(id: string, vue: PlayerView): DOMRect | null {
+  if (id === vue.me.id) return $('ma-main').getBoundingClientRect();
+  const siege = document.querySelector<HTMLElement>(`#adversaires [data-joueur="${CSS.escape(id)}"]`);
+  return (siege?.querySelector('.dos') ?? siege)?.getBoundingClientRect() ?? null;
+}
+
 function rendreTapis(vue: PlayerView): void {
   const dernier = vue.pile[vue.pile.length - 1];
   const signature = dernier ? `${dernier.player}:${dernier.cards.map((c) => c.id).join(',')}` : '';
   if (signature !== poseAffichee) {
     poseAffichee = signature;
-    $('pose').classList.toggle('de-moi', dernier?.player === vue.me.id);
-    $('pose').innerHTML = dernier ? sortHand(dernier.cards).map((c) => carteHTML(c)).join('') : '';
+    const pose = $('pose');
+    // Avant de redessiner : où sont les cartes qui vont bouger (voir mouvements.ts).
+    const anciennes = [...pose.querySelectorAll<HTMLElement>('.carte')];
+    const dansMaMain = placesDesCartes($('ma-main'));
+    // Un coup qui ouvre une série : celui qui la joue vient de ramasser le pli.
+    const ramasse = dernier && vue.pile.length === 1 ? placeDuJoueur(dernier.player, vue) : null;
+    if (anciennes.length > 0) emporter(anciennes, ramasse);
+    pose.classList.toggle('de-moi', dernier?.player === vue.me.id);
+    pose.innerHTML = dernier ? sortHand(dernier.cards).map((c) => carteHTML(c)).join('') : '';
+    if (dernier && enMouvement()) {
+      const depuis = placeDuJoueur(dernier.player, vue);
+      pose.querySelectorAll<HTMLElement>('.carte').forEach((carte, i) => {
+        const origine = dansMaMain.get(carte.dataset.id!) ?? depuis;
+        if (origine) poser(carte, origine, i);
+      });
+    }
   }
   // Série close : les cartes restent visibles, mais elles ne comptent plus.
   $('pose').classList.toggle('finie', vue.requirement === null && vue.pile.length > 0);
@@ -330,6 +352,7 @@ function rendreRestantes(vue: PlayerView): void {
 function rendreMaMain(vue: PlayerView): void {
   const rangs = rangsJouables(vue);
   const monTour = vue.turnPlayer === vue.me.id && vue.phase === 'jeu';
+  const avant = placesDesCartes($('ma-main'));
 
   $('ma-main').innerHTML = sortHand(vue.me.hand).map((c) => {
     const jouable = rangs.has(c.rank);
@@ -341,6 +364,8 @@ function rendreMaMain(vue: PlayerView): void {
   }).join('');
 
   ajusterChevauchement(vue.me.hand.length);
+  // Les cartes restantes se resserrent ; une donne se distribue depuis le tapis.
+  replacerLaMain($('ma-main'), avant, $('pose').getBoundingClientRect());
 
   const role = vue.me.role ? `<span class="role ${vue.me.role}">${pastilleDuRole(vue.me.role)}</span>` : '';
   // En ligne, de quoi réagir : un bouton, et la palette quand on l'ouvre.

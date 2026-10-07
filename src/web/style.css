@@ -539,18 +539,14 @@ button.action:disabled {
   font-variant-numeric: tabular-nums;
 }
 
-/* Les cartes que vous posez montent depuis votre main ; celles des autres
-   descendent d'en face. */
-#pose .carte { animation: arrivee-adverse .28s cubic-bezier(.2, .9, .3, 1.2) backwards; }
-#pose.de-moi .carte { animation-name: arrivee-mienne; }
+/* Les cartes arrivent sur le tapis depuis la main qui les joue (mouvements.ts).
+   Posées, elles gardent un léger désordre : personne n'aligne un pli au cordeau. */
+#pose .carte:nth-child(odd) { rotate: -2.5deg; }
+#pose .carte:nth-child(even) { rotate: 2deg; }
+#pose .carte:nth-child(3n) { translate: 0 -3px; }
 
-@keyframes arrivee-adverse {
-  from { transform: translateY(-30px) scale(.86); opacity: 0; }
-}
-
-@keyframes arrivee-mienne {
-  from { transform: translateY(30px) scale(.86); opacity: 0; }
-}
+/* La copie d'une carte qui s'en va : au-dessus du tapis, sous les écrans. */
+.carte.fantome { box-shadow: 0 2px 5px #0007; }
 
 /* ------------------------------------------- ce qui peut encore sortir */
 
