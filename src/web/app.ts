@@ -51,6 +51,7 @@ import {
 
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
 import { SUR_PORTAIL } from './portail.ts';
+import { dessinDeCarte } from './cartes.ts';
 import {
   direLeSalon, direSiOnJoue, ecouterLesInvitations, invitationRecue, lienDInvitation, multijoueurImmediat, portailPret,
 } from './crazygames.ts';
@@ -136,7 +137,7 @@ function carteHTML(c: Card, classes = ''): string {
   const teinte = EST_ROUGE(c) ? 'rouge' : '';
   return `<button class="carte ${teinte} ${classes}" data-id="${c.id}" type="button">`
     + `<span class="coin">${hauteur(c.rank)}<i>${c.suit}</i></span>`
-    + `<span class="centre">${c.suit}</span></button>`;
+    + `${dessinDeCarte(c.rank, c.suit)}</button>`;
 }
 
 /**
@@ -1342,10 +1343,10 @@ function suivreLaVie(): void {
  * décor seulement : ni bouton, ni focus, et les mêmes cartes qu'à la table.
  */
 const EVENTAIL = `<div class="eventail" aria-hidden="true">${
-  ([['9', '♣'], [tr('V', 'J'), '♦'], [tr('D', 'Q'), '♥'], ['2', '♠']] as const).map(([valeur, couleur]) => {
+  ([['9', '♣', 9], [tr('V', 'J'), '♦', 11], [tr('D', 'Q'), '♥', 12], ['2', '♠', 15]] as const).map(([valeur, couleur, rang]) => {
     const rouge = couleur === '♥' || couleur === '♦' ? ' rouge' : '';
     return `<span class="carte${rouge}"><span class="coin">${valeur}<i>${couleur}</i></span>`
-      + `<span class="centre">${couleur}</span></span>`;
+      + `${dessinDeCarte(rang, couleur)}</span>`;
   }).join('')}</div>`;
 
 function voileAccueil(): void {

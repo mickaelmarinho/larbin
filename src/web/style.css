@@ -103,9 +103,12 @@ body {
   width: calc(var(--carte-l) * 0.42);
   height: calc(var(--carte-h) * 0.42);
   border-radius: 4px;
-  background: var(--dos);
+  background:
+    linear-gradient(135deg, #ffffff38 0 12%, transparent 13%),
+    repeating-linear-gradient(-45deg, #0000002b 0 2px, transparent 2px 6px),
+    var(--dos);
   border: 1px solid #00000055;
-  box-shadow: 0 1px 3px #0006;
+  box-shadow: 0 1px 3px #0006, inset 0 0 0 1.5px #f7f1e3b8, inset 0 0 0 2.5px #00000030;
 }
 
 .dos + .dos { margin-left: calc(var(--carte-l) * -0.28); }
@@ -292,14 +295,54 @@ button.action:disabled {
   font-size: calc(var(--carte-l) * 0.26);
 }
 
-.carte .centre {
+/* Sous l'index, le dessin de la carte (voir cartes.ts). Son cadre laisse
+   l'index respirer : c'est lui qu'on lit dans un éventail serré. */
+.carte .centre,
+.carte .points,
+.carte .figure {
   position: absolute;
-  right: calc(var(--carte-l) * 0.09);
-  bottom: calc(var(--carte-l) * 0.06);
-  font-size: calc(var(--carte-l) * 0.5);
-  line-height: 1;
-  opacity: .9;
+  left: 30%;
+  right: 9%;
+  top: 25%;
+  bottom: 8%;
+  pointer-events: none;
 }
+
+/* L'as, et le 2 : une seule couleur, en grand. */
+.carte .centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--carte-l) * 0.56);
+  line-height: 1;
+}
+
+/* Le 2 est la plus forte carte du jeu : il porte la couronne de l'emblème. */
+.carte .centre.deux { font-size: calc(var(--carte-l) * 0.46); }
+.carte .couronne {
+  width: calc(var(--carte-l) * 0.34);
+  margin-bottom: calc(var(--carte-l) * 0.02);
+  fill: var(--laiton);
+  filter: drop-shadow(0 1px 0 #0000002e);
+}
+
+/* Les cartes à points : disposés comme sur un vrai jeu, ceux du bas renversés. */
+.carte .points { top: 29%; bottom: 13%; left: 31%; right: 10%; }
+.carte .points i {
+  position: absolute;
+  font-style: normal;
+  font-size: calc(var(--carte-l) * 0.2);
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+.carte .points i.bas { transform: translate(-50%, -50%) rotate(180deg); }
+
+/* Les figures : un buste de la couleur de la carte, coiffé de laiton. */
+.carte .figure { width: auto; height: auto; fill: currentColor; overflow: visible; }
+.carte .figure .cadre { fill: currentColor; fill-opacity: .07; stroke: currentColor; stroke-opacity: .32; stroke-width: 1; }
+.carte .figure .or { fill: var(--laiton); stroke: var(--laiton-sombre); stroke-width: .5; }
+.carte .figure .blason { fill: var(--creme); font-size: 11px; }
 
 /* Les cartes se recouvrent : une ombre portée sur le bord gauche fait lire
    l'éventail comme une pile, et non comme un bandeau blanc. */
