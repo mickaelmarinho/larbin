@@ -35,7 +35,10 @@ html, body {
 }
 
 body {
+  /* Le grain du feutre, par-dessus le dégradé du tapis : un bruit très léger,
+     tracé une fois et répété, qui donne de la matière sans rien charger. */
   background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='.1'/%3E%3C/svg%3E"),
     radial-gradient(ellipse 120% 80% at 50% 22%, var(--fond-haut) 0%, var(--feutre) 55%, var(--fond-bas) 100%);
   color: var(--texte);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -1845,3 +1848,95 @@ body.portail .hors-portail { display: none !important; }
 body.portail { -webkit-user-select: none; user-select: none; }
 body.portail input { -webkit-user-select: text; user-select: text; }
 .rejoindre[hidden] { display: none; }
+
+/* ------------------------------------------------ la table, habillée */
+
+/* Les pictogrammes de la barre (icones.ts) : au trait, de la couleur du texte. */
+.icone {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+  margin: auto;
+}
+
+#sons, #musique-choix, #tapis-choix, #voir-restantes, #recommencer, #accueil {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid #ffffff24;
+  background: linear-gradient(180deg, #ffffff1c, #ffffff0a);
+  color: var(--texte);
+  box-shadow: 0 1px 2px #0005, inset 0 1px 0 #ffffff1a;
+  transition: background .15s, transform .1s;
+}
+#sons:active, #musique-choix:active, #voir-restantes:active, #accueil:active { transform: scale(.94); }
+#voir-restantes.actif { border-color: var(--laiton); color: var(--laiton); }
+@media (hover: hover) {
+  #scores button:hover { background: linear-gradient(180deg, #ffffff2b, #ffffff14); }
+}
+
+/* Chaque joueur a son médaillon : l'avatar dans un jeton cerclé de laiton. */
+.medaillon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  background: radial-gradient(circle at 35% 28%, #ffffff30, #00000038 72%);
+  box-shadow: 0 0 0 2px var(--laiton-sombre), 0 0 0 3px #00000055, 0 3px 6px #0007, inset 0 1px 1px #ffffff40;
+  transition: box-shadow .25s, transform .25s;
+}
+
+.joueur { gap: 4px; padding: 8px 10px 7px; min-width: 82px; }
+.joueur .dos-pile { margin-top: 1px; }
+
+/* À qui le tour : son médaillon s'allume, et bat doucement. */
+.joueur.actif .medaillon {
+  box-shadow: 0 0 0 2px var(--laiton), 0 0 0 3px #00000055, 0 0 16px #d9a44199, inset 0 1px 1px #ffffff40;
+  animation: a-son-tour 1.6s ease-in-out infinite;
+}
+@keyframes a-son-tour {
+  50% { transform: scale(1.07); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .joueur.actif .medaillon { animation: none; }
+}
+.joueur.sorti .medaillon, .joueur.absent .medaillon { filter: grayscale(.8); }
+
+#ma-ligne .medaillon { width: 30px; height: 30px; font-size: 17px; }
+
+/* Le tapis de jeu : une ligne de laiton en ovale, comme sur une table de cartes. */
+#tapis::before {
+  content: '';
+  position: absolute;
+  inset: 4% 3%;
+  border-radius: 50%;
+  border: 1.5px solid #d9a44126;
+  box-shadow: inset 0 0 60px #00000030;
+  pointer-events: none;
+}
+#tapis > * { position: relative; }
+
+/* Dans une fenêtre basse, les sièges se couchent : le médaillon à côté du nom. */
+@media (max-height: 560px) and (min-width: 560px) {
+  .joueur {
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 8px;
+    row-gap: 1px;
+    align-items: center;
+    justify-items: start;
+    padding: 5px 10px;
+  }
+  .joueur .medaillon { grid-row: 1 / span 2; width: 34px; height: 34px; font-size: 19px; }
+  .joueur .role, .joueur .etat { grid-column: 1 / -1; justify-self: center; }
+}

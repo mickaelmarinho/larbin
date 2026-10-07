@@ -52,6 +52,7 @@ import {
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
 import { SUR_PORTAIL } from './portail.ts';
 import { dessinDeCarte } from './cartes.ts';
+import { icone } from './icones.ts';
 import { emporter, enMouvement, placesDesCartes, poser, replacerLaMain } from './mouvements.ts';
 import {
   direLeSalon, direSiOnJoue, ecouterLesInvitations, invitationRecue, lienDInvitation, multijoueurImmediat, portailPret,
@@ -253,11 +254,12 @@ function rendreAdversaires(vue: PlayerView): void {
       o.connecte ? '' : 'absent',
     ].join(' ');
     return `<div class="joueur ${classes}" data-joueur="${o.id}">
+      <span class="medaillon">${avatarDe(o.id)}</span>
+      <span class="nom">${o.name}</span>
       <div class="dos-pile">
         ${'<div class="dos"></div>'.repeat(dos)}
         ${o.count > 0 ? `<span class="compte">${o.count}</span>` : ''}
       </div>
-      <span class="nom"><span class="avatar">${avatarDe(o.id)}</span>${o.name}</span>
       ${o.role ? `<span class="role ${o.role}">${pastilleDuRole(o.role)}</span>` : ''}
       <span class="etat">${etatTexte}</span>
       ${bulle(o.id)}
@@ -374,7 +376,7 @@ function rendreMaMain(vue: PlayerView): void {
          title="${tr('Réagir', 'React')}">😊</button>${paletteOuverte ? `<div class="palette">${REACTIONS
       .map((r) => `<button data-reaction="${r}" type="button">${r}</button>`).join('')}</div>` : ''}`
     : '';
-  $('ma-ligne').innerHTML = `<span class="avatar">${avatarDe(vue.me.id)}</span>${role}`
+  $('ma-ligne').innerHTML = `<span class="medaillon">${avatarDe(vue.me.id)}</span>${role}`
     + `<span>${tr('Manche', 'Round')} ${vue.round} — ${pluriel(vue.me.hand.length, ['carte', 'cartes'], ['card', 'cards'])}</span>${reagir}`;
 
   const poser = $('poser') as HTMLButtonElement;
@@ -525,7 +527,7 @@ function ecouter(vue: PlayerView | null): void {
 /** La clochette de la barre : barrée quand les sons sont coupés. */
 function afficherClochette(): void {
   const actifs = sonsActifs();
-  $('sons').textContent = actifs ? '🔔' : '🔕';
+  $('sons').innerHTML = icone(actifs ? 'cloche' : 'cloche-coupee');
   $('sons').title = actifs ? tr('Couper les sons', 'Mute sounds') : tr('Remettre les sons', 'Unmute sounds');
   $('sons').classList.toggle('coupes', !actifs);
   // La note de musique, pâlie tant qu'aucun morceau ne joue.
@@ -2368,6 +2370,14 @@ window.addEventListener('resize', () => {
 // Le texte en clair de la page (pour les moteurs et les aperçus de lien) cède
 // la place au vrai accueil.
 document.getElementById('presentation')?.remove();
+
+// Les pictogrammes de la barre : la page porte des caractères de secours, pour
+// l'instant d'avant le script ; la cloche, elle, se redessine avec son état.
+$('musique-choix').innerHTML = icone('musique');
+$('tapis-choix').innerHTML = icone('tapis');
+$('voir-restantes').innerHTML = icone('oeil');
+$('recommencer').innerHTML = icone('recommencer');
+$('accueil').innerHTML = icone('maison');
 
 // Les boutons fixes de la table sont écrits en français dans la page : en
 // anglais, on les renomme une fois pour toutes.
