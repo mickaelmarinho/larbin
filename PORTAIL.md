@@ -192,6 +192,14 @@ du dépôt.
 
 ## Où on en est
 
+**7 octobre 2026 : CrazyGames a refusé le jeu.** Leur seul motif : « The
+overall quality of the game does not yet meet the expectations of our
+platform ». Rien sur l'intégration, qui avait passé tous leurs contrôles : c'est
+le jeu lui-même — son allure, sans doute — qu'ils jugent en dessous de leur
+catalogue. Redéposer la même version donnerait la même réponse. La version
+portail et le module restent en place : ils resserviront si on y retourne
+après un vrai travail sur l'habillage, ou chez un autre portail.
+
 **4 octobre 2026 : le jeu est déposé, palier Basic, en attente de relecture**
 (« Awaiting review »). Leur page de test a confirmé, chez eux : le signal de
 début de partie, le salon, l'écoute des invitations, le lien d'invitation, leur
