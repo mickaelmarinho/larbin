@@ -50,7 +50,7 @@ import {
 } from './musique.ts';
 
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
-import { SUR_PORTAIL } from './portail.ts';
+import { CHEZ_CRAZYGAMES, SUR_PORTAIL } from './portail.ts';
 import { dessinDeCarte } from './cartes.ts';
 import { icone } from './icones.ts';
 import { emporter, enMouvement, placesDesCartes, poser, replacerLaMain } from './mouvements.ts';
@@ -108,8 +108,8 @@ const TITRES: Record<Role, string> = enAnglais ? ROLES_EN : {
 const lienDuSite = (marque: string) => `https://${ADRESSE_PUBLIQUE}${enAnglais ? '/en?' : '/?'}${marque}`;
 /** Les règles complètes, dans la langue de la page. */
 /** Les portails de jeux s'adressent à un public dès 12 ans : on y tait le nom le plus vert du jeu. */
-const GROS_MOT_FR = SUR_PORTAIL ? '' : ' — ou Trou du cul —';
-const GROS_MOT_EN = SUR_PORTAIL ? '' : ' or Asshole';
+const GROS_MOT_FR = CHEZ_CRAZYGAMES ? '' : ' — ou Trou du cul —';
+const GROS_MOT_EN = CHEZ_CRAZYGAMES ? '' : ' or Asshole';
 const LIEN_REGLES = `https://${ADRESSE_PUBLIQUE}${tr('/regles', '/en/rules')}`;
 
 /** « Défi du 27 sept. » — « Challenge of 27 Sep ». */
@@ -1207,7 +1207,7 @@ function voileHistoire(retour: () => void): void {
        reversal</b>: the last serves the first, and everything is replayed in the
        next round. The Japanese names say it better than ours.</p>
     <p>The game reached the West in the second half of the 20th century and took on
-       table names — President, Scum${SUR_PORTAIL ? '' : ', Asshole'}, and in France ${SUR_PORTAIL ? '' : 'Trou du cul or '}Larbin
+       table names — President, Scum${CHEZ_CRAZYGAMES ? '' : ', Asshole'}, and in France ${CHEZ_CRAZYGAMES ? '' : 'Trou du cul or '}Larbin
        (“the lackey”) — each with its house rules, passed on by word of mouth and
        never written down.</p>
     <p>These are ours: a trick goes around only once, the 2 cuts, cards are not
@@ -1226,7 +1226,7 @@ function voileHistoire(retour: () => void): void {
        l'<b>inversion sociale</b> : le dernier sert le premier, et tout se rejoue
        à la manche suivante. Les noms japonais le disent mieux que les nôtres.</p>
     <p>Le jeu gagne l'Occident dans la seconde moitié du XX<sup>e</sup> siècle et
-       prend chez nous des noms de table — Président, ${SUR_PORTAIL ? '' : 'Trou du cul, '}Larbin —
+       prend chez nous des noms de table — Président, ${CHEZ_CRAZYGAMES ? '' : 'Trou du cul, '}Larbin —
        chacun avec ses règles maison, transmises de bouche à oreille sans jamais
        être écrites.</p>
     <p>Celles-ci sont les vôtres : une série ne fait qu'un tour, le 2 coupe net,
@@ -1516,7 +1516,7 @@ function voileAccueil(): void {
       <span class="hors-portail"><a href="${LIEN_REGLES}" target="_blank" rel="noopener">${tr('Toutes les règles', 'Full rules')}</a>
       · </span><a href="${lienConfidentialite()}" target="_blank" rel="noopener">${tr('Confidentialité', 'Privacy')}</a>
       <span class="hors-portail">· <a href="mailto:mickagames1@outlook.fr">Contact</a>
-      · <a href="${horsLigne ? 'https://' + ADRESSE_PUBLIQUE : ''}${tr('/en', '/')}" hreflang="${tr('en', 'fr')}" lang="${tr('en', 'fr')}">${tr('English', 'Français')}</a></span>
+      · <a href="${SUR_PORTAIL ? `?lang=${tr('en', 'fr')}` : `${horsLigne ? 'https://' + ADRESSE_PUBLIQUE : ''}${tr('/en', '/')}`}" hreflang="${tr('en', 'fr')}" lang="${tr('en', 'fr')}">${tr('English', 'Français')}</a></span>
     </p>
     </div>
   `, 'accueil');
@@ -1791,10 +1791,12 @@ function voileSalon(en: TableEnLigne): void {
   if (salon.publique) return voileTablePublique(en, salon);
 
   const jeSuisHote = salon.sieges.find((s) => s.id === en.moi)?.hote ?? false;
-  // Chez un portail, la page n'a pas d'adresse à nous : le lien d'invitation
-  // est celui qu'il fabrique. S'il n'en donne pas, seul le code voyage.
-  const lien = SUR_PORTAIL ? lienDInvitation(salon.code) ?? ''
-    : `${location.origin}${enAnglais ? '/en?' : '/?'}salon=${salon.code}`;
+  // Chez un portail, la page n'a pas d'adresse à nous. CrazyGames fabrique le
+  // lien d'invitation — s'il n'en donne pas, seul le code voyage ; ailleurs, le
+  // lien mène à notre site, où l'on retrouve le même salon.
+  const lien = CHEZ_CRAZYGAMES ? lienDInvitation(salon.code) ?? ''
+    : SUR_PORTAIL ? lienDuSite(`salon=${salon.code}`)
+      : `${location.origin}${enAnglais ? '/en?' : '/?'}salon=${salon.code}`;
   const sansLien = lien === '';
   const manque = salon.minJoueurs - salon.sieges.length;
 

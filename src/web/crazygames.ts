@@ -8,7 +8,7 @@
  * devient muet si elle manque ou refuse de démarrer : le jeu ne dépend jamais
  * d'elle.
  */
-import { SUR_PORTAIL } from './portail.ts';
+import { CHEZ_CRAZYGAMES } from './portail.ts';
 
 interface Invitation { [cle: string]: string | number | undefined }
 
@@ -35,7 +35,7 @@ let demarrage: Promise<boolean> | null = null;
 /** Lance le module une fois ; vrai s'il répond. Hors du portail, toujours faux. */
 export function portailPret(): Promise<boolean> {
   demarrage ??= (async () => {
-    if (!SUR_PORTAIL) return false;
+    if (!CHEZ_CRAZYGAMES) return false;
     try {
       const sdk = (window as { CrazyGames?: { SDK?: Bibliotheque } }).CrazyGames?.SDK;
       if (!sdk) return false;

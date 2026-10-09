@@ -19,7 +19,7 @@ rmSync(dossier, { recursive: true, force: true });
 mkdirSync(dossier, { recursive: true });
 const port = 9300 + Math.floor(Math.random() * 500);
 const chrome = spawn('C:/Program Files/Google/Chrome/Application/chrome.exe', [
-  '--headless=new', '--disable-gpu', '--hide-scrollbars', '--mute-audio',
+  '--headless=new', '--disable-gpu', '--hide-scrollbars', '--mute-audio', `--force-device-scale-factor=${echelle}`,
   `--remote-debugging-port=${port}`, `--user-data-dir=${path.join(ici, 'profil-film-' + nom)}`,
   `--window-size=${L},${H}`, 'about:blank',
 ], { stdio: 'ignore' });
@@ -41,7 +41,7 @@ ws.on('message', (d) => { const m = JSON.parse(String(d)); if (m.id && attentes.
 const cdp = (method, params = {}) => new Promise((r) => { const n = ++id; attentes.set(n, r); ws.send(JSON.stringify({ id: n, method, params })); });
 const js = async (expression) => (await cdp('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })).result?.value;
 
-await cdp('Emulation.setDeviceMetricsOverride', { width: +L, height: +H, deviceScaleFactor: +echelle, mobile: false });
+await cdp('Emulation.setDeviceMetricsOverride', { width: +L, height: +H, deviceScaleFactor: 0, mobile: false });
 await cdp('Page.enable');
 await cdp('Page.navigate', { url: pathToFileURL(path.join(racine, 'portail', 'index.html')).href + '?lang=en' });
 await attendre(2500);
@@ -49,6 +49,8 @@ await attendre(2500);
 // Lancer une partie contre les bots, puis laisser un joueur automatique tenir la main.
 console.log(await js(`(async () => {
   try { localStorage.setItem('larbin.sons', 'coupes'); } catch {}
+  // Le grain du feutre se recalcule à chaque capture sans carte graphique : on filme sans lui.
+  document.body.style.background = 'radial-gradient(ellipse 120% 80% at 50% 22%, var(--fond-haut) 0%, var(--feutre) 55%, var(--fond-bas) 100%)';
   document.getElementById('solo').click();
   await new Promise(r => setTimeout(r, 500));
   const v = document.getElementById('voile');
@@ -69,15 +71,20 @@ console.log(await js(`(async () => {
   return 'partie lancée : ' + !document.getElementById('table').hidden;
 })()`));
 
+// Chrome envoie lui-même une image à chaque fois que l'écran change : bien plus
+// d'images par seconde qu'en lui demandant des captures une à une.
 const debut = Date.now(); const temps = [];
-while (Date.now() - debut < secondes * 1000) {
-  const t = Date.now() - debut;
-  const { data } = await cdp('Page.captureScreenshot', { format: 'jpeg', quality: 92 });
-  if (!data) continue;
+ws.on('message', (d) => {
+  const m = JSON.parse(String(d));
+  if (m.method !== 'Page.screencastFrame') return;
   const fichier = `i${String(temps.length).padStart(5, '0')}.jpg`;
-  writeFileSync(path.join(dossier, fichier), Buffer.from(data, 'base64'));
-  temps.push([fichier, t]);
-}
+  writeFileSync(path.join(dossier, fichier), Buffer.from(m.params.data, 'base64'));
+  temps.push([fichier, Date.now() - debut]);
+  void cdp('Page.screencastFrameAck', { sessionId: m.params.sessionId });
+});
+await cdp('Page.startScreencast', { format: 'jpeg', quality: 92, everyNthFrame: 1, maxWidth: Math.round(L * echelle), maxHeight: Math.round(H * echelle) });
+await attendre(secondes * 1000);
+await cdp('Page.stopScreencast');
 // La liste pour ffmpeg : chaque image dure jusqu'à la suivante.
 const lignes = temps.map(([f, t], i) => `file '${f}'\nduration ${(((temps[i + 1]?.[1] ?? t + 80) - t) / 1000).toFixed(3)}`);
 lignes.push(`file '${temps.at(-1)[0]}'`);

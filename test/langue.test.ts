@@ -98,8 +98,16 @@ test('la page du portail : marquée, en anglais, sans lien vers le site', async 
   const page = pagePortail(gabarit);
   assert.match(page, /<html lang="en">/);
   assert.match(page, /<body class="portail">/);
-  assert.match(page, /window\.LARBIN_PORTAIL = true;<\/script>\s*<script>\/\*SCRIPT\*\//, 'la marque précède le script du jeu');
+  assert.match(page, /window\.LARBIN_PORTAIL = 'crazygames';<\/script>\s*<script>\/\*SCRIPT\*\//, 'la marque précède le script du jeu');
+  assert.match(page, /sdk\.crazygames\.com/, 'CrazyGames veut sa bibliothèque');
   assert.doesNotMatch(page, /href="\/|larbin\.vercel\.app|Trou du cul|Asshole/);
+
+  // itch.io n'impose rien : ni bibliothèque, ni classe qui masque les comptes et les liens.
+  const itch = pagePortail(gabarit, 'itch');
+  assert.match(itch, /window\.LARBIN_PORTAIL = 'itch';<\/script>\s*<script>\/\*SCRIPT\*\//);
+  assert.match(itch, /<body class="itch">/);
+  assert.doesNotMatch(itch, /crazygames|class="portail"/);
+  assert.throws(() => pagePortail(gabarit, 'ailleurs'), /portail inconnu/);
 });
 
 test('une invitation du portail ne mène qu’à un code de salon bien formé', async () => {

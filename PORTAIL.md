@@ -180,17 +180,40 @@ autre que le titre du jeu**, et rien d'important dans le coin haut gauche, que
 leurs étiquettes recouvrent. Les vidéos durent 15 à 20 secondes, sans curseur
 ni texte ajouté, et commencent par la couverture.
 
-- **Couvertures** — 1920×1080, 800×1200 et 800×800 — tirées de
-  `scripts/portail/couverture.html`, ouverte dans Chrome sans écran avec
-  `?f=large`, `?f=haut` ou `?f=carre` et l'option `--screenshot`.
+- **Couvertures** — 1920×1080, 800×1200 et 800×800 —
+  `node scripts/portail/couverture.mjs` écrit `portail/couverture.html`, avec
+  les vraies cartes du jeu ; on l'ouvre dans Chrome sans écran avec `?f=large`,
+  `?f=haut` ou `?f=carre` et l'option `--screenshot`.
 - **Vidéos** — 1920×1080 et 1080×1620 — `scripts/portail/filmer.mjs` filme une
-  partie contre les bots, jouée toute seule, image par image ; `ffmpeg` colle
-  la couverture devant et assemble le tout en MP4.
+  partie contre les bots, jouée toute seule (une quinzaine d'images par
+  seconde) ; `ffmpeg` colle la couverture devant et assemble le tout en MP4.
 
 Les fichiers produits restent dans `portail/images/` et `portail/videos/`, hors
 du dépôt.
 
+## Chez itch.io
+
+itch.io héberge sans relire et sans rien interdire : `npm run build` fabrique
+aussi **`itch/index.html`**, où le jeu reste entier — comptes, classement,
+liens vers le site. Seul change ce que le cadre d'un portail impose
+(`src/web/portail.ts` distingue les deux) :
+
+- la langue suit le navigateur, et le lien « English / Français » recharge la
+  page avec `?lang=` ;
+- le lien d'invitation d'un salon mène à `larbin.vercel.app` : un ami invité
+  depuis itch.io rejoint le même salon sur notre site ;
+- pas d'installation sur l'écran d'accueil, pas de copie hors ligne.
+
+À déposer : `itch/larbin-itch.zip` (itch.io veut une archive contenant
+`index.html`). Réglages du projet : type **HTML**, « This file will be played
+in the browser », taille 960×600, **Mobile friendly** et **Fullscreen button**
+cochés, « No payments ». Couverture : 630×500.
+
 ## Où on en est
+
+**9 octobre 2026 : nouvel habillage** (cartes dessinées, animations, table,
+accueil et écrans de fin). Couvertures et vidéos refaites. Mickaël retente
+CrazyGames par « Submit new version » et dépose en parallèle sur itch.io.
 
 **7 octobre 2026 : CrazyGames a refusé le jeu.** Leur seul motif : « The
 overall quality of the game does not yet meet the expectations of our
