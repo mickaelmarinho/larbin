@@ -324,7 +324,9 @@ button.action:disabled {
 /* Le 2 est la plus forte carte du jeu : il porte la couronne de l'emblème. */
 .carte .centre.deux { font-size: calc(var(--carte-l) * 0.46); }
 .carte .couronne {
+  flex: 0 0 auto;
   width: calc(var(--carte-l) * 0.34);
+  height: calc(var(--carte-l) * 0.194);
   margin-bottom: calc(var(--carte-l) * 0.02);
   fill: var(--laiton);
   filter: drop-shadow(0 1px 0 #0000002e);
@@ -342,7 +344,9 @@ button.action:disabled {
 .carte .points i.bas { transform: translate(-50%, -50%) rotate(180deg); }
 
 /* Les figures : un buste de la couleur de la carte, coiffé de laiton. */
-.carte .figure { width: auto; height: auto; fill: currentColor; overflow: visible; }
+/* Le dessin tient dans un cadre posé comme les points : Safari ne sait pas
+   étirer un SVG entre quatre bords, il lui faut une boîte à remplir. */
+.carte .figure svg { display: block; width: 100%; height: 100%; fill: currentColor; overflow: visible; }
 .carte .figure .cadre { fill: currentColor; fill-opacity: .07; stroke: currentColor; stroke-opacity: .32; stroke-width: 1; }
 .carte .figure .or { fill: var(--laiton); stroke: var(--laiton-sombre); stroke-width: .5; }
 .carte .figure .blason { fill: var(--creme); font-size: 11px; }
@@ -2071,3 +2075,8 @@ body.portail input { -webkit-user-select: text; user-select: text; }
   .raccourci .jeton .picto { width: 18px; height: 18px; }
   .raccourci { padding-block: 3px; }
 }
+
+/* Safari veut les deux dimensions d'un SVG : on ne lui laisse rien à deviner. */
+.blason-de-fin svg { width: 67px; }
+.blason-de-fin.sous-boss svg { width: 55px; }
+.blason-de-fin.victoire svg { width: 81px; }

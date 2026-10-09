@@ -45,14 +45,14 @@ const COIFFES: Record<11 | 12 | 13, string> = {
 };
 
 function figure(rang: 11 | 12 | 13, couleur: Suit): string {
-  return '<svg class="figure" viewBox="0 0 40 60" aria-hidden="true">'
+  return '<span class="figure"><svg viewBox="0 0 40 60" aria-hidden="true">'
     + '<rect class="cadre" x="1.5" y="1.5" width="37" height="57" rx="4"/>'
     + '<circle cx="20" cy="26" r="7.2"/>'
     + '<path d="M5.5 55c0-12 5.5-17 14.5-17s14.5 5 14.5 17z"/>'
     + '<path class="or" d="M13.5 39.5l6.5 5 6.5-5-1.5-2h-10z"/>'
     + COIFFES[rang]
     + `<text class="blason" x="20" y="54" text-anchor="middle">${couleur}</text>`
-    + '</svg>';
+    + '</svg></span>';
 }
 
 /** La couronne de l'emblème du jeu, posée sur le 2. */
