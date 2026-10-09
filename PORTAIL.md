@@ -211,6 +211,18 @@ cochés, « No payments ». Couverture : 630×500.
 
 ## Où on en est
 
+**9 octobre 2026 : le jeu est en ligne sur itch.io**, à
+<https://mickagames1.itch.io/le-larbin> (compte de Mickaël, jeu gratuit, sans
+paiement configuré). Vérifié par lui sur la page : une partie en ligne se joue,
+et le lien d'invitation d'un salon mène à notre site. Le contenu produit par
+une IA est déclaré, comme itch.io le demande : graphismes, sons, textes, code.
+Les dons se règlent dans la page du projet (« $0 or donate ») le jour où un
+moyen de paiement est configuré.
+
+Côté CrazyGames, un jeu refusé ne se redépose pas : ni nouveau fichier, ni
+fiche modifiable. Mickaël a écrit à submissions@crazygames.com pour demander
+la réouverture du dépôt avec le nouvel habillage ; on attend leur réponse.
+
 **9 octobre 2026 : nouvel habillage** (cartes dessinées, animations, table,
 accueil et écrans de fin). Couvertures et vidéos refaites. Mickaël retente
 CrazyGames par « Submit new version » et dépose en parallèle sur itch.io.
