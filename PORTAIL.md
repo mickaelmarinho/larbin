@@ -219,6 +219,12 @@ une IA est déclaré, comme itch.io le demande : graphismes, sons, textes, code.
 Les dons se règlent dans la page du projet (« $0 or donate ») le jour où un
 moyen de paiement est configuré.
 
+Le 11 octobre, Mickaël a complété la classification de la page (multijoueur
+par serveur, 1 à 6 joueurs, anglais et français) et publié un billet d'annonce
+dans le « devlog » du jeu. Compteurs au 10 octobre : 19 visiteurs en 14 jours,
+aucun par la recherche ni par un partage — presque tous de nous. À relire vers
+le 18 octobre, colonne « dont chez un portail ».
+
 Côté CrazyGames, un jeu refusé ne se redépose pas : ni nouveau fichier, ni
 fiche modifiable. Mickaël a écrit à submissions@crazygames.com pour demander
 la réouverture du dépôt avec le nouvel habillage ; on attend leur réponse.
