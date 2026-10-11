@@ -46,21 +46,44 @@ const page = `<!doctype html>
   body.carre .blason { width: calc(var(--u) * 14); height: calc(var(--u) * 14); }
   body.carre h1 { font-size: calc(var(--u) * 13); }
   body.carre .eventail-affiche { --carte-l: calc(var(--u) * 21); margin-top: calc(var(--u) * 2); }
+  /* L'aperçu d'un lien partagé (1200×630) : lui seul porte une accroche et l'adresse. */
+  .accroche, .adresse { display: none; }
+  body.partage .scene { gap: calc(var(--u) * 6); }
+  body.partage .titre { align-items: flex-start; text-align: left; }
+  body.partage .entete { display: flex; align-items: center; gap: calc(var(--u) * 3); }
+  body.partage .blason { width: calc(var(--u) * 15); height: calc(var(--u) * 15); }
+  body.partage h1 { font-size: calc(var(--u) * 13.5); margin: 0; }
+  body.partage .accroche { display: block; margin: calc(var(--u) * 4) 0 0; font-size: calc(var(--u) * 4.8);
+       line-height: 1.3; color: #e8e2d4; text-shadow: 0 .4vmin 1vmin #0009; }
+  body.partage .accroche b { display: block; color: #f4efe1; font-size: 1.2em; margin-bottom: .15em; }
+  body.partage .adresse { display: block; margin: calc(var(--u) * 4) 0 0; font-size: calc(var(--u) * 4.4);
+       font-weight: 700; color: #d9a441; }
+  body.partage .eventail-affiche { --carte-l: calc(var(--u) * 29); }
 </style></head>
 <body>
 <div class="scene">
   <div class="titre">
-    <svg class="blason" viewBox="0 0 64 64"><path d="M18 24V13l7.5 6L32 9l6.5 10L46 13v11z" fill="#d9a441"/><path d="M32 54C12 41 14 27 24 27c4.2 0 7 3.2 8 5.4 1-2.2 3.8-5.4 8-5.4 10 0 12 14-8 27z" fill="#c0392b"/></svg>
-    <h1>Le Larbin</h1>
+    <div class="entete">
+      <svg class="blason" viewBox="0 0 64 64"><path d="M18 24V13l7.5 6L32 9l6.5 10L46 13v11z" fill="#d9a441"/><path d="M32 54C12 41 14 27 24 27c4.2 0 7 3.2 8 5.4 1-2.2 3.8-5.4 8-5.4 10 0 12 14-8 27z" fill="#c0392b"/></svg>
+      <h1>Le Larbin</h1>
+    </div>
+    <p class="accroche" id="accroche"></p>
+    <p class="adresse">larbin.vercel.app</p>
   </div>
   <div class="eventail-affiche" id="eventail"></div>
 </div>
 <script>${cartes}</script>
 <script>
-  document.body.className = new URLSearchParams(location.search).get('f') || 'large';
+  const demande = new URLSearchParams(location.search);
+  document.body.className = demande.get('f') || 'large';
+  const anglais = demande.get('l') === 'en';
+  document.getElementById('accroche').innerHTML = anglais
+    ? '<b>President, but faster.</b>Free, no sign-up, on phone or PC.'
+    : '<b>Le Président, en plus nerveux.</b>Gratuit, sans compte, sur téléphone ou PC.';
+  const figures = anglais ? ['J', 'Q'] : ['V', 'D'];
   const carte = (nom, rang, couleur) => '<span class="carte' + (couleur === '♥' || couleur === '♦' ? ' rouge' : '') + '">'
     + '<span class="coin">' + nom + '<i>' + couleur + '</i></span>' + Cartes.dessinDeCarte(rang, couleur) + '</span>';
-  document.getElementById('eventail').innerHTML = carte('9', 9, '♣') + carte('J', 11, '♦') + carte('Q', 12, '♥') + carte('2', 15, '♠');
+  document.getElementById('eventail').innerHTML = carte('9', 9, '♣') + carte(figures[0], 11, '♦') + carte(figures[1], 12, '♥') + carte('2', 15, '♠');
 </script>
 </body></html>
 `;

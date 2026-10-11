@@ -36,6 +36,9 @@ const REMPLACEMENTS = [
   [/<meta property="og:description" content="[^"]*">/,
     '<meta property="og:description" content="The President card game (Scum, Asshole) online and free: against bots, with friends or other players, on phone or PC. A trick goes around the table only once.">'],
   ['<meta property="og:url" content="https://larbin.vercel.app/">', '<meta property="og:url" content="https://larbin.vercel.app/en">'],
+  // L'aperçu du lien partagé : la même image, avec son accroche en anglais.
+  ['<meta property="og:image" content="https://larbin.vercel.app/apercu-fr.jpg">', '<meta property="og:image" content="https://larbin.vercel.app/apercu-en.jpg">'],
+  ['"image": "https://larbin.vercel.app/apercu-fr.jpg"', '"image": "https://larbin.vercel.app/apercu-en.jpg"'],
   [/<meta property="og:image:alt" content="[^"]*">/, '<meta property="og:image:alt" content="Le Larbin, the President card game online">'],
   ['"alternateName": ["Président en ligne", "Trou du cul en ligne"]', '"alternateName": ["President card game online", "Scum card game online"]'],
   [/"description": "Le jeu de cartes du Président[^"]*"/,
