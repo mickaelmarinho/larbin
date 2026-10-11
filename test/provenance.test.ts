@@ -14,6 +14,10 @@ test('d’où vient la visite : lien partagé, moteur de recherche, ou autre', (
   assert.equal(provenance('https://duckduckgo.com/', p()), 'recherche');
   assert.equal(provenance('https://www.qwant.com/', p()), 'recherche');
   assert.equal(provenance('https://github.com/mickaelmarinho/larbin', p()), 'autre');
+  assert.equal(provenance('https://www.reddit.com/r/WebGames/comments/abc/', p()), 'partage', 'un lien posté sur un forum');
+  assert.equal(provenance('https://old.reddit.com/', p()), 'partage');
+  assert.equal(provenance('https://mickagames1.itch.io/le-larbin', p()), 'partage');
+  assert.equal(provenance('https://notreddit.com.example.org/', p()), 'autre');
   assert.equal(provenance('', p()), 'autre');
   assert.equal(provenance('pas une adresse', p()), 'autre');
   assert.equal(provenance('https://googleusercontent.example.com/', p()), 'autre', 'pas n’importe quel « google »');
