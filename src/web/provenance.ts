@@ -12,7 +12,7 @@ export type Provenance = 'recherche' | 'partage' | 'autre';
 
 const MOTEURS = /(^|\.)(google|bing|duckduckgo|qwant|ecosia|yahoo|yandex|search\.brave|startpage|lilo)\./i;
 
-const FORUMS = /(^|.)(reddit.com|redd.it|itch.io|facebook.com|t.co|x.com|twitter.com|discord.com|newgrounds.com|gamejolt.com)$/i;
+const FORUMS = /(^|\.)(reddit\.com|redd\.it|itch\.io|facebook\.com|t\.co|x\.com|twitter\.com|discord\.com|newgrounds\.com|gamejolt\.com)$/i;
 
 export function provenance(referent: string, params: URLSearchParams): Provenance {
   // Nos liens partagés portent une marque : ?defi, ?salon, ou ?via=partage.
