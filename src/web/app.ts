@@ -1402,6 +1402,17 @@ const EVENTAIL = `<div class="eventail" aria-hidden="true">${
       + `${dessinDeCarte(rang, couleur)}</span>`;
   }).join('')}</div>`;
 
+/**
+ * Chez un portail, changer de langue recharge la page avec ?lang= — en gardant
+ * ce que l'adresse portait déjà : certains portails y mettent le jeton sans
+ * lequel le jeu ne se charge pas.
+ */
+function adresseDansLAutreLangue(): string {
+  const params = new URLSearchParams(location.search);
+  params.set('lang', tr('en', 'fr'));
+  return `?${params}`;
+}
+
 function voileAccueil(): void {
   const horsLigne = location.protocol === 'file:';
   direAuPortail();
@@ -1516,7 +1527,7 @@ function voileAccueil(): void {
       <span class="hors-portail"><a href="${LIEN_REGLES}" target="_blank" rel="noopener">${tr('Toutes les règles', 'Full rules')}</a>
       · </span><a href="${lienConfidentialite()}" target="_blank" rel="noopener">${tr('Confidentialité', 'Privacy')}</a>
       <span class="hors-portail">· <a href="mailto:mickagames1@outlook.fr">Contact</a>
-      · <a href="${SUR_PORTAIL ? `?lang=${tr('en', 'fr')}` : `${horsLigne ? 'https://' + ADRESSE_PUBLIQUE : ''}${tr('/en', '/')}`}" hreflang="${tr('en', 'fr')}" lang="${tr('en', 'fr')}">${tr('English', 'Français')}</a></span>
+      · <a href="${SUR_PORTAIL ? attribut(adresseDansLAutreLangue()) : `${horsLigne ? 'https://' + ADRESSE_PUBLIQUE : ''}${tr('/en', '/')}`}" hreflang="${tr('en', 'fr')}" lang="${tr('en', 'fr')}">${tr('English', 'Français')}</a></span>
     </p>
     </div>
   `, 'accueil');
