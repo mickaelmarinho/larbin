@@ -211,6 +211,19 @@ cochés, « No payments ». Couverture : 630×500.
 
 ## Où on en est
 
+**13 octobre 2026 : le jeu est en ligne sur Game Jolt**, à
+<https://gamejolt.com/games/le-larbin/1107218> (compte « Mickagames », gratuit,
+classé « Teen » pour le seul nom « Trou du cul / Asshole », langage « mild »).
+C'est la même page que pour itch.io (`itch/index.html`), déposée en « Browser
+Build », « Fit to screen » activé. Game Jolt charge le jeu avec un jeton dans
+l'adresse (`?token=…`) : le lien de changement de langue le conserve depuis la
+version 1.0.1. Dossier de dépôt : `gamejolt/`, hors du dépôt, avec bandeau
+2000×500, vignette 16:9, captures et avatar.
+
+Reddit, 11 octobre : post dans r/WebGames retiré par les filtres de Reddit
+(compte créé le jour même) ; message envoyé aux modérateurs, sans réponse au 13.
+Ne pas reposter. Leur règle P6 interdit les liens marqués : poster l'adresse nue.
+
 **9 octobre 2026 : le jeu est en ligne sur itch.io**, à
 <https://mickagames1.itch.io/le-larbin> (compte de Mickaël, jeu gratuit, sans
 paiement configuré). Vérifié par lui sur la page : une partie en ligne se joue,
