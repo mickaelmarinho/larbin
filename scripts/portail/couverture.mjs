@@ -4,7 +4,8 @@
 //   node scripts/portail/couverture.mjs          # écrit portail/couverture.html
 //
 // La page se capture ensuite dans Chrome sans écran, à trois formats :
-//   ?f=large (1920×1080), ?f=haut (800×1200), ?f=carre (800×800).
+//   ?f=large (1920×1080), ?f=haut (800×1200), ?f=carre (800×800),
+//   ?f=bandeau (2000×500), et ?f=partage&l=fr|en (1200×630) pour l'aperçu des liens.
 // Les portails n'acceptent aucun texte que le titre, et rien d'important dans
 // le coin haut gauche, que leurs étiquettes recouvrent.
 import { build } from 'esbuild';
@@ -46,6 +47,8 @@ const page = `<!doctype html>
   body.carre .blason { width: calc(var(--u) * 14); height: calc(var(--u) * 14); }
   body.carre h1 { font-size: calc(var(--u) * 13); }
   body.carre .eventail-affiche { --carte-l: calc(var(--u) * 21); margin-top: calc(var(--u) * 2); }
+  /* Le bandeau large et bas d'une page de jeu (2000×500) : tout en grand, sur une ligne. */
+  body.bandeau { --u: 1.7vmin; }
   /* L'aperçu d'un lien partagé (1200×630) : lui seul porte une accroche et l'adresse. */
   .accroche, .adresse { display: none; }
   body.partage .scene { gap: calc(var(--u) * 6); }
