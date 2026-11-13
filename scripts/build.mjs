@@ -66,9 +66,10 @@ async function assembler() {
   await writeFile(sortie, seul, 'utf8');
 
   // Les dossiers à déposer chez les portails de jeux : une seule page, autonome,
-  // pour chacun — portail/ pour CrazyGames, itch/ pour itch.io. La marque se
+  // pour chacun — portail/ pour CrazyGames, gamedistribution/, itch/ pour itch.io. La marque se
   // pose sur le gabarit, avant d'y verser le style et le script.
-  for (const [dossier, chez] of [[portail, 'crazygames'], [path.join(racine, 'itch'), 'itch']]) {
+  for (const [dossier, chez] of [[portail, 'crazygames'],
+    [path.join(racine, 'gamedistribution'), 'gamedistribution'], [path.join(racine, 'itch'), 'itch']]) {
     await mkdir(dossier, { recursive: true });
     await writeFile(path.join(dossier, 'index.html'), pagePortail(horsLigne(gabarit), chez)
       .replace('/*STYLE*/', () => style.trim())

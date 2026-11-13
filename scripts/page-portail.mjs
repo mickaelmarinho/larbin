@@ -6,9 +6,15 @@
 // reconnaît (voir src/web/portail.ts). Comme pour la page anglaise, un morceau
 // introuvable arrête l'assemblage.
 //
-// Deux portails, deux pages : CrazyGames impose sa bibliothèque et interdit
-// comptes et liens vers le site (la classe « portail » les masque) ; itch.io
-// n'impose rien, et le jeu y reste entier.
+// Trois portails, trois pages : CrazyGames et GameDistribution imposent leur
+// bibliothèque et interdisent comptes et liens vers le site (la classe
+// « portail » les masque) ; itch.io n'impose rien, et le jeu y reste entier.
+
+/**
+ * Le numéro du jeu chez GameDistribution, donné par son tableau de bord à la
+ * création de la fiche. Il n'a rien de secret : il figure dans la page.
+ */
+export const ID_GAMEDISTRIBUTION = '';
 
 const PRESENTATION = `<main id="presentation">
   <h1>Le Larbin — the President card game, but faster</h1>
@@ -21,6 +27,24 @@ const PORTAILS = {
     classe: 'portail',
     // Sa bibliothèque d'abord : le jeu la trouve prête, ou s'en passe.
     avant: '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>\n',
+  },
+  // Sa bibliothèque relaie ses événements au jeu (voir src/web/gamedistribution.ts).
+  gamedistribution: {
+    classe: 'portail',
+    avant: `<script>
+window.GD_OPTIONS = {
+  gameId: '${ID_GAMEDISTRIBUTION}',
+  onEvent: function (e) { window.dispatchEvent(new CustomEvent('larbin-gd', { detail: e.name })); },
+};
+(function (d, s, id) {
+  if (d.getElementById(id)) return;
+  var js = d.createElement(s), fjs = d.getElementsByTagName(s)[0];
+  js.id = id;
+  js.src = 'https://html5.api.gamedistribution.com/main.min.js';
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'gamedistribution-jssdk'));
+</script>
+`,
   },
   itch: { classe: 'itch', avant: '' },
 };

@@ -50,7 +50,8 @@ import {
 } from './musique.ts';
 
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
-import { CHEZ_CRAZYGAMES, SUR_PORTAIL } from './portail.ts';
+import { CHEZ_CRAZYGAMES, REGLES_STRICTES, SUR_PORTAIL } from './portail.ts';
+import { apresLaPub } from './gamedistribution.ts';
 import { dessinDeCarte } from './cartes.ts';
 import { icone } from './icones.ts';
 import { emporter, enMouvement, placesDesCartes, poser, replacerLaMain } from './mouvements.ts';
@@ -108,8 +109,8 @@ const TITRES: Record<Role, string> = enAnglais ? ROLES_EN : {
 const lienDuSite = (marque: string) => `https://${ADRESSE_PUBLIQUE}${enAnglais ? '/en?' : '/?'}${marque}`;
 /** Les règles complètes, dans la langue de la page. */
 /** Les portails de jeux s'adressent à un public dès 12 ans : on y tait le nom le plus vert du jeu. */
-const GROS_MOT_FR = CHEZ_CRAZYGAMES ? '' : ' — ou Trou du cul —';
-const GROS_MOT_EN = CHEZ_CRAZYGAMES ? '' : ' or Asshole';
+const GROS_MOT_FR = REGLES_STRICTES ? '' : ' — ou Trou du cul —';
+const GROS_MOT_EN = REGLES_STRICTES ? '' : ' or Asshole';
 const LIEN_REGLES = `https://${ADRESSE_PUBLIQUE}${tr('/regles', '/en/rules')}`;
 
 /** « Défi du 27 sept. » — « Challenge of 27 Sep ». */
@@ -829,7 +830,9 @@ function voileFinDeManche(vue: PlayerView): void {
   $('suivante').addEventListener('click', () => {
     cacherVoile();
     annonce = '';
-    agir({ type: 'manche-suivante' });
+    // En ligne, les autres attendent : la publicité n'a sa place qu'en solo.
+    if (table instanceof TableSolo) apresLaPub(() => agir({ type: 'manche-suivante' }));
+    else agir({ type: 'manche-suivante' });
   });
 }
 
@@ -855,7 +858,7 @@ function voileDefi(bilan: BilanDuDefi): void {
   $('defi-go').addEventListener('click', () => {
     if (!entame) compter('defi-lance');
     cacherVoile();
-    installer(new TableDefi(bilan.jour));
+    apresLaPub(() => installer(new TableDefi(bilan.jour)));
   });
   $('defi-retour').addEventListener('click', voileAccueil);
 }
@@ -1053,10 +1056,11 @@ function voileFinDePartie(vue: PlayerView): void {
 
   $('rejouer')?.addEventListener('click', () => {
     if (table instanceof TableSolo) {
+      const solo = table;
       cacherVoile();
       mancheAnnoncee = 0;
       poseAffichee = '';
-      table.recommencer();
+      apresLaPub(() => solo.recommencer());
     } else {
       agir({ type: 'nouvelle-partie' });
     }
@@ -1207,7 +1211,7 @@ function voileHistoire(retour: () => void): void {
        reversal</b>: the last serves the first, and everything is replayed in the
        next round. The Japanese names say it better than ours.</p>
     <p>The game reached the West in the second half of the 20th century and took on
-       table names — President, Scum${CHEZ_CRAZYGAMES ? '' : ', Asshole'}, and in France ${CHEZ_CRAZYGAMES ? '' : 'Trou du cul or '}Larbin
+       table names — President, Scum${REGLES_STRICTES ? '' : ', Asshole'}, and in France ${REGLES_STRICTES ? '' : 'Trou du cul or '}Larbin
        (“the lackey”) — each with its house rules, passed on by word of mouth and
        never written down.</p>
     <p>These are ours: a trick goes around only once, the 2 cuts, cards are not
@@ -1226,7 +1230,7 @@ function voileHistoire(retour: () => void): void {
        l'<b>inversion sociale</b> : le dernier sert le premier, et tout se rejoue
        à la manche suivante. Les noms japonais le disent mieux que les nôtres.</p>
     <p>Le jeu gagne l'Occident dans la seconde moitié du XX<sup>e</sup> siècle et
-       prend chez nous des noms de table — Président, ${CHEZ_CRAZYGAMES ? '' : 'Trou du cul, '}Larbin —
+       prend chez nous des noms de table — Président, ${REGLES_STRICTES ? '' : 'Trou du cul, '}Larbin —
        chacun avec ses règles maison, transmises de bouche à oreille sans jamais
        être écrites.</p>
     <p>Celles-ci sont les vôtres : une série ne fait qu'un tour, le 2 coupe net,
@@ -1569,7 +1573,7 @@ function voileAccueil(): void {
   $('solo').addEventListener('click', () => enPassantParLesRegles(() => {
     compter('solo-lancee');
     cacherVoile();
-    installer(new TableSolo());
+    apresLaPub(() => installer(new TableSolo()));
   }));
 
   $('defi').addEventListener('click', () => {
@@ -1598,7 +1602,10 @@ function voileAccueil(): void {
     const choisi = nom();
     enPassantParLesRegles(() => voileTables(choisi));
   });
-  $('creer').addEventListener('click', () => installer(new TableEnLigne(nom(), '')));
+  $('creer').addEventListener('click', () => {
+    const choisi = nom();
+    apresLaPub(() => installer(new TableEnLigne(choisi, '')));
+  });
 
   // S'il y a du monde en ligne, autant le dire : c'est ce qui donne envie de
   // pousser la porte. Le serveur endormi ne fait attendre personne : la
@@ -1607,7 +1614,9 @@ function voileAccueil(): void {
   suivreLaVie();
   $('rejoindre').addEventListener('click', () => {
     const code = ($('code') as HTMLInputElement).value.trim().toUpperCase();
-    if (code.length === 4) installer(new TableEnLigne(nom(), code));
+    if (code.length !== 4) return;
+    const choisi = nom();
+    apresLaPub(() => installer(new TableEnLigne(choisi, code)));
   });
 }
 
@@ -1803,9 +1812,11 @@ function voileSalon(en: TableEnLigne): void {
 
   const jeSuisHote = salon.sieges.find((s) => s.id === en.moi)?.hote ?? false;
   // Chez un portail, la page n'a pas d'adresse à nous. CrazyGames fabrique le
-  // lien d'invitation — s'il n'en donne pas, seul le code voyage ; ailleurs, le
-  // lien mène à notre site, où l'on retrouve le même salon.
+  // lien d'invitation — s'il n'en donne pas, seul le code voyage ; GameDistribution
+  // interdit tout lien vers ailleurs : le code seul ; sinon, le lien mène à notre
+  // site, où l'on retrouve le même salon.
   const lien = CHEZ_CRAZYGAMES ? lienDInvitation(salon.code) ?? ''
+    : REGLES_STRICTES ? ''
     : SUR_PORTAIL ? lienDuSite(`salon=${salon.code}`)
       : `${location.origin}${enAnglais ? '/en?' : '/?'}salon=${salon.code}`;
   const sansLien = lien === '';

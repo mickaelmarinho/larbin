@@ -9,7 +9,7 @@
  */
 import type { EvenementNavigateur } from '../reseau/protocole.ts';
 import { estUnRobot, provenance } from './provenance.ts';
-import { SUR_PORTAIL } from './portail.ts';
+import { CHEZ_GAMEDISTRIBUTION, SUR_PORTAIL } from './portail.ts';
 import { hoteDuJeu } from './table.ts';
 
 const CLE_PAS_COMPTER = 'larbin.pas-compter';
@@ -35,7 +35,9 @@ export function reglerLeComptage(params: URLSearchParams): 'retire' | 'remis' | 
 }
 
 function horsDesCompteurs(): boolean {
-  if (location.protocol === 'file:' || estUnRobot(navigator.userAgent, navigator.webdriver)) return true;
+  // GameDistribution interdit toute mesure qui ne soit pas la sienne : son
+  // tableau de bord dira combien on y joue.
+  if (CHEZ_GAMEDISTRIBUTION || location.protocol === 'file:' || estUnRobot(navigator.userAgent, navigator.webdriver)) return true;
   try {
     return localStorage.getItem(CLE_PAS_COMPTER) === 'oui';
   } catch {

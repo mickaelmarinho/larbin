@@ -107,6 +107,14 @@ test('la page du portail : marquée, en anglais, sans lien vers le site', async 
   assert.match(itch, /window\.LARBIN_PORTAIL = 'itch';<\/script>\s*<script>\/\*SCRIPT\*\//);
   assert.match(itch, /<body class="itch">/);
   assert.doesNotMatch(itch, /crazygames|class="portail"/);
+
+  // GameDistribution : sa bibliothèque, qui relaie ses événements au jeu, et les règles strictes.
+  const gd = pagePortail(gabarit, 'gamedistribution');
+  assert.match(gd, /window\.LARBIN_PORTAIL = 'gamedistribution';<\/script>\s*<script>\/\*SCRIPT\*\//);
+  assert.match(gd, /<body class="portail">/);
+  assert.match(gd, /html5\.api\.gamedistribution\.com\/main\.min\.js/);
+  assert.match(gd, /dispatchEvent\(new CustomEvent\('larbin-gd'/);
+  assert.doesNotMatch(gd, /href="\/|larbin\.vercel\.app|Trou du cul|Asshole|crazygames/);
   assert.throws(() => pagePortail(gabarit, 'ailleurs'), /portail inconnu/);
 });
 

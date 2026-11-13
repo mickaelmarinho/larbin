@@ -39,8 +39,17 @@ function preparer(): AudioContext | null {
     sortie.gain.value = VOLUME;
     sortie.connect(contexte.destination);
   }
-  if (contexte.state === 'suspended') void contexte.resume();
+  if (contexte.state === 'suspended' && !silence) void contexte.resume();
   return contexte;
+}
+
+/** Pendant une publicité du portail, le jeu se tait — musique comprise. */
+let silence = false;
+
+export function faireSilence(oui: boolean): void {
+  silence = oui;
+  if (!contexte) return;
+  void (oui ? contexte.suspend() : contexte.resume()).catch(() => { /* rien à couper */ });
 }
 
 /** Le canal audio, partagé avec la musique d'ambiance. */

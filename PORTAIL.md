@@ -209,7 +209,74 @@ liens vers le site. Seul change ce que le cadre d'un portail impose
 in the browser », taille 960×600, **Mobile friendly** et **Fullscreen button**
 cochés, « No payments ». Couverture : 630×500.
 
+## Chez GameDistribution
+
+GameDistribution ne garde pas le jeu pour lui : il le propose aux centaines de
+sites de jeux qui puisent dans son catalogue. C'est le seul canal qui place le
+jeu devant des joueurs sans qu'on ait de réputation. Il se paie en publicités,
+qu'il passe lui-même, et reverse **33 %** de leurs revenus nets. Le versement se
+fait **à partir de 100 €** cumulés, dans les 60 jours qui suivent le relevé du mois.
+
+**Leurs règles (lues le 13 novembre 2026)**
+- Leur module est obligatoire.
+- Les publicités passent seulement après un geste du joueur et hors partie ;
+  le jeu se tait et attend pendant ce temps.
+- Aucun lien vers un autre site.
+- Aucune mesure d'audience qui ne soit pas la leur.
+- Pas de publicités d'autres régies, pas d'achats dans le jeu.
+- Le jeu est hébergé chez eux en entier ; la partie en ligne passe par notre
+  serveur, comme chez CrazyGames.
+- La version déposée doit rester identique à notre dernière version.
+- Pour l'IA, ils demandent seulement de signaler les contenus qui imitent des
+  personnes ou des lieux réels (« deep fake »), ce que le Larbin n'a pas. Rien
+  n'interdit un jeu fait avec une IA.
+
+**Ce que change la version GameDistribution** (`npm run build` →
+`gamedistribution/index.html`, `PORTAIL = 'gamedistribution'`)
+- Les mêmes règles strictes que chez CrazyGames : ni compte, ni classement, ni
+  partage, ni lien vers le site, ni gros mot.
+- Un salon se rejoint par son code seulement, sans lien.
+- Nos compteurs sont coupés : leur tableau de bord donne les parties.
+- Leurs publicités (`src/web/gamedistribution.ts`) passent avant une partie
+  solo, un défi ou un salon, et entre deux manches ou deux parties en solo,
+  jamais en ligne pendant que les autres attendent. Le son est coupé, et le jeu
+  repart quand leur module rend la main, au plus tard après 60 s.
+- Leur numéro de jeu se colle dans `ID_GAMEDISTRIBUTION`
+  (`scripts/page-portail.mjs`), puis on reconstruit.
+
+**Déposer — c'est Mickaël qui le fait**
+1. Créer un compte développeur sur <https://gamedistribution.com/developers/>.
+2. « Add game » / « Upload game » : la fiche crée le **Game ID**. Me le donner :
+   je reconstruis et je prépare `gamedistribution/larbin-gamedistribution.zip`.
+3. Déposer le zip (« HTML5 »), les trois vignettes de `gamedistribution/` et
+   les textes ci-dessous. Cocher « Mobile ready » : le jeu se joue au téléphone.
+4. Regarder en entier la publicité d'essai dans l'aperçu de l'administration,
+   puis « Request activation ». Leur relecture prend d'une à trois semaines.
+5. Les informations de paiement attendront qu'il y ait de l'argent à toucher.
+   Leur contrat suppose un vendeur assujetti à la TVA : se renseigner sur le
+   statut à prendre avant de les remplir.
+
+**Les textes** (200 à 500 caractères chacun)
+
+Description :
+> Le Larbin is the President card game (also known as Scum), but faster: a
+> trick goes around the table only once, and a 2 ends it on the spot. Be the
+> first to empty your hand to become the Boss — finish last and you are the
+> Lackey, who must give their two best cards to the Boss next round. Play
+> against bots, take on the daily challenge, or open a room and play with
+> friends using a four-letter code.
+
+Instructions :
+> Tap or click the cards you want to play, then press Play. You must play the
+> same number of cards as the player before you, of a higher rank, or pass.
+> Each player speaks only once per trick. 2 is the highest card, 3 the lowest.
+> A short tutorial teaches the game in two minutes.
+
 ## Où on en est
+
+**13 novembre 2026 : version GameDistribution prête**, en attente du compte et
+du numéro de jeu (voir plus haut). Le passage d'une publicité a été essayé en
+local, avec un faux module : la partie attend la fin de la publicité, puis démarre.
 
 **13 octobre 2026 : le jeu est en ligne sur Game Jolt**, à
 <https://gamejolt.com/games/le-larbin/1107218> (compte « Mickagames », gratuit,

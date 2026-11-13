@@ -7,21 +7,29 @@
  * une variable posée avant le script ; tout le reste du code se règle dessus.
  *
  * Tous n'ont pas les mêmes exigences. CrazyGames relit les jeux et interdit les
- * comptes maison et les liens qui ramènent ses joueurs ailleurs ; itch.io
- * héberge sans rien demander, et le jeu y garde ses comptes et ses liens.
+ * comptes maison et les liens qui ramènent ses joueurs ailleurs ; GameDistribution
+ * y ajoute l'interdiction de toute mesure qui ne soit pas la sienne, et passe
+ * ses publicités entre deux parties ; itch.io héberge sans rien demander, et le
+ * jeu y garde ses comptes et ses liens.
  */
-export type Portail = 'crazygames' | 'itch';
+export type Portail = 'crazygames' | 'gamedistribution' | 'itch';
 
 const declare = typeof window === 'undefined' ? undefined : (window as { LARBIN_PORTAIL?: string }).LARBIN_PORTAIL;
 
 /** Chez quel portail tourne la page, ou null sur notre site et dans le fichier seul. */
-export const PORTAIL: Portail | null = declare === 'crazygames' || declare === 'itch' ? declare : null;
+export const PORTAIL: Portail | null = declare === 'crazygames' || declare === 'gamedistribution' || declare === 'itch' ? declare : null;
 
 /** Dans le cadre d'un portail, quel qu'il soit. */
 export const SUR_PORTAIL: boolean = PORTAIL !== null;
 
-/** Chez CrazyGames, et sous ses règles : ni compte, ni lien vers le site, ni gros mot. */
+/** Chez CrazyGames, dont le module fabrique les invitations. */
 export const CHEZ_CRAZYGAMES: boolean = PORTAIL === 'crazygames';
+
+/** Chez GameDistribution, dont le module passe les publicités. */
+export const CHEZ_GAMEDISTRIBUTION: boolean = PORTAIL === 'gamedistribution';
+
+/** Sous les règles des portails qui relisent les jeux : ni compte, ni lien vers le site, ni gros mot. */
+export const REGLES_STRICTES: boolean = CHEZ_CRAZYGAMES || CHEZ_GAMEDISTRIBUTION;
 
 /**
  * Chez un portail, l'adresse ne dit rien de la langue : on suit le navigateur,
