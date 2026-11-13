@@ -224,22 +224,33 @@ fait **à partir de 100 €** cumulés, dans les 60 jours qui suivent le relevé
 - Aucun lien vers un autre site.
 - Aucune mesure d'audience qui ne soit pas la leur.
 - Pas de publicités d'autres régies, pas d'achats dans le jeu.
-- Le jeu est hébergé chez eux en entier ; la partie en ligne passe par notre
-  serveur, comme chez CrazyGames.
+- Le jeu est hébergé chez eux en entier.
 - La version déposée doit rester identique à notre dernière version.
 - Pour l'IA, ils demandent seulement de signaler les contenus qui imitent des
   personnes ou des lieux réels (« deep fake »), ce que le Larbin n'a pas. Rien
   n'interdit un jeu fait avec une IA.
 
+**Une version sans serveur** (décidé le 13 novembre 2026). Notre serveur de
+parties tourne sur l'offre gratuite de Northflank, qui « should not be used for
+production applications » ; un jeu diffusé avec des publicités en serait une.
+Un serveur de bac à sable ne tiendrait pas non plus l'affluence d'un portail,
+et un accueil qui attend son réveil nuirait à la relecture. Chez
+GameDistribution, le Larbin se joue donc **sans aucun serveur** : solo contre
+les bots, défi du jour sans classement, leçons. Ni salons ni tables en ligne :
+le jeu entre amis reste sur larbin.vercel.app, sans publicité. Si le portail
+amène un jour du monde et des revenus, on paiera un vrai serveur avec, et on
+rouvrira l'en-ligne.
+
 **Ce que change la version GameDistribution** (`npm run build` →
 `gamedistribution/index.html`, `PORTAIL = 'gamedistribution'`)
+- Aucun appel à nos serveurs (`SANS_SERVEUR` dans `src/web/portail.ts` :
+  `hoteDuJeu` refuse, et chaque appelant s'en passe déjà). L'accueil n'a plus
+  de bloc « En ligne ».
 - Les mêmes règles strictes que chez CrazyGames : ni compte, ni classement, ni
   partage, ni lien vers le site, ni gros mot.
-- Un salon se rejoint par son code seulement, sans lien.
 - Nos compteurs sont coupés : leur tableau de bord donne les parties.
 - Leurs publicités (`src/web/gamedistribution.ts`) passent avant une partie
-  solo, un défi ou un salon, et entre deux manches ou deux parties en solo,
-  jamais en ligne pendant que les autres attendent. Le son est coupé, et le jeu
+  solo ou un défi, et entre deux manches ou deux parties. Le son est coupé, et le jeu
   repart quand leur module rend la main, au plus tard après 60 s.
 - Leur numéro de jeu se colle dans `ID_GAMEDISTRIBUTION`
   (`scripts/page-portail.mjs`), puis on reconstruit.
@@ -263,8 +274,8 @@ Description :
 > trick goes around the table only once, and a 2 ends it on the spot. Be the
 > first to empty your hand to become the Boss — finish last and you are the
 > Lackey, who must give their two best cards to the Boss next round. Play
-> against bots, take on the daily challenge, or open a room and play with
-> friends using a four-letter code.
+> against three bots, take on the daily challenge, or learn the game in four
+> short lessons.
 
 Instructions :
 > Tap or click the cards you want to play, then press Play. You must play the
@@ -274,9 +285,11 @@ Instructions :
 
 ## Où on en est
 
-**13 novembre 2026 : version GameDistribution prête**, en attente du compte et
-du numéro de jeu (voir plus haut). Le passage d'une publicité a été essayé en
-local, avec un faux module : la partie attend la fin de la publicité, puis démarre.
+**13 novembre 2026 : version GameDistribution prête, sans serveur**, en
+attente du compte et du numéro de jeu (voir plus haut). Essayée en local :
+la partie attend la fin d'une publicité (faux module) avant de démarrer ; une
+partie solo et un défi joués, et aucune requête ne part ailleurs que vers leur
+module et ses régies (ni Northflank, ni Vercel).
 
 **13 octobre 2026 : le jeu est en ligne sur Game Jolt**, à
 <https://gamejolt.com/games/le-larbin/1107218> (compte « Mickagames », gratuit,
