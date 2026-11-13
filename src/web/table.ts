@@ -7,7 +7,7 @@
  * une PlayerView et envoie des actions, dans les deux cas.
  */
 import type { Action, GameState } from '../engine/types.ts';
-import { SUR_PORTAIL } from './portail.ts';
+import { SANS_SERVEUR, SUR_PORTAIL } from './portail.ts';
 import { apply, createGame, viewFor, type PlayerView } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
 import {
@@ -298,6 +298,8 @@ let hoteTrouve: Promise<string> | null = null;
  */
 export function hoteDuJeu(): Promise<string> {
   hoteTrouve ??= (async () => {
+    // Chaque appelant sait déjà se passer d'un serveur qui ne répond pas.
+    if (SANS_SERVEUR) throw new Error('ce jeu ne parle à aucun serveur');
     // Chez un portail, la page n'est jamais servie par notre serveur : inutile
     // d'y chercher /sante, ce qui lui ferait signaler un fichier manquant.
     if (SUR_PORTAIL) {

@@ -50,7 +50,7 @@ import {
 } from './musique.ts';
 
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
-import { CHEZ_CRAZYGAMES, REGLES_STRICTES, SUR_PORTAIL } from './portail.ts';
+import { CHEZ_CRAZYGAMES, REGLES_STRICTES, SANS_SERVEUR, SUR_PORTAIL } from './portail.ts';
 import { apresLaPub } from './gamedistribution.ts';
 import { dessinDeCarte } from './cartes.ts';
 import { icone } from './icones.ts';
@@ -865,7 +865,7 @@ function voileDefi(bilan: BilanDuDefi): void {
 
 /** Le score du défi : les rôles en émojis, à comparer — et à envoyer. */
 function voileDefiFini(bilan: BilanDuDefi, retour: () => void): void {
-  const horsLigne = location.protocol === 'file:';
+  const horsLigne = location.protocol === 'file:' || SANS_SERVEUR;
   const stats = statsDuDefi(noterDansLHistorique(bilan), bilan.jour);
   const s = (n: number) => (n > 1 ? 's' : '');
   montrerVoile(`
@@ -1418,7 +1418,7 @@ function adresseDansLAutreLangue(): string {
 }
 
 function voileAccueil(): void {
-  const horsLigne = location.protocol === 'file:';
+  const horsLigne = location.protocol === 'file:' || SANS_SERVEUR;
   direAuPortail();
   // Un nom tiré au sort attend dans le champ : on peut jouer sans rien taper.
   const nomConnu = localStorage.getItem('larbin.nom') || nomPropose();
@@ -1481,7 +1481,7 @@ function voileAccueil(): void {
       ${horsLigne ? '' : `<button class="compte-choix" id="compte" type="button"
               title="${moi ? tr('Mon compte', 'My account') : tr('Créer un compte ou se connecter', 'Create an account or sign in')}">${icone('cle')}<span> ${tr('Compte', 'Account')}</span></button>`}
     </div>
-    ${horsLigne ? `<p class="mention">${tr(`Ce fichier joue en solo, hors ligne.
+    ${SANS_SERVEUR ? '' : horsLigne ? `<p class="mention">${tr(`Ce fichier joue en solo, hors ligne.
        Pour une partie à plusieurs, ouvrez`, 'This file plays solo, offline. To play with others, open')}
        <a href="https://${ADRESSE_PUBLIQUE}${PREFIXE}" target="_blank" rel="noopener">${ADRESSE_PUBLIQUE}${PREFIXE}</a>
        ${tr('— ou lancez <b>Serveur.cmd</b> pour jouer sur votre wifi.', '— or run <b>Serveur.cmd</b> to play over your Wi-Fi.')}</p>` : `
@@ -2450,7 +2450,7 @@ if (sessionOuverte()) void monCompte();
 
 // On cherche le serveur de parties dès le premier instant : s'il dort ailleurs,
 // il se réveille pendant que le joueur entre son nom.
-void hoteDuJeu();
+if (!SANS_SERVEUR) void hoteDuJeu();
 const demandes = new URLSearchParams(location.search);
 const comptage = reglerLeComptage(demandes);
 compterLaVisite(jourDeParis(), demandes);

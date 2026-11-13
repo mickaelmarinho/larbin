@@ -28,6 +28,14 @@ export const CHEZ_CRAZYGAMES: boolean = PORTAIL === 'crazygames';
 /** Chez GameDistribution, dont le module passe les publicités. */
 export const CHEZ_GAMEDISTRIBUTION: boolean = PORTAIL === 'gamedistribution';
 
+/**
+ * Le jeu ne parle à aucun serveur : solo, défi sans classement, leçons. Chez
+ * GameDistribution, qui se paie en publicités, notre serveur de parties — sur
+ * une offre gratuite, réservée aux projets sans but commercial — n'est pas
+ * appelé, pas même pour le réveiller.
+ */
+export const SANS_SERVEUR: boolean = CHEZ_GAMEDISTRIBUTION;
+
 /** Sous les règles des portails qui relisent les jeux : ni compte, ni lien vers le site, ni gros mot. */
 export const REGLES_STRICTES: boolean = CHEZ_CRAZYGAMES || CHEZ_GAMEDISTRIBUTION;
 
