@@ -255,35 +255,79 @@ rouvrira l'en-ligne.
 - Leur numéro de jeu se colle dans `ID_GAMEDISTRIBUTION`
   (`scripts/page-portail.mjs`), puis on reconstruit.
 
-**Déposer — c'est Mickaël qui le fait**
-1. Créer un compte développeur sur <https://gamedistribution.com/developers/>.
-2. « Add game » / « Upload game » : la fiche crée le **Game ID**. Me le donner :
-   je reconstruis et je prépare `gamedistribution/larbin-gamedistribution.zip`.
-3. Déposer le zip (« HTML5 »), les trois vignettes de `gamedistribution/` et
-   les textes ci-dessous. Cocher « Mobile ready » : le jeu se joue au téléphone.
-4. Regarder en entier la publicité d'essai dans l'aperçu de l'administration,
-   puis « Request activation ». Leur relecture prend d'une à trois semaines.
-5. Les informations de paiement attendront qu'il y ait de l'argent à toucher.
+**Leurs règles de qualité** (« Developer Guidelines » et « Design Guidelines »,
+lues le 19 novembre 2026 ; publiées en images, lues page par page) et ce que le
+Larbin en fait :
+
+| Règle | Où en est le Larbin |
+|---|---|
+| Préroll après le bouton « Play », midrolls aux pauses naturelles | avant une partie ou un défi ; entre deux manches et deux parties |
+| Jeu en pause et muet pendant la publicité | son coupé, la partie attend |
+| Au retour, un écran qui ne reprend qu'au geste du joueur | écran « Prêt ? / Continuer » (ajouté le 19 nov.) |
+| Musique de fond, bruitages, sons d'interface ; bouton pour couper | musique allumée par défaut chez eux (ajouté le 19 nov.), bouton des sons |
+| Tutoriel ou objectif clair avant de jouer | quatre leçons, et l'écran de bienvenue |
+| Langue par défaut : l'anglais ; ou celle du navigateur | celle du navigateur, l'anglais sinon |
+| Ni lien sortant, ni contact, ni réseau social | rien de visible ni de cliquable (vérifié) |
+| Aucune donnée collectée, aucun traceur, aucune connexion | compteurs coupés, ni compte ni serveur |
+| Pas d'alcool, de drogue, de sexe, de violence | ni « Trou du cul » ni « Asshole » dans cette version |
+| Ordinateur (Chrome, Firefox, Safari) et téléphone ; plein écran sans coupure | jeu adaptatif, déjà joué sur iPhone et PC |
+| IA : signaler seulement les « deep fakes » | aucun |
+| Vignettes 512×512, 512×384, 200×120 ; pas de titre sur la 200×120, titre déconseillé sur les 512 ; pas d'espace vide ni d'image étirée | les cartes seules en grand (`?f=cartes`) ; titre sur les formats promo 1280×720 et 1280×550 |
+| Description et instructions : 200 à 500 caractères, en anglais, avec le titre exact au moins une fois | 433 et 276 caractères |
+| 1 à 2 genres, 1 à 5 tags ; tranche d'âge obligatoire | voir plus bas |
+
+**Déposer — c'est Mickaël qui le fait** (compte approuvé le 19 novembre 2026 ;
+limite de 2 jeux par semaine pour un nouveau développeur)
+
+1. **Se connecter en tapant soi-même l'adresse** `gamedistribution.com` dans le
+   navigateur, puis l'espace développeur — pas par le lien de l'e-mail.
+2. **« Add New Game »**, et remplir la fiche :
+   - **Title** : `Larbin – President Card Game`
+   - **Description** et **Instructions** : les textes ci-dessous, tels quels.
+   - **Genres** (2 au plus) : le genre des jeux de cartes (« Card » / « Cards »),
+     et si un second est demandé, « Casual » ou « Board ».
+   - **Tags** (5 au plus) : `cards`, `card game`, `president`, `scum`,
+     `strategy`. Jamais « Trou du cul » ni « Asshole », et pas « multiplayer » :
+     cette version se joue seul contre les bots.
+   - **Language** : English (et French si plusieurs langues se cochent).
+   - **Mobile ready** : oui. **Orientation** : les deux (« Both ») si proposé,
+     sinon « Landscape ».
+   - **Age groups** : toutes les tranches proposées ; cocher « No blood », et
+     « Kids friendly » s'il existe.
+   - **Thumbnails**, depuis le dossier `gamedistribution/` du projet :
+     `vignette-512x512.png`, `vignette-512x384.png`, `vignette-200x120.png` ;
+     et si on les demande, `promo-1280x720.png` et `promo-1280x550.png`.
+3. **Enregistrer** : la fiche affiche alors le **Game ID** (une suite de lettres
+   et de chiffres). Si le formulaire réclame un fichier de jeu avant
+   d'enregistrer, déposer `gamedistribution/larbin-gamedistribution-provisoire.zip`.
+4. **M'envoyer le Game ID.** Je le colle dans `ID_GAMEDISTRIBUTION`, je
+   reconstruis et je fabrique `gamedistribution/larbin-gamedistribution.zip`
+   (un `index.html` à la racine).
+5. **Déposer ce zip** sur la fiche (« Upload » / « Update build »), à la place
+   du provisoire s'il y en avait un.
+6. **Ouvrir l'aperçu du jeu** dans leur espace et regarder la **publicité
+   d'essai jusqu'au bout** : c'est ce qui active leur module pour ce jeu.
+   Jouer une manche pour vérifier que tout va bien.
+7. **« Request Activation »**. Leur relecture prend jusqu'à une semaine ; s'ils
+   demandent des changements, me copier leur message.
+8. Les informations de paiement attendront qu'il y ait de l'argent à toucher.
    Leur contrat suppose un vendeur assujetti à la TVA : se renseigner sur le
    statut à prendre avant de les remplir.
 
 **Les textes** (200 à 500 caractères chacun)
 
-Description :
-> Le Larbin is the President card game (also known as Scum), but faster: a
-> trick goes around the table only once, and a 2 ends it on the spot. Be the
-> first to empty your hand to become the Boss — finish last and you are the
-> Lackey, who must give their two best cards to the Boss next round. Play
-> against three bots, take on the daily challenge, or learn the game in four
-> short lessons.
+Description (433 caractères) :
+> Larbin – President Card Game is the President card game (also known as Scum), but faster: a trick goes around the table only once, and a 2 ends it on the spot. Be the first to empty your hand to become the Boss. Finish last and you are the Lackey, who must give their two best cards to the Boss next round. Play against three bots, take on the daily challenge with the same deal for everyone, or learn the game in four short lessons.
 
-Instructions :
-> Tap or click the cards you want to play, then press Play. You must play the
-> same number of cards as the player before you, of a higher rank, or pass.
-> Each player speaks only once per trick. 2 is the highest card, 3 the lowest.
-> A short tutorial teaches the game in two minutes.
+Instructions (276 caractères) :
+> Tap or click the cards you want to play, then press Play. You must play the same number of cards as the player before you, of a higher rank, or pass. Each player speaks only once per trick. 2 is the highest card, 3 the lowest. A short tutorial teaches the game in two minutes.
 
 ## Où on en est
+
+**19 novembre 2026 : compte GameDistribution approuvé.** Version vérifiée
+contre leurs règles de qualité (voir le tableau plus haut) : écran « Continuer »
+après une publicité, musique par défaut, vignettes refaites sans titre. Reste
+à Mickaël de créer la fiche et de me donner le Game ID.
 
 **13 novembre 2026 : version GameDistribution prête, sans serveur**, en
 attente du compte et du numéro de jeu (voir plus haut). Essayée en local :

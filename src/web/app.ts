@@ -51,7 +51,7 @@ import {
 
 import { PREFIXE, enAnglais, pluriel, rang, tr } from './langue.ts';
 import { CHEZ_CRAZYGAMES, REGLES_STRICTES, SANS_SERVEUR, SUR_PORTAIL } from './portail.ts';
-import { apresLaPub } from './gamedistribution.ts';
+import { apresLaPub, quandLaPubAPasse } from './gamedistribution.ts';
 import { dessinDeCarte } from './cartes.ts';
 import { icone } from './icones.ts';
 import { emporter, enMouvement, placesDesCartes, poser, replacerLaMain } from './mouvements.ts';
@@ -665,6 +665,18 @@ function montrerVoile(html: string, classe = ''): void {
   $('voile').innerHTML = `<div class="panneau${classe ? ` ${classe}` : ''}${neuf ? ' neuf' : ''}">${html}</div>`;
   $('voile').hidden = false;
 }
+
+// Au retour d'une publicité du portail, la partie attend que le joueur soit prêt.
+quandLaPubAPasse((suite) => {
+  montrerVoile(`
+    <h2>${tr('Prêt ?', 'Ready?')}</h2>
+    <button class="action primaire" id="reprendre" type="button">${tr('Continuer', 'Continue')}</button>
+  `);
+  $('reprendre').addEventListener('click', () => {
+    cacherVoile();
+    suite();
+  });
+});
 
 function cacherVoile(): void {
   voileAffiche = '';

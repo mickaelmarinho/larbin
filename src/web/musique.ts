@@ -14,6 +14,7 @@
  * Coupée par défaut, parce que sur un téléphone une musique imposée fait fuir.
  */
 import { GESTES, contexteAudio } from './sons.ts';
+import { CHEZ_GAMEDISTRIBUTION } from './portail.ts';
 
 const CLE = 'larbin.musique';
 // Réglé pour un haut-parleur de téléphone : plus bas, on n'entend rien.
@@ -168,7 +169,10 @@ export function choixDepuisStockage(valeur: string | null): NomMusique | null {
 
 export function musiqueChoisie(): NomMusique | null {
   try {
-    return choixDepuisStockage(localStorage.getItem(CLE));
+    const garde = localStorage.getItem(CLE);
+    // GameDistribution veut une musique de fond : chez lui, elle joue tant qu'on ne l'a pas coupée.
+    if (garde === null && CHEZ_GAMEDISTRIBUTION) return 'casino';
+    return choixDepuisStockage(garde);
   } catch {
     return null;
   }

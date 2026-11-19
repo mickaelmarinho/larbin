@@ -5,7 +5,8 @@
 //
 // La page se capture ensuite dans Chrome sans écran, à trois formats :
 //   ?f=large (1920×1080), ?f=haut (800×1200), ?f=carre (800×800),
-//   ?f=bandeau (2000×500), et ?f=partage&l=fr|en (1200×630) pour l'aperçu des liens.
+//   ?f=bandeau (2000×500), ?f=partage&l=fr|en (1200×630) pour l'aperçu des liens,
+//   et ?f=cartes, l'éventail seul, pour les petites vignettes.
 // Les portails n'acceptent aucun texte que le titre, et rien d'important dans
 // le coin haut gauche, que leurs étiquettes recouvrent.
 import { build } from 'esbuild';
@@ -49,6 +50,10 @@ const page = `<!doctype html>
   body.carre .eventail-affiche { --carte-l: calc(var(--u) * 21); margin-top: calc(var(--u) * 2); }
   /* Le bandeau large et bas d'une page de jeu (2000×500) : tout en grand, sur une ligne. */
   body.bandeau { --u: 1.7vmin; }
+  /* Les vignettes de GameDistribution (512×512, 512×384, 200×120) : les cartes
+     seules, en grand — il y déconseille le titre, et l'interdit sur la plus petite. */
+  body.cartes .titre { display: none; }
+  body.cartes .eventail-affiche { --carte-l: calc(var(--u) * 40); margin-top: calc(var(--u) * -6); }
   /* L'aperçu d'un lien partagé (1200×630) : lui seul porte une accroche et l'adresse. */
   .accroche, .adresse { display: none; }
   body.partage .scene { gap: calc(var(--u) * 6); }
