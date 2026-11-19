@@ -68,6 +68,17 @@ export interface Mouvement {
 
 export type Phase = 'coupe' | 'jeu' | 'fin-de-manche' | 'fin-de-partie';
 
+/**
+ * Les règles de la partie. « larbin » : la variante maison — une série ne fait
+ * qu'un tour de table, finir sur un 2 rend Larbin, on ne mélange qu'une fois et
+ * le Boss coupe. « classique » : le Président que chacun connaît — la série
+ * continue tant que quelqu'un monte, un joueur qui a passé peut reprendre la
+ * parole, on mélange à chaque manche, et finir sur un 2 n'a rien de puni.
+ * Dans les deux, le 2 clôt la série (personne ne peut le battre) et l'échange
+ * est imposé.
+ */
+export type Regles = 'larbin' | 'classique';
+
 export interface GameState {
   /**
    * Identifie cette partie-ci. Le jeu se sauvegarde et se recharge : sans ce
@@ -75,6 +86,8 @@ export interface GameState {
    * est nouvelle ou si elle la revoit après un rechargement.
    */
   partie: string;
+  /** Absent des parties sauvegardées avant l'option : ce sont des parties « larbin ». */
+  regles?: Regles;
   players: Player[];
   /** Ordre de placement, sens des aiguilles d'une montre. */
   order: string[];

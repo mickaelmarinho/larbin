@@ -21,6 +21,11 @@ import { DEUX } from './cards.ts';
  *  - ouvrir gros quand c'est gratuit ;
  *  - accélérer quand un adversaire est sur le point de sortir.
  *
+ * Au Président classique, deux de ces réflexes tombent : finir sur un 2 n'y
+ * coûte rien, et un joueur qui a passé peut reprendre la parole tant que la
+ * série court. Le bot garde alors ses 2 sans crainte, et compte tout le monde
+ * parmi ceux qui peuvent encore monter.
+ *
  * Tout changement passe par `node scripts/arene.mjs`, qui oppose ce bot à
  * `bot-candidat.ts` et compte aussi les fins sur un 2.
  *
@@ -67,7 +72,8 @@ export function botAction(view: PlayerView, hasard: () => number = Math.random):
  * suffit pour départager deux coups.
  */
 function survie(view: PlayerView, rank: Rank, count: number): number {
-  const parlants = view.others.filter((o) => o.count > 0 && !o.aAgi && !o.passed);
+  // Au classique, quiconque a encore des cartes peut répondre, même s'il a passé.
+  const parlants = view.others.filter((o) => o.count > 0 && (view.regles === 'classique' || (!o.aAgi && !o.passed)));
   if (parlants.length === 0) return 1;
 
   // Combien de coups au-dessus dorment encore dans les mains adverses ?
@@ -98,15 +104,16 @@ function tours(hand: Card[]): number {
 function pick(view: PlayerView): Card[] | null {
   const handSize = view.me.hand.length;
   const menace = view.others.some((o) => o.count > 0 && o.count <= 2);
+  const auLarbin = view.regles !== 'classique';
 
   // Tous les autres ont déjà parlé : la série ne fait qu'un tour, donc poser
   // l'emporte à coup sûr.
-  const serieAcquise = view.requirement !== null
+  const serieAcquise = auLarbin && view.requirement !== null
     && view.others.every((o) => o.count === 0 || o.aAgi);
 
   // Un coup qui vide la main : on le prend, sauf s'il se termine sur un 2.
   const sorties = view.legal.filter((play) => play.length === handSize);
-  const propre = sorties.find((play) => play[0].rank !== DEUX);
+  const propre = sorties.find((play) => !auLarbin || play[0].rank !== DEUX);
   if (propre) return propre;
 
   // Par identifiant, et non par référence : voir l'avertissement en tête du fichier.
@@ -119,6 +126,7 @@ function pick(view: PlayerView): Card[] | null {
   // ce qui revient à devoir finir dessus —, condamne la manche. On écarte ces
   // coups tant qu'il existe autre chose à faire, passer compris.
   const condamne = (play: Card[]) => {
+    if (!auLarbin) return false;
     const apres = reste(play);
     if (apres.length === 0) return play[0].rank === DEUX;
     return apres.every((c) => c.rank === DEUX);
@@ -150,7 +158,7 @@ function pick(view: PlayerView): Card[] | null {
     if (rank === DEUX && handSize > 6) score -= 20;
     // ...mais chaque 2 gardé est une dette, d'autant plus lourde qu'il reste
     // peu d'autres cartes pour finir proprement.
-    const deuxGardes = apres.filter((c) => c.rank === DEUX).length;
+    const deuxGardes = auLarbin ? apres.filter((c) => c.rank === DEUX).length : 0;
     if (deuxGardes > 0) score -= (70 * deuxGardes) / (apres.length - deuxGardes + 1);
 
     // Tenir la série, c'est ouvrir la suivante : le gain est proportionnel à

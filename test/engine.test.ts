@@ -689,3 +689,96 @@ test('le bot passe plutôt que de finir sur un 2', () => {
   assert.ok(vue.canPass, 'la situation de test suppose qu’on puisse passer');
   assert.equal(botAction(vue)?.type, 'passer', 'sa paire de 2 le ferait finir Larbin');
 });
+
+/* ------------------------------------------------- le Président classique */
+
+/** La même partie imposée, mais aux règles classiques. */
+function classique(mains: Record<string, string[]>, turn = 0): GameState {
+  const state = partie(mains, turn);
+  state.regles = 'classique';
+  return state;
+}
+
+test('classique : la série continue tant que quelqu’un monte', () => {
+  let state = classique({
+    a: ['7♠', 'D♥', '3♠'], b: ['9♠', '3♦'], c: ['6♠', '3♣'], d: ['V♠', '4♥'],
+  });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('7♠').id] });
+  state = apply(state, { type: 'poser', player: 'b', cards: [carte('9♠').id] });
+  state = apply(state, { type: 'passer', player: 'c' });
+  state = apply(state, { type: 'poser', player: 'd', cards: [carte('V♠').id] });
+
+  // Au Larbin la série serait close ; ici, a reprend la parole et monte.
+  assert.deepEqual(state.requirement, { rank: 11, count: 1 });
+  assert.equal(state.order[state.turn], 'a');
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('D♥').id] });
+  assert.equal(state.order[state.turn], 'b');
+});
+
+test('classique : celui qui a passé peut reprendre la parole', () => {
+  let state = classique({
+    a: ['7♠', '3♠'], b: ['9♠', '3♦'], c: ['R♠', '3♣'], d: ['V♠', '4♥'],
+  });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('7♠').id] });
+  state = apply(state, { type: 'poser', player: 'b', cards: [carte('9♠').id] });
+  state = apply(state, { type: 'passer', player: 'c' });
+  state = apply(state, { type: 'poser', player: 'd', cards: [carte('V♠').id] });
+  state = apply(state, { type: 'passer', player: 'a' });
+  state = apply(state, { type: 'passer', player: 'b' });
+  // c avait passé sur le 9 ; il monte sur le valet.
+  state = apply(state, { type: 'poser', player: 'c', cards: [carte('R♠').id] });
+  assert.deepEqual(state.requirement, { rank: 13, count: 1 });
+});
+
+test('classique : la série s’arrête quand tous les autres passent à la suite', () => {
+  let state = classique({
+    a: ['7♠', '3♠'], b: ['9♠', '3♦'], c: ['6♠', '3♣'], d: ['5♠', '4♥'],
+  });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('7♠').id] });
+  state = apply(state, { type: 'poser', player: 'b', cards: [carte('9♠').id] });
+  for (const id of ['c', 'd', 'a']) state = apply(state, { type: 'passer', player: id });
+  assert.equal(state.requirement, null, 'la série est close');
+  assert.equal(state.order[state.turn], 'b', 'le dernier à avoir posé ouvre');
+});
+
+test('classique : finir sur un 2 n’est pas puni', () => {
+  let state = classique({
+    a: ['2♠'], b: ['9♠', '3♦'], c: ['6♠', '3♣'], d: ['5♠', '4♥'],
+  });
+  state = apply(state, { type: 'poser', player: 'a', cards: [carte('2♠').id] });
+  assert.equal(state.players.find((p) => p.id === 'a')!.finishedOnTwo, false);
+});
+
+test('classique : on mélange à chaque manche, sans coupe, et le Boss ouvre après l’échange', () => {
+  let state = createGame(QUATRE.map((id) => ({ id, name: id, isBot: true })), 11, 'classique');
+  state = jouerUneManche(state);
+  state = apply(state, { type: 'manche-suivante' });
+  assert.equal(state.phase, 'jeu', 'pas de coupe');
+  assert.equal(state.carteMontree, null);
+  const boss = state.players.find((p) => p.role === 'boss')!;
+  assert.equal(state.order[state.turn], boss.id);
+  assert.equal(state.mouvements.length, 4, 'les deux échanges sont faits');
+  const toutes = state.players.flatMap((p) => ids(p.hand));
+  assert.equal(new Set(toutes).size, 52);
+});
+
+test('classique : 200 parties de bots, aucune règle violée', () => {
+  for (let seed = 0; seed < 200; seed++) {
+    const n = 4 + (seed % 3);
+    let state = createGame(QUATRE.slice(0, n).concat(['e', 'f'].slice(0, Math.max(0, n - 4)))
+      .map((id) => ({ id, name: id, isBot: true })), seed * 31 + 5, 'classique');
+    for (let manche = 0; manche < 3; manche++) {
+      assert.equal(new Set(state.players.flatMap((p) => ids(p.hand))).size, 52);
+      state = jouerUneManche(state);
+      assert.equal(state.finishOrder.length, n);
+      assert.ok(state.players.every((p) => !p.finishedOnTwo));
+      state = apply(state, { type: 'manche-suivante' });
+    }
+  }
+});
+
+test('une partie sauvegardée sans règles se joue au Larbin', () => {
+  const state = nouvelle();
+  delete state.regles;
+  assert.equal(viewFor(state, 'a').regles, 'larbin');
+});

@@ -2,7 +2,7 @@
  * L'arène : fait s'affronter deux stratégies de bot et dit laquelle gagne —
  * ou, plus souvent, qu'on ne peut pas conclure.
  *
- *   node scripts/arene.mjs [parties] [--series=N] [--graine=N] [--calibrage]
+ *   node scripts/arene.mjs [parties] [--series=N] [--graine=N] [--calibrage] [--classique]
  *
  * Le piège de l'exercice est de mesurer du bruit et d'y croire. Garde-fous :
  *
@@ -41,6 +41,8 @@ const GRAINE = Number(process.argv.find((a) => a.startsWith('--graine='))?.slice
 /** Plusieurs séries indépendantes valent mieux qu'une longue : voir plus haut. */
 const SERIES = Number(process.argv.find((a) => a.startsWith('--series='))?.slice(9)) || 3;
 const candidat = CALIBRAGE ? botAction : botCandidat;
+/** Aux règles du Président classique plutôt qu'à celles du Larbin. */
+const REGLES = process.argv.includes('--classique') ? 'classique' : 'larbin';
 
 /** Deux d'un côté, deux de l'autre : la table reste équilibrée. */
 const PLACES = ['a', 'b', 'c', 'd'];
@@ -50,7 +52,7 @@ const PLACES = ['a', 'b', 'c', 'd'];
  * que chacun a terminées sur un 2. `camps` dit quelle stratégie tient quelle place.
  */
 function partie(camps, graine) {
-  let etat = createGame(PLACES.map((id) => ({ id, name: id, isBot: true })), graine);
+  let etat = createGame(PLACES.map((id) => ({ id, name: id, isBot: true })), graine, REGLES);
   const deux = Object.fromEntries(PLACES.map((p) => [p, 0]));
   let manches = 0;
   // Le repère « fini sur un 2 » est remis à zéro au début de chaque manche :

@@ -1,5 +1,5 @@
 import type {
-  Action, Card, GameState, Mouvement, Player, Rank, Role, SensEchange,
+  Action, Card, GameState, Mouvement, Player, Rank, Regles, Role, SensEchange,
 } from './types.ts';
 import {
   DAME_DE_COEUR, DEUX, RANKS, cardLabel, groupByRank, makeDeck, rankLabel, sortHand,
@@ -31,6 +31,9 @@ function fail(message: string): never {
 
 /* ---------------------------------------------------------------- lecture */
 
+/** Joue-t-on au Président classique plutôt qu'à la variante du Larbin ? */
+export const classique = (state: { regles?: Regles }): boolean => state.regles === 'classique';
+
 export function player(state: GameState, id: string): Player {
   const p = state.players.find((x) => x.id === id);
   if (!p) fail(`Joueur inconnu : ${id}`);
@@ -43,8 +46,9 @@ export function currentPlayer(state: GameState): Player {
 
 /**
  * Ceux qui n'ont pas encore pris la parole dans la série et ont de quoi le
- * faire. Une série ne fait qu'un tour de table : dès que la liste est vide,
- * elle est close.
+ * faire. Au Larbin, une série ne fait qu'un tour de table ; au classique, chaque
+ * coup posé rend la parole aux autres (voir doPlay). Dans les deux cas, dès que
+ * la liste est vide, la série est close.
  */
 function restentAParler(state: GameState): Player[] {
   return state.players.filter((p) => p.hand.length > 0 && !p.aAgi);
@@ -95,7 +99,7 @@ function identifiantDePartie(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
+export function createGame(seeds: PlayerSeed[], seed = Date.now(), regles: Regles = 'larbin'): GameState {
   if (seeds.length < MIN_JOUEURS || seeds.length > MAX_JOUEURS) {
     fail(`Le Larbin se joue de ${MIN_JOUEURS} à ${MAX_JOUEURS} joueurs (reçu : ${seeds.length}).`);
   }
@@ -117,6 +121,7 @@ export function createGame(seeds: PlayerSeed[], seed = Date.now()): GameState {
 
   const state: GameState = {
     partie: identifiantDePartie(),
+    regles,
     players,
     order: seeds.map((s) => s.id),
     round: 0,
@@ -163,6 +168,16 @@ function startRound(state: GameState): void {
   state.log.push(`--- Manche ${state.round} ---`);
 
   const boss = state.players.find((p) => p.role === 'boss');
+  if (boss && classique(state)) {
+    // Au classique, on mélange à chaque manche ; l'échange fait, le Boss ouvre.
+    const { items: melange, seed } = shuffle(makeDeck(), state.rng);
+    state.rng = seed;
+    distribuer(state, melange, randomSeat(state));
+    planExchanges(state);
+    state.phase = 'jeu';
+    state.turn = state.order.indexOf(boss.id);
+    return;
+  }
   if (!boss) {
     // Première manche : là, et seulement là, on mélange vraiment.
     const { items: melange, seed } = shuffle(makeDeck(), state.rng);
@@ -361,6 +376,14 @@ function doPlay(state: GameState, id: string, cardIds: string[]): void {
   }
 
   p.hand = p.hand.filter((c) => !cards.includes(c));
+  // Au classique, monter rend la parole à tous, même à ceux qui avaient passé :
+  // la série ne s'arrête que lorsque tous les autres passent à la suite.
+  if (classique(state)) {
+    for (const x of state.players) {
+      x.aAgi = false;
+      x.passed = false;
+    }
+  }
   p.aAgi = true;
   if (!req) state.pile = [];        // on ouvre : le tapis se ramasse maintenant
   state.pile.push({ player: id, cards });
@@ -371,7 +394,8 @@ function doPlay(state: GameState, id: string, cardIds: string[]): void {
 
   if (p.hand.length === 0) {
     p.finishedAt = state.finishOrder.length;
-    p.finishedOnTwo = rank === DEUX;
+    // Finir sur un 2 n'est puni qu'au Larbin.
+    p.finishedOnTwo = rank === DEUX && !classique(state);
     state.finishOrder.push(id);
     state.log.push(
       p.finishedOnTwo
@@ -586,6 +610,7 @@ export interface PlayerView {
   me: Player;
   /** L'identité de la partie en cours : elle survit aux rechargements. */
   partie: string;
+  regles: Regles;
   round: number;
   phase: GameState['phase'];
   turnPlayer: string;
@@ -624,6 +649,7 @@ export function viewFor(state: GameState, id: string): PlayerView {
   return {
     me: structuredClone(me),
     partie: state.partie,
+    regles: state.regles ?? 'larbin',
     round: state.round,
     phase: state.phase,
     turnPlayer: state.order[state.turn],
