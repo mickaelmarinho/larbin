@@ -324,6 +324,13 @@ Instructions (276 caractères) :
 
 ## Où on en est
 
+**20 novembre 2026 : activation demandée chez GameDistribution** (version
+1.0.0). Zip déposé, vignettes en JPG (leur site refuse le PNG), page des
+règles anglaise ajoutée en « Game Wiki Page », publicité d'essai vue : « SDK :
+Yes ». Les publicités à récompense sont facultatives et n'ont pas bloqué la
+demande. Une fois activé, le jeu ne se retire plus : une désactivation le
+cache seulement du catalogue. Leur relecture prend jusqu'à une semaine.
+
 **19 novembre 2026 : compte GameDistribution approuvé.** Version vérifiée
 contre leurs règles de qualité (voir le tableau plus haut) : écran « Continuer »
 après une publicité, musique par défaut, vignettes refaites sans titre.
