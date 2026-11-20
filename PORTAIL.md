@@ -326,8 +326,13 @@ Instructions (276 caractères) :
 
 **19 novembre 2026 : compte GameDistribution approuvé.** Version vérifiée
 contre leurs règles de qualité (voir le tableau plus haut) : écran « Continuer »
-après une publicité, musique par défaut, vignettes refaites sans titre. Reste
-à Mickaël de créer la fiche et de me donner le Game ID.
+après une publicité, musique par défaut, vignettes refaites sans titre.
+
+**20 novembre 2026 : fiche créée** (« Larbin – President Card Game », Game ID
+`501ad41b71bd4253b866e3d887915371`, compatibilité « Both », orientation
+« Both »). Le champ Tags n'accepte que les mots de leur liste. Zip final :
+`gamedistribution/larbin-gamedistribution.zip`. Reste à Mickaël : le déposer,
+regarder la publicité d'essai, demander l'activation.
 
 **13 novembre 2026 : version GameDistribution prête, sans serveur**, en
 attente du compte et du numéro de jeu (voir plus haut). Essayée en local :

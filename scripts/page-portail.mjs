@@ -14,7 +14,7 @@
  * Le numéro du jeu chez GameDistribution, donné par son tableau de bord à la
  * création de la fiche. Il n'a rien de secret : il figure dans la page.
  */
-export const ID_GAMEDISTRIBUTION = '';
+export const ID_GAMEDISTRIBUTION = '501ad41b71bd4253b866e3d887915371';
 
 const PRESENTATION = `<main id="presentation">
   <h1>Le Larbin — the President card game, but faster</h1>
