@@ -322,6 +322,24 @@ Description (433 caractères) :
 Instructions (276 caractères) :
 > Tap or click the cards you want to play, then press Play. You must play the same number of cards as the player before you, of a higher rank, or pass. Each player speaks only once per trick. 2 is the highest card, 3 the lowest. A short tutorial teaches the game in two minutes.
 
+**Si leur relecture demande des corrections** — ce qui est prêt, pour répondre
+dans la journée :
+
+| Ce qu'ils peuvent demander | Réponse prête |
+|---|---|
+| Vignette jugée vide, floue, étirée, ou titre en trop | `node scripts/portail/couverture.mjs`, puis capture Chrome sans écran au double de la taille et réduction par ffmpeg, en JPG (voir les formats `?f=cartes` et `?f=large`) ; une heure |
+| Publicité mal placée, ou pas d'écran de reprise | les points d'appel sont dans `apresLaPub` (`src/web/app.ts`) et l'écran « Continuer » dans `quandLaPubAPasse` ; ajouter ou retirer un point est l'affaire de quelques lignes |
+| Publicités à récompense | facultatives selon leurs règles ; si on nous les demande, un bonus librement choisi (par exemple garder sa place au lieu de devenir Larbin pour une manche) |
+| Musique absente ou trop forte | réglage par défaut dans `musiqueChoisie` (`src/web/musique.ts`) ; volume dans `sons.ts` |
+| Langue par défaut | le jeu suit le navigateur (permis par leur 4.2) ; forcer l'anglais tient en une ligne dans `src/web/langue.ts` |
+| Taille ou chargement | un seul `index.html` d'environ 200 Ko, sans fichier à charger : rien à alléger |
+| Lien sortant repéré | aucun n'est visible ni cliquable dans cette version ; leur envoyer une capture si besoin |
+| Texte de fiche (description, tags) | à corriger directement dans l'onglet « EDIT » par Mickaël, sans redéposer le jeu |
+
+Après toute correction du jeu : reconstruire (`npm run build`), refaire le zip,
+le déposer avec un nouveau numéro de version et un « Change Log », et demander
+de nouveau l'activation.
+
 ## Où on en est
 
 **20 novembre 2026 : activation demandée chez GameDistribution** (version

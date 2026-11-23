@@ -6,7 +6,7 @@
  * tourne sur le serveur. L'interface ne fait pas la différence — elle affiche
  * une PlayerView et envoie des actions, dans les deux cas.
  */
-import type { Action, GameState } from '../engine/types.ts';
+import type { Action, GameState, Regles } from '../engine/types.ts';
 import { SANS_SERVEUR, SUR_PORTAIL } from './portail.ts';
 import { apply, createGame, viewFor, type PlayerView } from '../engine/game.ts';
 import { botAction } from '../engine/bot.ts';
@@ -64,6 +64,32 @@ const PARTIE_LIBRE: ReglagesSolo = {
   cle: CLE_SAUVEGARDE,
   creer: () => createGame(TABLEE_SOLO),
 };
+
+/** La partie libre aux règles du Président classique : gardée à part, chacune reprend où on l'a laissée. */
+const PARTIE_CLASSIQUE: ReglagesSolo = {
+  cle: 'larbin.partie.classique',
+  creer: () => createGame(TABLEE_SOLO, Date.now(), 'classique'),
+};
+
+export const reglagesSolo = (regles: Regles): ReglagesSolo =>
+  (regles === 'classique' ? PARTIE_CLASSIQUE : PARTIE_LIBRE);
+
+const CLE_REGLES = 'larbin.regles';
+
+/** Les règles choisies à l'accueil pour jouer contre les bots ; la variante du Larbin par défaut. */
+export function reglesChoisies(): Regles {
+  try {
+    return localStorage.getItem(CLE_REGLES) === 'classique' ? 'classique' : 'larbin';
+  } catch {
+    return 'larbin';
+  }
+}
+
+export function choisirRegles(regles: Regles): void {
+  try {
+    localStorage.setItem(CLE_REGLES, regles);
+  } catch { /* le choix ne tiendra que le temps de l'écran */ }
+}
 
 export class TableSolo implements Table {
   readonly mode = 'solo';

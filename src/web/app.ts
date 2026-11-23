@@ -5,12 +5,12 @@
  * actions qu'elle lui renvoie. Que le moteur tourne dans cet onglet (solo) ou
  * sur le serveur (en ligne) ne change rien à ce fichier.
  */
-import type { Action, Card, Rank, Role } from '../engine/types.ts';
+import type { Action, Card, Rank, Regles, Role } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { rankLabel, sortHand } from '../engine/cards.ts';
 import {
-  ADRESSE_PUBLIQUE, DUREE_REACTION, TABLE_PUBLIQUE, TableDefi, TableEnLigne, TableSolo, activite, hoteDuJeu,
-  tablesPubliques, type ResumeTable, type Table,
+  ADRESSE_PUBLIQUE, DUREE_REACTION, TABLE_PUBLIQUE, TableDefi, TableEnLigne, TableSolo, activite, choisirRegles,
+  hoteDuJeu, reglagesSolo, reglesChoisies, tablesPubliques, type ResumeTable, type Table,
 } from './table.ts';
 import {
   DEFI_MANCHES, DEFI_MAXIMUM, bilanDuJour, emojisDuDefi, noterDansLHistorique, statsDuDefi, texteDuDefi,
@@ -378,7 +378,8 @@ function rendreMaMain(vue: PlayerView): void {
       .map((r) => `<button data-reaction="${r}" type="button">${r}</button>`).join('')}</div>` : ''}`
     : '';
   $('ma-ligne').innerHTML = `<span class="medaillon">${avatarDe(vue.me.id)}</span>${role}`
-    + `<span>${tr('Manche', 'Round')} ${vue.round} — ${pluriel(vue.me.hand.length, ['carte', 'cartes'], ['card', 'cards'])}</span>${reagir}`;
+    + `<span>${tr('Manche', 'Round')} ${vue.round} — ${pluriel(vue.me.hand.length, ['carte', 'cartes'], ['card', 'cards'])}`
+    + `${vue.regles === 'classique' ? ` · ${tr('classique', 'classic')}` : ''}</span>${reagir}`;
 
   const poser = $('poser') as HTMLButtonElement;
   const passer = $('passer') as HTMLButtonElement;
@@ -766,6 +767,7 @@ function voileDebutDeManche(vue: PlayerView): void {
   montrerVoile(`
     <h2>${tr('Manche', 'Round')} ${vue.round}</h2>
     ${laCoupe}
+    ${vue.regles === 'classique' ? `<p>${tr('Les cartes ont été mélangées.', 'The cards have been shuffled.')}</p>` : ''}
     ${phrases.length ? `<p>${phrases.map((p) => `• ${p}`).join('<br>')}</p>` : ''}
     <p>${ouvre}</p>
     <button class="action primaire" id="commencer" type="button">${tr('Jouer', 'Play')}</button>
@@ -1133,10 +1135,13 @@ function didacticielFini(): boolean {
   }
 }
 
-/** A-t-on déjà expliqué le jeu à ce navigateur ? */
-function dejaExplique(): boolean {
+/** Où l'on note qu'on a expliqué les règles classiques : elles ont leur propre écran. */
+const CLE_ACCUEILLI_CLASSIQUE = 'larbin.regles-vues.classique';
+
+/** A-t-on déjà expliqué ces règles-là à ce navigateur ? */
+function dejaExplique(regles: Regles = 'larbin'): boolean {
   try {
-    return localStorage.getItem(CLE_ACCUEILLI) === 'oui';
+    return localStorage.getItem(regles === 'classique' ? CLE_ACCUEILLI_CLASSIQUE : CLE_ACCUEILLI) === 'oui';
   } catch {
     return false;   // stockage indisponible : mieux vaut expliquer deux fois que jamais
   }
@@ -1150,9 +1155,35 @@ function dejaExplique(): boolean {
  * « vous passez » avant qu'il ait rien compris. Cinq lignes suffisent à jouer ;
  * la page des règles est là pour le reste.
  */
-function voileBienvenue(suite: () => void, libelle = tr('Revenir', 'Back')): void {
+function voileBienvenue(suite: () => void, libelle = tr('Revenir', 'Back'), regles: Regles = 'larbin'): void {
   suspendre(true);
-  montrerVoile(`${tr(`
+  montrerVoile(`${regles === 'classique' ? tr(`
+    <h2>Comment on joue — règles classiques</h2>
+    <p>Se débarrasser de toutes ses cartes avant les autres.</p>
+    <ul class="vite">
+      <li><b>Le 2 est la carte la plus forte</b>, devant l’as : personne ne peut
+          le battre, la série s’arrête dès qu’il tombe.</li>
+      <li>À votre tour, posez <b>autant de cartes que le joueur précédent</b>,
+          d’une hauteur strictement supérieure. Sinon, vous passez.</li>
+      <li><b>La série continue tant que quelqu’un monte</b> : même après avoir
+          passé, vous pourrez rejouer. Elle s’arrête quand tous les autres passent.</li>
+      <li>Les couleurs ne comptent pas : un 6 de cœur vaut un 6 de trèfle.</li>
+      <li>En fin de manche, le premier sorti devient <b>Boss</b> et le dernier
+          <b>Larbin</b> — qui lui donnera ses deux meilleures cartes. On mélange à chaque manche.</li>
+    </ul>`, `
+    <h2>How to play — classic rules</h2>
+    <p>Get rid of all your cards before the others.</p>
+    <ul class="vite">
+      <li><b>The 2 is the highest card</b>, above the ace: nobody can beat it,
+          so the trick ends as soon as it lands.</li>
+      <li>On your turn, play <b>as many cards as the previous player</b>,
+          of a strictly higher rank. Otherwise, you pass.</li>
+      <li><b>The trick goes on as long as someone plays higher</b>: even after
+          passing, you may play again. It ends when everyone else passes.</li>
+      <li>Suits don’t matter: a 6 of hearts is worth a 6 of clubs.</li>
+      <li>At the end of the round, the first one out becomes <b>Boss</b> and the last
+          one <b>Lackey</b> — who must hand over their two best cards. Cards are shuffled every round.</li>
+    </ul>`) : tr(`
     <h2>Comment on joue</h2>
     <p>Se débarrasser de toutes ses cartes avant les autres.</p>
     <ul class="vite">
@@ -1191,7 +1222,7 @@ function voileBienvenue(suite: () => void, libelle = tr('Revenir', 'Back')): voi
 
   const noter = () => {
     try {
-      localStorage.setItem(CLE_ACCUEILLI, 'oui');
+      localStorage.setItem(regles === 'classique' ? CLE_ACCUEILLI_CLASSIQUE : CLE_ACCUEILLI, 'oui');
     } catch { /* on réexpliquera, ce n'est pas grave */ }
     suspendre(false);
   };
@@ -1521,6 +1552,10 @@ function voileAccueil(): void {
             ? `${tr('Défi du jour', 'Daily challenge')} <small title="${tr('Jours de suite', 'Days in a row')}">🔥 ${serieDuDefi}</small>`
             : `${icone('calendrier')} ${tr('Défi du jour', 'Daily challenge')}`}</button>
       </div>
+      <div class="regles-choix" role="radiogroup" aria-label="${tr('Règles contre les bots', 'Rules against bots')}">
+        <button type="button" role="radio" data-regles="larbin" aria-checked="${reglesChoisies() === 'larbin'}">${tr('Règles du Larbin', 'Larbin rules')}</button>
+        <button type="button" role="radio" data-regles="classique" aria-checked="${reglesChoisies() === 'classique'}">${tr('Règles classiques', 'Classic rules')}</button>
+      </div>
       ${didacticielFini() ? '' : `<button class="action lecon" id="lecon-accueil" type="button">
         <span>♥ ${tr('Apprendre en jouant', 'Learn by playing')}</span>
         <small>${tr('4 petites leçons · 2 minutes', '4 short lessons · 2 minutes')}</small>
@@ -1577,16 +1612,30 @@ function voileAccueil(): void {
   $('histoire').addEventListener('click', () => voileHistoire(voileAccueil));
 
   // La première fois, on explique avant de lancer : cinq lignes, puis on joue.
-  const enPassantParLesRegles = (jouer: () => void) => {
-    if (dejaExplique()) jouer();
-    else voileBienvenue(jouer, tr('Jouer', 'Play'));
+  const enPassantParLesRegles = (jouer: () => void, regles: Regles = 'larbin') => {
+    if (dejaExplique(regles)) jouer();
+    else voileBienvenue(jouer, tr('Jouer', 'Play'), regles);
   };
 
-  $('solo').addEventListener('click', () => enPassantParLesRegles(() => {
-    compter('solo-lancee');
-    cacherVoile();
-    apresLaPub(() => installer(new TableSolo()));
-  }));
+  // Contre les bots, on choisit ses règles ; le défi du jour et les tables en
+  // ligne restent à celles du Larbin.
+  document.querySelectorAll<HTMLButtonElement>('[data-regles]').forEach((b) => {
+    b.addEventListener('click', () => {
+      choisirRegles(b.dataset.regles as Regles);
+      document.querySelectorAll('[data-regles]').forEach((autre) => {
+        autre.setAttribute('aria-checked', String(autre === b));
+      });
+    });
+  });
+
+  $('solo').addEventListener('click', () => {
+    const regles = reglesChoisies();
+    enPassantParLesRegles(() => {
+      compter('solo-lancee');
+      cacherVoile();
+      apresLaPub(() => installer(new TableSolo(reglagesSolo(regles))));
+    }, regles);
+  });
 
   $('defi').addEventListener('click', () => {
     nom();   // c'est sous ce nom que le score entrera au classement du jour

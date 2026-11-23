@@ -1178,6 +1178,39 @@ button.action.alerte {
 .panneau .deux .action + .action { margin-top: 0; }
 .panneau .deux + .action { margin-top: 8px; }
 
+/* Les règles contre les bots : un interrupteur à deux positions, sous les boutons du solo. */
+.regles-choix {
+  display: flex;
+  margin-top: 8px;
+  padding: 3px;
+  border: 1px solid #ffffff26;
+  border-radius: 999px;
+  background: #00000026;
+}
+
+.regles-choix button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texte-pale);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .2s, color .2s;
+}
+
+.regles-choix button[aria-checked="true"] {
+  background: var(--laiton);
+  color: #2a1e05;
+}
+
+.regles-choix button:focus-visible { outline: 2px solid var(--creme); outline-offset: 2px; }
+
 button.action.defi {
   border-color: #d9a44199;
   color: var(--creme);
