@@ -10,7 +10,7 @@
  * pas d'hôte, et un compte à rebours au bout duquel des bots prennent les
  * places vides — personne n'y attend seul devant un écran.
  */
-import type { Action, GameState } from '../engine/types.ts';
+import type { Action, GameState, Regles } from '../engine/types.ts';
 import {
   MAX_JOUEURS, MIN_JOUEURS, RegleViolee, apply, createGame, viewFor,
   type PlayerView,
@@ -59,6 +59,8 @@ export class Salon {
   lancement: number | null = null;
   /** À combien on joue ici. Le jeu en accepte quatre à six. */
   taille = MIN_JOUEURS;
+  /** Les règles de la partie. Une table publique joue toujours celles du Larbin. */
+  regles: Regles = 'larbin';
   /**
    * Instant où la table jouera à la place de celui dont c'est le tour. Le
    * serveur le renseigne en armant son minuteur ; le salon ne fait que le
@@ -120,6 +122,19 @@ export class Salon {
   }
 
   /**
+   * L'hôte d'un salon privé choisit les règles avant de lancer. Les tables
+   * publiques gardent celles du Larbin : un inconnu qui s'y assoit sait à quoi
+   * il joue.
+   */
+  choisirRegles(regles: unknown): void {
+    if (this.commencee) throw new RegleViolee('La partie a déjà commencé.');
+    if (this.publique) throw new RegleViolee('Les tables publiques se jouent aux règles du Larbin.');
+    if (regles !== 'larbin' && regles !== 'classique') throw new RegleViolee('Règles inconnues.');
+    this.regles = regles;
+    this.derniereActivite = Date.now();
+  }
+
+  /**
    * Tout le monde s'est-il dit prêt ? C'est la seule condition du départ : les
    * bots ne comptent pas, et une table sans humain n'est jamais prête. Se
    * dédire — ou voir arriver quelqu'un qui n'a rien promis — suffit à défaire
@@ -164,6 +179,7 @@ export class Salon {
       minJoueurs: MIN_JOUEURS,
       maxJoueurs: MAX_JOUEURS,
       taille: this.taille,
+      regles: this.regles,
       publique: this.publique,
       departDans: this.lancement !== null && !this.commencee
         ? Math.max(0, this.lancement - Date.now())
@@ -292,6 +308,8 @@ export class Salon {
     }
     this.etat = createGame(
       this.places.map((p) => ({ id: p.id, name: p.nom, isBot: p.estBot })),
+      Date.now(),
+      this.regles,
     );
     this.derniereActivite = Date.now();
   }

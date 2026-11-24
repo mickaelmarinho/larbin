@@ -15,6 +15,8 @@ const FIXES: Record<string, string> = {
   'Le serveur a trébuché sur ce message.': 'The server tripped over that message.',
   'Le serveur redémarre — rouvrez le lien dans un instant.': 'The server is restarting — reopen the link in a moment.',
   'Message illisible.': 'Unreadable message.',
+  'Règles inconnues.': 'Unknown rules.',
+  'Les tables publiques se jouent aux règles du Larbin.': 'Public tables are played with Larbin rules.',
   'Rejoignez un salon avant de jouer.': 'Join a room before playing.',
   'Trop de messages d’un coup.': 'Too many messages at once.',
   'Trop de tables ouvertes. Réessayez dans un moment.': 'Too many open tables. Try again in a moment.',

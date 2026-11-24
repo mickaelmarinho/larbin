@@ -1889,6 +1889,18 @@ function voileSalon(en: TableEnLigne): void {
       ${jeSuisHote && s.id !== en.moi ? `<button class="mini" data-retirer="${s.id}" type="button">✕</button>` : ''}
     </li>`).join('');
 
+  // Les règles : l'hôte les choisit, les invités les voient. Un serveur pas
+  // encore à jour ne les transmet pas — c'est alors celles du Larbin.
+  const regles: Regles = salon.regles ?? 'larbin';
+  const choixDesRegles = jeSuisHote
+    ? `<div class="regles-choix" role="radiogroup" aria-label="${tr('Règles de la partie', 'Game rules')}">
+        <button type="button" role="radio" data-salon-regles="larbin" aria-checked="${regles === 'larbin'}">${tr('Règles du Larbin', 'Larbin rules')}</button>
+        <button type="button" role="radio" data-salon-regles="classique" aria-checked="${regles === 'classique'}">${tr('Règles classiques', 'Classic rules')}</button>
+      </div>`
+    : `<p class="mention">${regles === 'classique'
+      ? tr('On joue aux <b>règles classiques</b> du Président.', 'Playing <b>classic President rules</b>.')
+      : tr('On joue aux <b>règles du Larbin</b> : un seul tour de table par série.', 'Playing <b>Larbin rules</b>: one trip around the table per trick.')}</p>`;
+
   const erreur = en.erreur();
   montrerVoile(`
     <h2>${tr('Salon', 'Room')} ${salon.code}</h2>
@@ -1900,6 +1912,7 @@ function voileSalon(en: TableEnLigne): void {
       <button class="action" id="copier" type="button">${navigator.share && !SUR_PORTAIL ? tr('Envoyer', 'Send') : tr('Copier', 'Copy')}</button>
     </div>
     <ul class="classement">${sieges}</ul>
+    ${choixDesRegles}
     ${erreur ? `<p class="mention alerte">${messageDuServeur(erreur)}</p>` : ''}
     ${manque > 0 ? `<p class="mention">${tr(`Encore ${manque} joueur${manque > 1 ? 's' : ''} — ou autant de bots.`,
       `${manque} more player${manque > 1 ? 's' : ''} needed — or as many bots.`)}</p>` : ''}
@@ -1914,6 +1927,9 @@ function voileSalon(en: TableEnLigne): void {
 
   en.oublierErreur();
   brancherInterrupteurSons();
+  $('voile').querySelectorAll<HTMLButtonElement>('[data-salon-regles]').forEach((b) => {
+    b.addEventListener('click', () => en.regles(b.dataset.salonRegles as Regles));
+  });
 
   $('copier').addEventListener('click', async () => {
     // Dans le cadre d'un portail, la feuille de partage du téléphone est refusée : on copie.

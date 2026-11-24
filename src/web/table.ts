@@ -515,6 +515,11 @@ export class TableEnLigne implements Table {
   }
 
   /** Proposer de jouer à quatre, cinq ou six. */
+  /** L'hôte choisit les règles de la partie, avant de la lancer. */
+  regles(regles: Regles): void {
+    this.dire({ type: 'regles', regles });
+  }
+
   taille(joueurs: number): void {
     this.dire({ type: 'taille', taille: joueurs });
   }

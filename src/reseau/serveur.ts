@@ -456,6 +456,10 @@ async function traiter(ws: WebSocket, message: VersServeur): Promise<void> {
         salon.choisirTaille(Number(message.taille));
         ajusterLancement(salon);
         break;
+      case 'regles':
+        exigerHote(salon, id);
+        salon.choisirRegles(message.regles);
+        break;
       case 'action':
         salon.jouer(id, message.action);
         break;

@@ -6,7 +6,7 @@
  * des autres. Un joueur ne peut donc ni tricher, ni regarder le jeu du voisin,
  * même en ouvrant la console.
  */
-import type { Action } from '../engine/types.ts';
+import type { Action, Regles } from '../engine/types.ts';
 import type { PlayerView } from '../engine/game.ts';
 import { nomConvenable } from './moderation.ts';
 
@@ -58,6 +58,8 @@ export interface EtatSalon {
   maxJoueurs: number;
   /** Combien de joueurs à cette table : quatre, cinq ou six. */
   taille: number;
+  /** Les règles de la partie : celles du Larbin, ou le Président classique. */
+  regles: Regles;
   /**
    * Table publique : ouverte aux inconnus, sans hôte. Elle ne fait attendre
    * personne — au bout du compte à rebours, des bots prennent les places vides.
@@ -77,6 +79,7 @@ export type VersServeur =
   | { type: 'rejoindre-public'; nom: string; avatar?: string; session?: string }
   | { type: 'pret'; pret: boolean }
   | { type: 'taille'; taille: number }
+  | { type: 'regles'; regles: string }
   | { type: 'ajouter-bot' }
   | { type: 'retirer'; id: string }
   | { type: 'demarrer' }

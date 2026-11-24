@@ -430,3 +430,20 @@ test('une table publique pleine n’accueille plus personne', () => {
   assert.equal(quatre.accueille, false);
   assert.throws(() => quatre.asseoir('E', 'kE'), RegleViolee);
 });
+
+test('l’hôte choisit les règles, et la partie les suit', () => {
+  const salon = tableDe(2);
+  assert.equal(salon.etatPublic().regles, 'larbin', 'par défaut, les règles du Larbin');
+  salon.choisirRegles('classique');
+  assert.equal(salon.etatPublic().regles, 'classique');
+  salon.demarrer();
+  assert.equal(salon.etat?.regles, 'classique');
+  assert.throws(() => salon.choisirRegles('larbin'), RegleViolee, 'plus de changement une fois lancée');
+});
+
+test('les règles se limitent aux deux connues, et les tables publiques restent au Larbin', () => {
+  const salon = tableDe(0);
+  assert.throws(() => salon.choisirRegles('belote'), RegleViolee);
+  const publique = new Salon('PUBL', { publique: true });
+  assert.throws(() => publique.choisirRegles('classique'), RegleViolee);
+});
